@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HeartDrop 💖 | Couple's Connect Four</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: system-ui, sans-serif; }
+        .cell {
+            width: 70px;
+            height: 70px;
+            background: #4c1d95;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+            transition: all 0.2s;
+        }
+        .cell:hover {
+            transform: scale(1.05);
+        }
+        .drop { animation: drop 0.35s ease-in; }
+        @keyframes drop {
+            from { transform: translateY(-500px); }
+            to { transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-950 to-rose-950 text-white min-h-screen flex items-center justify-center">
+    <div class="text-center">
+        <h1 class="text-5xl font-bold mb-2">💖 HeartDrop 💖</h1>
+        <p class="text-pink-300 mb-8">Connect 4 to win her heart (or his!)</p>
+        
+        <div class="flex justify-center gap-8 mb-6">
+            <div class="flex items-center gap-3">
+                <span class="text-4xl">❤️</span>
+                <div>
+                    <p class="font-semibold">Dan</p>
+                    <p class="text-sm text-red-400">Player 1</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-4xl">💋</span>
+                <div>
+                    <p class="font-semibold">Nicole</p>
+                    <p class="text-sm text-pink-400">Player 2</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="turn" class="text-2xl font-medium mb-4">Dan's turn ❤️</div>
+        
+        <div id="board" class="inline-grid grid-cols-7 gap-3 bg-purple-900/50 p-6 rounded-3xl shadow-2xl"></div>
+        
+        <div id="status" class="mt-8 min-h-[60px] text-3xl font-bold"></div>
+        
+        <div class="mt-8">
+            <button onclick="resetGame()" 
+                    class="bg-white text-purple-900 px-8 py-4 rounded-full font-bold text-lg hover:bg-pink-200 transition">
+                New Game
+            </button>
+        </div>
+        
+        <p class="mt-10 text-pink-200 text-sm">First to connect 4 wins! Take turns clicking columns.</p>
+    </div>
+
+    <script>
+        const ROWS = 6;
+        const COLS = 7;
+        let board = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+        let currentPlayer = 1;
+        let gameOver = false;
+
+        const boardEl = document.getElementById('board');
+        const turnEl = document.getElementById('turn');
+        const statusEl = document.getElementById('status');
+
+        function createBoard() {
+            boardEl.innerHTML = '';
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.addEventListener('click', () => handleClick(col));
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        function handleClick(col) {
+            if (gameOver) return;
+            
+            for (let row = ROWS - 1; row >= 0; row--) {
+                if (board[row][col] === 0) {
+                    board[row][col] = currentPlayer;
+                    render();
+                    
+                    if (checkWin(row, col)) {
+                        gameOver = true;
+                        statusEl.innerHTML = `
+                            <span class="text-5xl">🎉 ${currentPlayer === 1 ? 'Dan' : 'Your Girl'} WINS! 💘</span><br>
+                            <span class="text-2xl mt-4 block">${currentPlayer === 1 ? 'You stole her heart ❤️' : 'She got you good 💋'}</span>
+                            <span class="text-xl mt-6 block text-pink-300">Winner picks: victory kiss, massage, or movie night! 😘</span>
+                        `;
+                        launchSimpleConfetti();
+                        return;
+                    }
+                    
+                    if (isDraw()) {
+                        statusEl.innerHTML = `<span class="text-yellow-300">It's a draw! ❤️ Try again for more kisses</span>`;
+                        gameOver = true;
+                        return;
+                    }
+                    
+                    currentPlayer = currentPlayer === 1 ? 2 : 1;
+                    turnEl.textContent = currentPlayer === 1 ? "Dan's turn ❤️" : "Her turn 💋";
+                    return;
+                }
+            }
+        }
+
+        function render() {
+            const cells = boardEl.children;
+            for (let i = 0; i < cells.length; i++) {
+                const row = Math.floor(i / COLS);
+                const col = i % COLS;
+                const cell = cells[i];
+                cell.classList.remove('drop', 'ring-4', 'ring-white');
+                
+                if (board[row][col] === 1) {
+                    cell.innerHTML = '❤️';
+                    cell.classList.add('drop', 'bg-red-500');
+                } else if (board[row][col] === 2) {
+                    cell.innerHTML = '💋';
+                    cell.classList.add('drop', 'bg-pink-500');
+                } else {
+                    cell.innerHTML = '';
+                }
+            }
+        }
+
+        function checkWin(row, col) {
+            const player = board[row][col];
+            const directions = [[1,0], [0,1], [1,1], [1,-1]];
+            
+            for (let [dr, dc] of directions) {
+                let count = 1;
+                let r = row + dr, c = col + dc;
+                while (r >=0 && r < ROWS && c >=0 && c < COLS && board[r][c] === player) {
+                    count++;
+                    r += dr; c += dc;
+                }
+                r = row - dr; c = col - dc;
+                while (r >=0 && r < ROWS && c >=0 && c < COLS && board[r][c] === player) {
+                    count++;
+                    r -= dr; c -= dc;
+                }
+                if (count >= 4) return true;
+            }
+            return false;
+        }
+
+        function isDraw() {
+            return board[0].every(cell => cell !== 0);
+        }
+
+        function launchSimpleConfetti() {
+            for (let i = 0; i < 80; i++) {
+                setTimeout(() => {
+                    const conf = document.createElement('div');
+                    conf.textContent = ['❤️','💋','💖','✨'][Math.floor(Math.random()*4)];
+                    conf.style.position = 'fixed';
+                    conf.style.left = Math.random()*100 + 'vw';
+                    conf.style.top = '-50px';
+                    conf.style.fontSize = '30px';
+                    conf.style.zIndex = 9999;
+                    conf.style.transition = 'all 3s';
+                    document.body.appendChild(conf);
+                    
+                    setTimeout(() => {
+                        conf.style.top = '100vh';
+                        conf.style.opacity = '0';
+                        conf.style.transform = `rotate(${Math.random()*720}deg)`;
+                    }, 50);
+                    
+                    setTimeout(() => conf.remove(), 3500);
+                }, i * 8);
+            }
+        }
+
+        function resetGame() {
+            board = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+            currentPlayer = 1;
+            gameOver = false;
+            statusEl.innerHTML = '';
+            turnEl.textContent = "Dan's turn ❤️";
+            render();
+        }
+
+        // Start the game
+        createBoard();
+        render();
+    </script>
+</body>
+</html>
