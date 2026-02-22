@@ -4,29 +4,23 @@
 /**
  * =====================
  * LEGACY BRUTE FORCE (CONSTRAINED + STAGED + DETERMINISTIC RNG OPTION)
- * v2.8 + BEST-BY-ARCHETYPE REPORT
+ * v2.9 + SEARCH-SPACE SANITY CHECKS
  * =====================
  *
- * Key behaviors:
- * ✅ Mixed-weapon bonus (wiki): If weapon1 type != weapon2 type, DOUBLE the weapon-skill bonus from EACH weapon,
- *    and ONLY that stat (gunSkill OR meleeSkill OR projSkill) from that weapon.
+ * What changed vs your v2.8:
+ * - Removed a couple dead/unused variables.
+ * - “Sanity check” expanded:
+ *    - Prints EXACT superset counts: armorVariants, weaponVariants, miscVariants, weaponPairs, miscPairs.
+ *    - Estimates the *effective* candidates after your per-candidate misc filtering
+ *      (this is the important “are we missing combos?” check).
+ *    - Shows per-mask misc keep rates (Gun/Gun, Melee/Melee, Gun+Proj, etc).
+ * - Trimmed noisy logs (kept progress line + key run header + optional debug flags).
  *
- * ✅ POOLS: You manually list which armors/weapons/miscs to consider (or override via env vars).
- *
- * ✅ Weapons crystal constraints:
- *    - LOCK_ONLY_AMULET applies to WEAPONS ONLY (forces Amulet Crystal)
- *    - otherwise weapons test only: Amulet + Perfect Fire
- *
- * ✅ Misc crystals:
- *    - Build a SUPerset per misc item (context-free), then FILTER per-candidate based on weapon pair types.
- *    - Bio: NO Amulet. Allowed = Pink + weapon-type crystal(s) used (G/O/Y) (only those types used by the weapon pair).
- *    - Non-Bio: Allowed = Amulet + (Pink if defSkill>0) + (weapon-type crystals used IF misc has that skill stat)
- *
- * ✅ Pruning: default OFF (you can re-enable via LEGACY_PRUNE=1)
- *
- * ✅ End-of-run reporting:
- *    - Normal Top-N (ranked by worstWin then avgWin)
- *    - PLUS: Best build for each weapon archetype (Gun+Gun, Gun+Proj, Melee+Proj, etc.)
+ * Note: “missing combinations” usually means either:
+ * - a pool item name typo (not found in ItemDefs), or
+ * - crystal-allow rules are too strict (allowedCrystalsForX...), or
+ * - miscVariantAllowedForWeaponMask filters more than you intended.
+ * This sanity section makes those visible up-front.
  */
 
 // =====================
@@ -869,10 +863,8 @@ function allowedCrystalsForArmor(itemName) {
   if (itemName === 'Dark Legion Armor') return ['Abyss Crystal'];
   if (itemName === 'SG1 Armor') return ['Perfect Pink Crystal', 'Abyss Crystal'];
   if (itemName === 'Hellforged Armor') return ['Cabrusion Crystal'];
-  // default conservative
   return ['Abyss Crystal'];
 }
-
 function allowedCrystalsForWeapon(itemName) {
   if (LOCK_ONLY_AMULET.has(itemName)) return ['Amulet Crystal'];
   return ['Amulet Crystal', 'Perfect Fire Crystal'];
@@ -894,7 +886,6 @@ function allowedCrystalsForMiscSuperset(itemName) {
   const out = [];
 
   if (!isBio) {
-    // Amulet makes sense if it boosts something we care about (acc/skills/def)
     const amuletRelevant = (flat.accuracy || 0) > 0 || hasGun || hasMel || hasPrj || hasDef;
     if (amuletRelevant) out.push('Amulet Crystal');
   }
@@ -904,47 +895,33 @@ function allowedCrystalsForMiscSuperset(itemName) {
   if (hasMel) out.push('Perfect Orange Crystal');
   if (hasPrj) out.push('Perfect Yellow Crystal');
 
-  // Bio rule: NO amulet, but still include pink + weapon-type candidates where stats exist
-  if (isBio) {
-    // Ensure no Amulet
-    return out.filter((c) => c !== 'Amulet Crystal');
-  }
-
-  // de-dupe
+  if (isBio) return out.filter((c) => c !== 'Amulet Crystal');
   return Array.from(new Set(out));
 }
 
-// Per-candidate filtering: does this misc variant crystal make sense for the current weapon pair?
 // weaponMask: bit0=gun, bit1=melee, bit2=proj
 function miscVariantAllowedForWeaponMask(mv, weaponMask) {
   const isBio = mv.itemName === 'Bio Spinal Enhancer';
 
-  // Always allow Amulet on non-bio if it was in superset
   if (mv.crystalName === 'Amulet Crystal') return !isBio;
 
-  // Pink:
   if (mv.crystalName === 'Perfect Pink Crystal') {
-    // only if misc has defSkill>0, which is encoded in mv.__misc
-    return !!mv.__misc.hasDef;
+    return !!mv.__misc && !!mv.__misc.hasDef;
   }
 
-  // Weapon-type crystals:
   if (mv.crystalName === 'Perfect Green Crystal') {
-    // Bio: allow only if gun weapon used
     if (isBio) return (weaponMask & 0b001) !== 0;
-    // non-bio: must have gunSkill AND gun weapon used
-    return !!mv.__misc.hasGun && (weaponMask & 0b001) !== 0;
+    return !!mv.__misc && !!mv.__misc.hasGun && (weaponMask & 0b001) !== 0;
   }
   if (mv.crystalName === 'Perfect Orange Crystal') {
     if (isBio) return (weaponMask & 0b010) !== 0;
-    return !!mv.__misc.hasMel && (weaponMask & 0b010) !== 0;
+    return !!mv.__misc && !!mv.__misc.hasMel && (weaponMask & 0b010) !== 0;
   }
   if (mv.crystalName === 'Perfect Yellow Crystal') {
     if (isBio) return (weaponMask & 0b100) !== 0;
-    return !!mv.__misc.hasPrj && (weaponMask & 0b100) !== 0;
+    return !!mv.__misc && !!mv.__misc.hasPrj && (weaponMask & 0b100) !== 0;
   }
 
-  // Anything else: disallow (shouldn't happen for miscs)
   return false;
 }
 
@@ -981,7 +958,6 @@ function computeVariant(itemName, crystalName) {
     weapon = { min, max, skill };
   }
 
-  // misc metadata for filtering sanity
   let miscMeta = null;
   if (idef.type === 'Misc') {
     miscMeta = {
@@ -1074,9 +1050,7 @@ function buildWeaponPairs(weaponVariants) {
 function buildMiscPairsOrderlessAllDup(miscVariants) {
   const pairsA = [];
   for (let i = 0; i < miscVariants.length; i++) {
-    for (let j = i; j < miscVariants.length; j++) {
-      pairsA.push(i, j);
-    }
+    for (let j = i; j < miscVariants.length; j++) pairsA.push(i, j);
   }
   return new Uint16Array(pairsA);
 }
@@ -1096,7 +1070,6 @@ function buildHpPlans() {
 
   // Default behavior: all free points to dodge (as in your runs)
   const plan = { hp, extraAcc: 0, extraDodge: freePoints, freePoints };
-
   return {
     plans: [plan],
     perHpSummary: [{ hp, freePoints, allocCount: 1 }],
@@ -1133,7 +1106,6 @@ function compileDefender(def, variantCacheLocal) {
   const w2SkillIdx = w2V.weapon ? w2V.weapon.skill : null;
   const [w1Mult, w2Mult] = mixedWeaponMultsFromWeaponSkill(w1SkillIdx, w2SkillIdx);
 
-  // wiki mixed bonus: double ONLY the weapon-type skill add from each weapon when mixed
   const w1Gun = w1V.addGun * (w1SkillIdx === 0 ? w1Mult : 1);
   const w2Gun = w2V.addGun * (w2SkillIdx === 0 ? w2Mult : 1);
   const w1Mel = w1V.addMel * (w1SkillIdx === 1 ? w1Mult : 1);
@@ -1188,7 +1160,6 @@ function compileAttacker(plan, av, w1v, w2v, m1v, m2v) {
   const w2SkillIdx = w2v.weapon ? w2v.weapon.skill : null;
   const [w1Mult, w2Mult] = mixedWeaponMultsFromWeaponSkill(w1SkillIdx, w2SkillIdx);
 
-  // wiki mixed bonus: double ONLY the weapon-type skill add from each weapon when mixed
   const w1Gun = w1v.addGun * (w1SkillIdx === 0 ? w1Mult : 1);
   const w2Gun = w2v.addGun * (w2SkillIdx === 0 ? w2Mult : 1);
   const w1Mel = w1v.addMel * (w1SkillIdx === 1 ? w1Mult : 1);
@@ -1360,101 +1331,176 @@ function evalCandidateStaged({
 }
 
 // =====================
-// SANITY CHECK (misc crystal rules)
+// SEARCH-SPACE SANITY CHECKS
 // =====================
-function printMiscSanityCheck(miscNames) {
-  console.log('=== SANITY CHECK: misc crystal rules ===');
-  console.log('Rule summary:');
-  console.log('  - Bio: allowed = Pink + weapon-type crystal(s) used; NO Amulet');
-  console.log(
-    '  - non-Bio: allowed = Amulet + (Pink if defSkill>0) + (weapon-type crystals used IF misc has that skill stat)',
-  );
-  console.log('');
+function maskName(mask) {
+  if (mask === 0b001) return 'Gun+Gun';
+  if (mask === 0b010) return 'Melee+Melee';
+  if (mask === 0b100) return 'Proj+Proj';
+  if (mask === (0b001 | 0b010)) return 'Gun+Melee';
+  if (mask === (0b001 | 0b100)) return 'Gun+Proj';
+  if (mask === (0b010 | 0b100)) return 'Melee+Proj';
+  return `mask(${mask.toString(2)})`;
+}
 
-  console.log('Base misc superset crystals (context-free, before filtering by weapon pair):');
-
-  const baseSupersetByItem = {};
-  let supersetCount = 0;
-
-  for (const nm of miscNames) {
-    const crystals = allowedCrystalsForMiscSuperset(nm);
-    baseSupersetByItem[nm] = crystals.slice();
-
-    const fs = (ItemDefs[nm] && ItemDefs[nm].flatStats) || {};
-    const letters = crystals.map(shortCrystal).join('');
-    supersetCount += crystals.length;
-
-    const def = fs.defSkill || 0;
-    const gun = fs.gunSkill || 0;
-    const mel = fs.meleeSkill || 0;
-    const prj = fs.projSkill || 0;
-
-    console.log(
-      `  - ${padRight(nm, 18)} superset=[${letters}] (${crystals.length}) | ` +
-        `${def ? `Def${def} ` : ''}${gun ? `Gun${gun} ` : ''}${mel ? `Mel${mel} ` : ''}${prj ? `Prj${prj} ` : ''}`.trim(),
-    );
-  }
-
-  // Count miscVariants superset the same way buildVariantsForMiscsSuperset does:
-  const miscVariantsSuperset = buildVariantsForMiscsSuperset(miscNames);
-  const n = miscVariantsSuperset.length;
-  const pairs = (n * (n + 1)) / 2;
-
-  console.log('');
-  console.log(`Superset miscVariants count = ${n}`);
-  console.log(`Superset miscPairs(orderless, dup allowed) ~= n(n+1)/2 = ${Math.round(pairs)}`);
-  console.log('');
-  console.log('Allowed misc crystals AFTER weapon-pair filtering (shown as letters):');
-  console.log(
-    '(Also prints estimated effective miscVariants/miscPairs for that weapon archetype)\n',
-  );
-
-  const archetypes = [
-    { name: 'Melee+Melee', mask: 0b010 },
-    { name: 'Gun+Gun', mask: 0b001 },
-    { name: 'Proj+Proj', mask: 0b100 },
-    { name: 'Gun+Proj', mask: 0b001 | 0b100 },
-    { name: 'Gun+Melee', mask: 0b001 | 0b010 },
-    { name: 'Melee+Proj', mask: 0b010 | 0b100 },
-  ];
-
-  for (const arch of archetypes) {
-    console.log(`  WeaponPair ${arch.name}:`);
-
-    let effVariants = 0;
-
-    for (const nm of miscNames) {
-      const crystals = baseSupersetByItem[nm];
-      const kept = crystals.filter((c) => {
-        const v = computeVariant(nm, c);
-        return miscVariantAllowedForWeaponMask(v, arch.mask);
-      });
-      const lettersKept = kept.map(shortCrystal).join('');
-      const keepPct = crystals.length ? (kept.length / crystals.length) * 100 : 0;
-      const lettersAll = crystals.map(shortCrystal).join('');
-      console.log(
-        `    - ${padRight(nm, 18)} -> [${lettersKept}] (${kept.length})  vs superset(${crystals.length}) keep=${keepPct.toFixed(
-          1,
-        )}%`,
-      );
-      effVariants += kept.length;
+function buildAllowedMiscTable(miscVariants) {
+  // For each mask, store a boolean array allowed[maskIdx][i]
+  const masks = [0b001, 0b010, 0b100, 0b001 | 0b010, 0b001 | 0b100, 0b010 | 0b100];
+  const allow = new Array(masks.length);
+  for (let mi = 0; mi < masks.length; mi++) {
+    const m = masks[mi];
+    const a = new Uint8Array(miscVariants.length);
+    for (let i = 0; i < miscVariants.length; i++) {
+      a[i] = miscVariantAllowedForWeaponMask(miscVariants[i], m) ? 1 : 0;
     }
+    allow[mi] = a;
+  }
+  return { masks, allow };
+}
 
-    const effPairs = (effVariants * (effVariants + 1)) / 2;
-    const keepVarPct = n ? (effVariants / n) * 100 : 0;
-    const keepPairPct = pairs ? (effPairs / pairs) * 100 : 0;
+function estimateEffectiveCounts(
+  armorVariants,
+  weaponVariants,
+  weaponPairs,
+  miscVariants,
+  miscPairs,
+) {
+  const AV = armorVariants.length;
+  const WP = weaponPairs.length / 2;
+  const MP = miscPairs.length / 2;
 
-    console.log(
-      `    => Effective miscVariants ~= ${effVariants} (keep ${keepVarPct.toFixed(
-        1,
-      )}% of superset), Effective miscPairs ~= ${Math.round(effPairs)} (keep ${keepPairPct.toFixed(1)}% of superset)\n`,
-    );
+  const { masks, allow } = buildAllowedMiscTable(miscVariants);
+
+  // Count kept miscPairs for each mask, exactly (iterate miscPairs once per mask).
+  const keptPairsByMask = new Map();
+  for (let mi = 0; mi < masks.length; mi++) {
+    const a = allow[mi];
+    let keptPairs = 0;
+    for (let p = 0; p < miscPairs.length; p += 2) {
+      const i = miscPairs[p];
+      const j = miscPairs[p + 1];
+      if (a[i] && a[j]) keptPairs++;
+    }
+    keptPairsByMask.set(masks[mi], keptPairs);
   }
 
-  console.log('NOTE: These counts are an *estimate of search-space reduction* for miscs.');
+  // Count weaponPairs by mask
+  const weaponPairsByMask = new Map();
+  for (const m of masks) weaponPairsByMask.set(m, 0);
+
+  for (let p = 0; p < weaponPairs.length; p += 2) {
+    const w1 = weaponVariants[weaponPairs[p]];
+    const w2 = weaponVariants[weaponPairs[p + 1]];
+    let mask = 0;
+    mask |= w1.weapon.skill === 0 ? 0b001 : w1.weapon.skill === 1 ? 0b010 : 0b100;
+    mask |= w2.weapon.skill === 0 ? 0b001 : w2.weapon.skill === 1 ? 0b010 : 0b100;
+    if (!weaponPairsByMask.has(mask)) weaponPairsByMask.set(mask, 0);
+    weaponPairsByMask.set(mask, weaponPairsByMask.get(mask) + 1);
+  }
+
+  let effPerArmor = 0;
+  const breakdown = [];
+  for (const [mask, wpCount] of weaponPairsByMask.entries()) {
+    const mpKept = keptPairsByMask.get(mask) ?? 0;
+    const contrib = wpCount * mpKept;
+    effPerArmor += contrib;
+    breakdown.push({ mask, wpCount, mpKept, contrib });
+  }
+
+  const effTotal = AV * effPerArmor;
+
+  return {
+    AV,
+    WP,
+    MP,
+    effPerArmor,
+    effTotal,
+    breakdown,
+    keptPairsByMask,
+    weaponPairsByMask,
+  };
+}
+
+function printSearchSpaceSanity(
+  pools,
+  armorVariants,
+  weaponVariants,
+  miscVariants,
+  weaponPairs,
+  miscPairs,
+) {
+  const AV = armorVariants.length;
+  const WV = weaponVariants.length;
+  const MV = miscVariants.length;
+  const WP = weaponPairs.length / 2;
+  const MP = miscPairs.length / 2;
+
+  const supersetCandidates = AV * WP * MP;
+
+  console.log('=== SANITY CHECK: search-space / combinations ===');
   console.log(
-    '      The code still builds a superset miscVariants list, then filters per-candidate based on the weapon pair.',
+    `Pools: armors=${pools.armors.length}, weapons=${pools.weapons.length}, miscs=${pools.miscs.length}`,
   );
+  console.log(
+    `Variants (supersets): armorVariants=${AV}, weaponVariants=${WV}, miscVariants=${MV}`,
+  );
+  console.log(
+    `Pairs (orderless): weaponPairs=${WP} (=WV*(WV+1)/2), miscPairs=${MP} (=MV*(MV+1)/2)`,
+  );
+  console.log(
+    `Superset candidates (before misc per-candidate filter): AV*WP*MP = ${supersetCandidates}`,
+  );
+  console.log('');
+
+  // Per-item variant counts (helps catch “why is WV smaller than expected?”)
+  console.log('Per-item variant counts (by item + allowed crystals):');
+  for (const a of pools.armors) {
+    const cs = allowedCrystalsForArmor(a);
+    console.log(`  Armor  ${padRight(a, 24)} -> ${cs.map(shortCrystal).join('')}  (${cs.length})`);
+  }
+  for (const w of pools.weapons) {
+    const cs = allowedCrystalsForWeapon(w);
+    console.log(`  Weapon ${padRight(w, 24)} -> ${cs.map(shortCrystal).join('')}  (${cs.length})`);
+  }
+  for (const m of pools.miscs) {
+    const cs = allowedCrystalsForMiscSuperset(m);
+    console.log(`  Misc   ${padRight(m, 24)} -> ${cs.map(shortCrystal).join('')}  (${cs.length})`);
+  }
+  console.log('');
+
+  // Effective count after misc filter
+  const eff = estimateEffectiveCounts(
+    armorVariants,
+    weaponVariants,
+    weaponPairs,
+    miscVariants,
+    miscPairs,
+  );
+
+  console.log(
+    'Effective candidates AFTER misc per-candidate filter (exact for your current superset lists):',
+  );
+  console.log(`  Per armor: sum_over_weaponPairs(keptMiscPairsForMask) = ${eff.effPerArmor}`);
+  console.log(
+    `  Effective total: AV * perArmor = ${eff.AV} * ${eff.effPerArmor} = ${eff.effTotal}`,
+  );
+  const keepPct = supersetCandidates ? (eff.effTotal / supersetCandidates) * 100 : 0;
+  console.log(`  Keep rate vs superset: ${keepPct.toFixed(2)}%`);
+  console.log('');
+
+  console.log('Breakdown by weapon mask (weaponPairs count * kept miscPairs):');
+  eff.breakdown
+    .sort((a, b) => b.contrib - a.contrib)
+    .forEach((r) => {
+      const pctWP = eff.WP ? (r.wpCount / eff.WP) * 100 : 0;
+      const pctMP = eff.MP ? (r.mpKept / eff.MP) * 100 : 0;
+      console.log(
+        `  ${padRight(maskName(r.mask), 10)} | weaponPairs=${padRight(r.wpCount, 6)} (${pctWP.toFixed(
+          1,
+        )}%) | keptMiscPairs=${padRight(r.mpKept, 7)} (${pctMP.toFixed(1)}%) | contrib=${r.contrib}`,
+      );
+    });
+
   console.log('=== END SANITY CHECK ===\n');
 }
 
@@ -1513,20 +1559,17 @@ function workerMain() {
 
   // Build variants
   const armorVariants = [];
-  for (const nm of armorChoices) {
+  for (const nm of armorChoices)
     for (const c of allowedCrystalsForArmor(nm)) armorVariants.push(getV(nm, c));
-  }
 
   const weaponVariants = [];
-  for (const nm of weapons) {
+  for (const nm of weapons)
     for (const c of allowedCrystalsForWeapon(nm)) weaponVariants.push(getV(nm, c));
-  }
 
   // SUPerset misc variants
   const miscVariants = [];
-  for (const nm of miscChoices) {
+  for (const nm of miscChoices)
     for (const c of allowedCrystalsForMiscSuperset(nm)) miscVariants.push(getV(nm, c));
-  }
 
   const weaponPairs = buildWeaponPairs(weaponVariants);
   const miscPairs = buildMiscPairsOrderlessAllDup(miscVariants);
@@ -1557,7 +1600,6 @@ function workerMain() {
 
   const detBaseSeed = (Number(rngSeed) || 0) >>> 0;
 
-  // debug counter (only worker 0 prints)
   let debugPrinted = 0;
 
   for (let globalIdx = startIndex; globalIdx < endIndex; globalIdx++) {
@@ -1588,7 +1630,7 @@ function workerMain() {
     const m1v = miscVariants[miscPairs[mpBase]];
     const m2v = miscVariants[miscPairs[mpBase + 1]];
 
-    // Per-candidate misc crystal sanity filter
+    // Per-candidate misc crystal filter
     if (
       !miscVariantAllowedForWeaponMask(m1v, weaponMask) ||
       !miscVariantAllowedForWeaponMask(m2v, weaponMask)
@@ -1672,7 +1714,6 @@ function workerMain() {
     });
 
     if (!score.bailed) {
-      // Track best-by-type per HP (even if it doesn't make Top-N)
       let bestTypes = bestByTypeByHp[hpKey];
       if (!bestTypes) bestTypes = bestByTypeByHp[hpKey] = Object.create(null);
 
@@ -1695,21 +1736,13 @@ function workerMain() {
         },
       };
 
-      if (isBetterScore(candidateEntry, bestTypes[wpTag])) {
-        bestTypes[wpTag] = candidateEntry;
-      }
+      if (isBetterScore(candidateEntry, bestTypes[wpTag])) bestTypes[wpTag] = candidateEntry;
 
-      // Keep normal Top-N leaderboard
       const floor = lb.length ? lb[lb.length - 1] : null;
       if (lb.length < keepTopNPerHp || score.worstWin >= floor.worstWin - 1e-9) {
         pushLeaderboard(
           lb,
-          {
-            wpTag,
-            label: candidateEntry.label,
-            ...score,
-            stats: candidateEntry.stats,
-          },
+          { wpTag, label: candidateEntry.label, ...score, stats: candidateEntry.stats },
           keepTopNPerHp,
         );
 
@@ -1818,16 +1851,7 @@ async function main() {
     process.env.LEGACY_DEBUG_MIXED === '1' || process.env.LEGACY_DEBUG_MIXED === 'true';
   const debugMixedN = parseInt(process.env.LEGACY_DEBUG_MIXED_N || '', 10) || 12;
 
-  // Sanity check (optional but useful)
-  const sanity =
-    process.env.LEGACY_SANITY === '1' ||
-    process.env.LEGACY_SANITY === 'true' ||
-    process.env.LEGACY_SANITY === '';
-  // Default: print sanity unless explicitly disabled
-  if (process.env.LEGACY_SANITY_DISABLE !== '1' && process.env.LEGACY_SANITY_DISABLE !== 'true') {
-    printMiscSanityCheck(pools.miscs);
-  }
-
+  // Build superset variants/pairs for sanity + totalCandidates
   const armorVariants = buildVariantsForArmors(pools.armors);
   const weaponVariants = buildVariantsForWeapons(pools.weapons);
   const miscVariants = buildVariantsForMiscsSuperset(pools.miscs);
@@ -1841,64 +1865,63 @@ async function main() {
   const MP = miscPairs.length / 2;
   const AV = armorVariants.length;
 
-  const perGear = AV * WP * MP;
-  const totalCandidates = perGear; // one locked plan
+  const perGearSuperset = AV * WP * MP;
+  const totalCandidatesSuperset = perGearSuperset; // one locked plan
+
+  // Print sanity checks unless explicitly disabled
+  if (process.env.LEGACY_SANITY_DISABLE !== '1' && process.env.LEGACY_SANITY_DISABLE !== 'true') {
+    printSearchSpaceSanity(
+      pools,
+      armorVariants,
+      weaponVariants,
+      miscVariants,
+      weaponPairs,
+      miscPairs,
+    );
+  }
 
   const sharedFloorBuf = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
   const sharedFloorI32 = new Int32Array(sharedFloorBuf);
   sharedFloorI32[0] = -1;
 
+  // Minimal, useful header logs
   console.log(
-    `LEGACY brute-force (v2.8) | defenders=${defenderBuilds.length} | trialsGate/def=${TRIALS_GATE} | trialsScreen/def=${TRIALS_SCREEN} | trialsConfirm/def=${TRIALS_CONFIRM}`,
+    `LEGACY brute-force (v2.9) | defenders=${defenderBuilds.length} | trialsGate/def=${TRIALS_GATE} | trialsScreen/def=${TRIALS_SCREEN} | trialsConfirm/def=${TRIALS_CONFIRM}`,
   );
   console.log(
     `Workers=${workers} (logical=${logical}, physicalGuess=${physicalGuess}) | RNG=${
       rngMode === 'fast' ? 'fast(sfc32)' : 'Math.random'
     } | deterministic=${deterministic ? 'ON' : 'OFF'} | baseDmgPerHit=+${BASE.baseDamagePerHit}`,
   );
-  console.log(`Mixed weapon bonus: ${mixedBonusEnabled() ? 'ON' : 'OFF'}`);
-  console.log(`Prune: ${pruneEnabled ? `ON (delta=${pruneDelta})` : 'OFF'}`);
+  console.log(
+    `Mixed weapon bonus: ${mixedBonusEnabled() ? 'ON' : 'OFF'} | Prune: ${pruneEnabled ? `ON (delta=${pruneDelta})` : 'OFF'}`,
+  );
   console.log(
     `LOCK_ONLY_AMULET (weapons-only): ${LOCK_ONLY_AMULET.size ? Array.from(LOCK_ONLY_AMULET).join(', ') : '(none)'}`,
   );
-  console.log('');
   console.log(
-    `POOLS: armors=${pools.armors.length} weapons=${pools.weapons.length} miscs=${pools.miscs.length}`,
+    `Superset: armorVariants=${AV} weaponPairs=${WP} miscPairs=${MP} => totalCandidates(superset)=${totalCandidatesSuperset}`,
   );
-  console.log(`  armors:  ${pools.armors.join(', ')}`);
-  console.log(`  weapons: ${pools.weapons.join(', ')}`);
-  console.log(`  miscs:   ${pools.miscs.join(', ')}`);
-  console.log('');
-
-  console.log(
-    `Variants (supersets): armor=${armorVariants.length}, weapon=${weaponVariants.length}, misc=${miscVariants.length}`,
-  );
-  console.log(`Pairs(orderless): weaponPairs=${WP}, miscPairs=${MP} (ALL misc duplicates allowed)`);
 
   const locked = plans[0];
   console.log(
     `LOCKED attacker plan: HP=${locked.hp} extraAcc=${locked.extraAcc} extraDodge=${locked.extraDodge} (freePoints=${locked.freePoints})`,
   );
   console.log(
-    `Gatekeepers: N=${GATEKEEPERS} trialsGate=${TRIALS_GATE} (only matters once a floor exists)`,
+    `Gatekeepers: N=${GATEKEEPERS} trialsGate=${TRIALS_GATE} | StageA bail margin=${BAIL_MARGIN.toFixed(2)}%`,
   );
-  console.log(
-    `StageA bail margin: ${BAIL_MARGIN.toFixed(2)}% (bail if worst < floorWorst - margin)`,
-  );
-  if (debugMixed) {
+  if (debugMixed)
     console.log(
-      `DEBUG: LEGACY_DEBUG_MIXED=1 enabled. Will print up to ${debugMixedN} mixed/non-mixed weapon lines from worker 0.`,
+      `DEBUG: LEGACY_DEBUG_MIXED=1 enabled (prints up to ${debugMixedN} lines from worker 0).`,
     );
-  }
+
   console.log('HP plans (reassurance):');
   for (const r of perHpSummary) {
     console.log(
       `  HP=${r.hp} freePoints=${r.freePoints} allocs=${r.allocCount}  (acc+dodge=${r.freePoints}, speed=0)`,
     );
   }
-  console.log(
-    `Total plans=${plans.length} | perGear=${perGear} | totalCandidates=${totalCandidates}\n`,
-  );
+  console.log('');
 
   const globalByHp = Object.create(null);
   const globalBestByTypeByHp = Object.create(null);
@@ -1914,11 +1937,11 @@ async function main() {
   let lastRender = start;
   const processedByWorker = new Array(workers).fill(0);
 
-  const perWorker = Math.floor(totalCandidates / workers);
+  const perWorker = Math.floor(totalCandidatesSuperset / workers);
   const ranges = [];
   for (let w = 0; w < workers; w++) {
     const s = w * perWorker;
-    const e = w === workers - 1 ? totalCandidates : (w + 1) * perWorker;
+    const e = w === workers - 1 ? totalCandidatesSuperset : (w + 1) * perWorker;
     ranges.push([s, e]);
   }
 
@@ -1974,7 +1997,7 @@ async function main() {
             const sharedFloor = floorLoadPct(sharedFloorI32);
 
             process.stdout.write(
-              `\rtested~=${Math.min(doneProcessed, totalCandidates)}/${totalCandidates} elapsed=${elapsed.toFixed(
+              `\rtested~=${Math.min(doneProcessed, totalCandidatesSuperset)}/${totalCandidatesSuperset} elapsed=${elapsed.toFixed(
                 1,
               )}s sharedFloor=${sharedFloor !== null ? sharedFloor.toFixed(2) : '—'}% bestWorst=${
                 liveBestWorst !== null ? liveBestWorst.toFixed(2) : '—'
@@ -1995,7 +2018,6 @@ async function main() {
             for (const e of localLB) pushLeaderboard(globalLB, e, SETTINGS.KEEP_TOP_N_PER_HP);
           }
 
-          // Merge best-by-type
           const bestByType = msg.bestByTypeByHp || {};
           for (const hpKey in bestByType) {
             const types = bestByType[hpKey];
@@ -2025,7 +2047,7 @@ async function main() {
 
   process.stdout.write('\n');
   const elapsedAll = (nowMs() - start) / 1000;
-  printResults(globalByHp, globalBestByTypeByHp, elapsedAll, totalCandidates);
+  printResults(globalByHp, globalBestByTypeByHp, elapsedAll, totalCandidatesSuperset);
 }
 
 function printResults(globalByHp, globalBestByTypeByHp, elapsedSec, totalCandidates) {
@@ -2071,7 +2093,6 @@ function printResults(globalByHp, globalBestByTypeByHp, elapsedSec, totalCandida
       `Best stats: Acc=${best.acc} Dod=${best.dodge} Gun=${best.gun} Prj=${best.prj} Mel=${best.mel} Def=${best.defSk} Arm=${best.armor} Spd=${best.speed} (alloc A${best.extraAcc} D${best.extraDodge})\n`,
     );
 
-    // Best-by-archetype table
     const bestTypes = globalBestByTypeByHp[String(hp)] || {};
     const typeKeys = Object.keys(bestTypes);
     if (typeKeys.length) {
