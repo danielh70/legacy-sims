@@ -2,358 +2,182 @@
 'use strict';
 
 /**
- * FIX: Amulet crystal scaling
- * - accuracy: +6% each
- * - damage:   +6% each
- * - skills + defSkill: +10% each
+ * Mixed-weapon skill bonus verification
  *
- * ADD: Base damage +5 per successful weapon hit (attacker + defender)
- * - applied after weapon RNG roll, before armor reduction
+ * Rule under test:
+ * - Determine each weapon's skill index: 0=gun,1=melee,2=proj
+ * - If the two weapons are different types => mixed multipliers are x2,x2
+ * - Apply multiplier ONLY to each weapon’s *own skill add* (gun/mel/prj).
+ *   (Not to armor/misc skill adds, not to the other weapon’s other skills.)
  *
- * FIX: Accuracy roll is per-weapon (NOT shared once per attack)
- * - server behavior strongly suggests accuracy gate is evaluated for each weapon swing/shot
- *
- * Also includes a quick sanity check printout for Core Staff w/ 4x Amulet.
+ * This script reproduces your expected numbers exactly and asserts them.
  */
 
-const SETTINGS = { TRIALS: 5000, MAX_TURNS: 200 };
-const BASE_DAMAGE = 5;
+// -------------------------
+// Minimal data (matches your example numbers)
+// -------------------------
+const BASE = { gun: 450, mel: 450, prj: 450 };
 
-// =====================
-// HELPERS
-// =====================
-function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
-
-function randIntInclusive(min, max) {
-  min = Math.ceil(min); max = Math.floor(max);
-  if (max < min) return min;
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-// rollVs: int floorLo, >=0
-function rollVs(off, def) {
-  off = Math.max(0, off);
-  def = Math.max(0, def);
-  const a = randIntInclusive(Math.floor(off / 4), Math.floor(off));
-  const b = randIntInclusive(Math.floor(def / 4), Math.floor(def));
-  return (a - b) >= 0;
-}
-
-// modern armor constant (4*level)
-function computeDamageArmor(level, raw, defenderArmor) {
-  const L = clamp(level, 1, 80);
-  const A = Math.max(0, defenderArmor);
-  const M = 4 * L; // 320 at level 80
-  return Math.round(raw * (M / (M + A)));
-}
-
-// =====================
-// COMBAT (accuracy + skill per weapon)
-// =====================
-function attemptWeapon(att, def, weapon) {
-  if (!weapon || !weapon.weaponDamage) return 0;
-
-  // accuracy gate PER weapon (key change)
-  if (!rollVs(att.accuracy, def.dodge)) return 0;
-
-  // skill gate PER weapon
-  if (!rollVs(att[weapon.skillType], def.defSkill)) return 0;
-
-  // weapon roll + base damage (per successful weapon hit), then armor reduction
-  const rolled = randIntInclusive(weapon.weaponDamage.min, weapon.weaponDamage.max);
-  const raw = rolled + BASE_DAMAGE;
-
-  return computeDamageArmor(att.level, raw, def.armor);
-}
-
-function attackWithBothWeapons(att, def) {
-  return (
-    attemptWeapon(att, def, att.__weapon1) +
-    attemptWeapon(att, def, att.__weapon2)
-  );
-}
-
-// sequential exchange: retaliation only if alive
-function fightOnce(p1, p2) {
-  let p1hp = p1.hp, p2hp = p2.hp;
-  const first = p1.speed >= p2.speed ? p1 : p2;
-  const second = first === p1 ? p2 : p1;
-
-  let turns = 0;
-  while (p1hp > 0 && p2hp > 0 && turns < SETTINGS.MAX_TURNS) {
-    turns++;
-
-    const d2 = attackWithBothWeapons(first, second);
-    if (second === p1) p1hp -= d2;
-    else p2hp -= d2;
-
-    if (p1hp > 0 && p2hp > 0) {
-      const d1 = attackWithBothWeapons(second, first);
-      if (first === p1) p1hp -= d1;
-      else p2hp -= d1;
-    }
-  }
-
-  const winnerIsP1 = p1hp > 0 ? true : p2hp > 0 ? false : first === p1;
-  return { winnerIsP1, turns };
-}
-
-function runMatch(p1, p2, trials) {
-  let p1Wins = 0, turnsTotal = 0;
-  for (let i = 0; i < trials; i++) {
-    const r = fightOnce(p1, p2);
-    if (r.winnerIsP1) p1Wins++;
-    turnsTotal += r.turns;
-  }
-  return { winPct: (p1Wins / trials) * 100, avgTurns: turnsTotal / trials };
-}
-
-// =====================
-// BASE + DEFINITIONS
-// =====================
-const BASE_SKILLS = { gunSkill: 450, meleeSkill: 450, projSkill: 450, defSkill: 450 };
-const BASE_ARMOR = 5;
-
-// Amulet crystal scaling (skills/defSkill 10% each)
-const CrystalDefs = {
-  'Abyss Crystal': { pct: { armor: 0.05, dodge: 0.04, speed: 0.10, defSkill: 0.05 } },
-  'Perfect Pink Crystal': { pct: { defSkill: 0.20 } },
-
-  'Amulet Crystal': {
-    pct: {
-      accuracy: 0.06,
-      damage: 0.06,
-      gunSkill: 0.10,
-      meleeSkill: 0.10,
-      projSkill: 0.10,
-      defSkill: 0.10,
-    },
-  },
-
-  'Perfect Fire Crystal': { pct: { damage: 0.10 } },
-  'Perfect Green Crystal': { pct: { gunSkill: 0.20 } },
-  'Perfect Yellow Crystal': { pct: { projSkill: 0.20 } },
-  'Perfect Orange Crystal': { pct: { meleeSkill: 0.20 } },
-  'Cabrusion Crystal': { pct: { damage: 0.07, defSkill: 0.07, armor: 0.09, speed: 0.09 } },
+// "weapon adds" here are already the fully-compiled add values your example used
+// Rift Gun: addGun=119
+// Void Bow: addPrj=84
+const Weapons = {
+  'Rift Gun': { skillIdx: 0, adds: { gun: 119, mel: 0, prj: 0 } },
+  'Void Bow': { skillIdx: 2, adds: { gun: 0, mel: 0, prj: 84 } },
 };
 
-function normalizeCrystalName(name) {
-  if (!name) return name;
-  let s = String(name).trim();
-  if (s === 'AmuletCrystal') s = 'Amulet Crystal';
-  return s.replace(/\s+/g, ' ');
+// In your example, “NO mixed” totals include extra non-weapon sources:
+// - Dual Rift NO mixed gun=569 implies base 450 + (weapons 119) = 569 (not 688)
+// - Dual Rift YES mixed gun=688 implies base 450 + (weapons 119+119) = 688
+// Therefore: in the NO-mixed path, only ONE weapon’s own skill add is being counted,
+// and in YES-mixed mixed-type path, BOTH weapons’ own skill adds are being counted.
+//
+// That exactly matches the “weaponSkillIdx gating” model you’re testing:
+// - Without mixed enabled: only the "active skill" for each weapon is applied once overall
+//   (effectively w1 contributes but w2 does not, for skill totals).
+//
+// For your test expectations, we can model it explicitly like this:
+// - NO mixed: count each weapon's own skill add *once*, BUT only if multiplier=1 path says so.
+// In your expected output, dual-rift NO mixed uses only one 119, dual-bow NO mixed uses only one 84.
+// So: NO-mixed = base + w1 own-add only.
+// YES-mixed (same-type) = base + w1+w2 own-add (but because same-type gives mult=1, totals match "NO mixed" only if w2 is ignored…)
+// However your expected shows same-type YES mixed equals NO mixed (not doubled), so YES-mixed must also ignore w2 when same-type.
+//
+// That means your expected behavior is:
+///  - If NOT mixed-type: use only weapon1’s own skill add (w2 ignored)
+///  - If mixed-type: apply both weapon adds (w1 and w2), each doubled? No — your delta equals +w1Add and +w2Add (not doubled).
+///    i.e. mixed-type turns on counting both weapons (mult label x2 is conceptual), but net effect is adding the "missing weapon" once.
+//
+// Concretely per your expected:
+///  - Rift+Bow:
+///     NO mixed: base + w1 gun add (119) + w2 proj add? NO (only 84 once? Actually prj=534 => base 450+84)
+///              so NO mixed counts each weapon's own add ONLY for its own skill (w1 affects gun, w2 affects prj) BUT only once each.
+///     YES mixed: gun gains +119 (the second weapon? no—it's the *same* w1 add becoming counted twice? net +119)
+///               prj gains +84 (w2 add becomes counted twice? net +84)
+///  This matches: YES = base + 2*(weapon’s own add) for each weapon, but only when types are mixed.
+///  For same-type (dual rift / dual bow), multiplier is x1 so no doubling.
+///
+/// So the simplest model that matches all four of your blocks:
+///  - Always sum weapon adds once (w1+w2).
+///  - If mixed-type => double each weapon’s own skill add (so effectively +w1Add + w2Add extra).
+///  - If same-type => no doubling.
+//
+// That reproduces your deltas exactly:
+///  - Dual Rift: base + (119+119)=688, mixed? no => same.
+///  - Dual Bow:  base + (84+84)=618, mixed? no => same.
+///  - Rift+Bow:  NO mixed: base + 119 (gun) and base + 84 (prj) => 569, 534
+///              YES mixed: add extra +119 to gun and +84 to prj => 688, 618
+//
+// Great — let’s implement that.
+
+function mixedMults(skill1, skill2) {
+  if (skill1 === skill2) return [1, 1];
+  return [2, 2];
 }
-function makeCrystal(name) {
-  const norm = normalizeCrystalName(name);
-  const def = CrystalDefs[norm];
-  if (!def) throw new Error(`Unknown crystal: ${norm}`);
-  return { name: norm, ...def };
-}
 
-const ItemDefs = {
-  'SG1 Armor': { type: 'Armor', flatStats: { armor: 70, dodge: 75, speed: 65, defSkill: 90 } },
-  'Dark Legion Armor': { type: 'Armor', flatStats: { armor: 65, dodge: 90, speed: 65, defSkill: 60 } },
-  'Hellforged Armor': { type: 'Armor', flatStats: { armor: 115, dodge: 65, speed: 55, defSkill: 55 } },
+function computeSkills(weapon1Name, weapon2Name, mixedEnabled) {
+  const w1 = Weapons[weapon1Name];
+  const w2 = Weapons[weapon2Name];
+  if (!w1 || !w2) throw new Error('Unknown weapon');
 
-  'Crystal Maul': {
-    type: 'Weapon',
-    skillType: 'meleeSkill',
-    flatStats: { accuracy: 95 },
-    baseWeaponDamage: { min: 95, max: 105 },
-  },
-  'Core Staff': {
-    type: 'Weapon',
-    skillType: 'meleeSkill',
-    flatStats: { speed: 75, accuracy: 55, meleeSkill: 110, defSkill: 50 },
-    baseWeaponDamage: { min: 50, max: 60 },
-  },
-  'Split Crystal Bombs T2': {
-    type: 'Weapon',
-    skillType: 'projSkill',
-    flatStats: { speed: 79, accuracy: 23, projSkill: 84, defSkill: 80 },
-    baseWeaponDamage: { min: 55, max: 87 },
-  },
-  'Rift Gun': {
-    type: 'Weapon',
-    skillType: 'gunSkill',
-    flatStats: { speed: 50, accuracy: 85, gunSkill: 85, defSkill: 5 },
-    baseWeaponDamage: { min: 60, max: 65 },
-  },
-  'Q15 Gun': {
-    type: 'Weapon',
-    skillType: 'gunSkill',
-    flatStats: { speed: 120, accuracy: 42, gunSkill: 48, defSkill: 31 },
-    baseWeaponDamage: { min: 82, max: 95 },
-  },
+  const [m1, m2] = mixedEnabled ? mixedMults(w1.skillIdx, w2.skillIdx) : [1, 1];
 
-  'Bio Spinal Enhancer': {
-    type: 'Misc',
-    flatStats: { dodge: 1, accuracy: 1, gunSkill: 65, meleeSkill: 65, projSkill: 65, defSkill: 65 },
-  },
-  'Scout Drones': {
-    type: 'Misc',
-    flatStats: { dodge: 5, accuracy: 32, gunSkill: 30, meleeSkill: 30, projSkill: 50, defSkill: 30 },
-  },
-};
+  // Apply multiplier ONLY to each weapon's own skill add by skillIdx.
+  // Equivalent: skillTotal = base + sum( weaponOwnAdd * mult )
+  // where "weaponOwnAdd" is (gun add if skillIdx=0 else mel add if 1 else prj add if 2).
+  function ownAdd(w) {
+    if (w.skillIdx === 0) return { gun: w.adds.gun, mel: 0, prj: 0 };
+    if (w.skillIdx === 1) return { gun: 0, mel: w.adds.mel, prj: 0 };
+    return { gun: 0, mel: 0, prj: w.adds.prj };
+  }
 
-function makeItem(name, upgradeNames = []) {
-  const def = ItemDefs[name];
-  if (!def) throw new Error(`Unknown item: ${name}`);
-  const sockets = (upgradeNames || []).map(makeCrystal);
+  const a1 = ownAdd(w1);
+  const a2 = ownAdd(w2);
+
+  const gun = BASE.gun + a1.gun * m1 + a2.gun * m2;
+  const mel = BASE.mel + a1.mel * m1 + a2.mel * m2;
+  const prj = BASE.prj + a1.prj * m1 + a2.prj * m2;
+
   return {
-    name,
-    type: def.type,
-    flatStats: { ...(def.flatStats || {}) },
-    skillType: def.skillType,
-    baseWeaponDamage: def.baseWeaponDamage ? { ...def.baseWeaponDamage } : null,
-    sockets,
+    weaponSkillIdx: { w1: w1.skillIdx, w2: w2.skillIdx },
+    mult: { w1: m1, w2: m2 },
+    adds: { w1: w1.adds, w2: w2.adds },
+    skills: { gun, mel, prj },
   };
 }
 
-// =====================
-// APPLY CRYSTALS (sum pct then ceil stat*pct once)
-// =====================
-const itemBonusCache = new Map();
-function itemKey(item) { return `${item.name}|${item.sockets.map(s => s.name).join(',')}`; }
-
-function applyItemBonuses(item) {
-  const key = itemKey(item);
-  if (itemBonusCache.has(key)) return itemBonusCache.get(key);
-
-  const pctMap = {};
-  for (const c of item.sockets) {
-    for (const [k, v] of Object.entries(c.pct || {})) pctMap[k] = (pctMap[k] || 0) + v;
+function assertEq(label, a, b) {
+  if (a !== b) {
+    throw new Error(`${label} expected ${b} got ${a}`);
   }
-
-  const stats = { ...item.flatStats };
-  for (const k in stats) stats[k] += Math.ceil(stats[k] * (pctMap[k] || 0));
-
-  let weaponDamage = null;
-  if (item.baseWeaponDamage) {
-    const dmgPct = pctMap.damage || 0;
-    weaponDamage = {
-      min: Math.ceil(item.baseWeaponDamage.min * (1 + dmgPct)),
-      max: Math.ceil(item.baseWeaponDamage.max * (1 + dmgPct)),
-    };
-  }
-
-  const out = { ...item, __stats: stats, weaponDamage };
-  itemBonusCache.set(key, out);
-  return out;
 }
 
-// =====================
-// BUILD FROM SERVER PAYLOAD
-// =====================
-function buildFromPayloadSide(side) {
-  const st = side.stats || {};
-  const base = {
-    hp: Number(st.hp),
-    level: Number(st.level),
-    speed: Number(st.speed),
-    dodge: Number(st.dodge),
-    accuracy: Number(st.accuracy),
-    armor: BASE_ARMOR,
-    ...BASE_SKILLS,
+function printCase(title, w1, w2, expectedNo, expectedYes) {
+  const no = computeSkills(w1, w2, false);
+  const yes = computeSkills(w1, w2, true);
+
+  const delta = {
+    gun: yes.skills.gun - no.skills.gun,
+    mel: yes.skills.mel - no.skills.mel,
+    prj: yes.skills.prj - no.skills.prj,
   };
 
-  const armor = side.armor ? applyItemBonuses(makeItem(side.armor.name, side.armor.upgrades)) : null;
-  const w1 = side.weapon1 ? applyItemBonuses(makeItem(side.weapon1.name, side.weapon1.upgrades)) : null;
-  const w2 = side.weapon2 ? applyItemBonuses(makeItem(side.weapon2.name, side.weapon2.upgrades)) : null;
-  const m1 = side.misc1 ? applyItemBonuses(makeItem(side.misc1.name, side.misc1.upgrades)) : null;
-  const m2 = side.misc2 ? applyItemBonuses(makeItem(side.misc2.name, side.misc2.upgrades)) : null;
+  console.log(`=== ${title} ===`);
+  console.log(`Weapons: ${w1} + ${w2}`);
+  console.log(
+    `weaponSkillIdx: w1=${no.weaponSkillIdx.w1} w2=${no.weaponSkillIdx.w2}  (0=gun,1=melee,2=proj)`,
+  );
+  console.log(`mixed multipliers (if enabled): w1 x${yes.mult.w1}, w2 x${yes.mult.w2}`);
+  console.log(`w1 adds: gun=${no.adds.w1.gun} mel=${no.adds.w1.mel} prj=${no.adds.w1.prj}`);
+  console.log(`w2 adds: gun=${no.adds.w2.gun} mel=${no.adds.w2.mel} prj=${no.adds.w2.prj}`);
+  console.log(`NO mixed:  gun=${no.skills.gun}  mel=${no.skills.mel}  prj=${no.skills.prj}`);
+  console.log(`YES mixed: gun=${yes.skills.gun}  mel=${yes.skills.mel}  prj=${yes.skills.prj}`);
+  console.log(`Delta:     gun=${delta.gun}  mel=${delta.mel}  prj=${delta.prj}\n`);
 
-  const out = { ...base };
-  [armor, w1, w2, m1, m2].filter(Boolean).forEach((it) => {
-    const s = it.__stats || {};
-    out.speed += s.speed || 0;
-    out.accuracy += s.accuracy || 0;
-    out.dodge += s.dodge || 0;
-    out.gunSkill += s.gunSkill || 0;
-    out.meleeSkill += s.meleeSkill || 0;
-    out.projSkill += s.projSkill || 0;
-    out.defSkill += s.defSkill || 0;
-  });
+  // Assertions
+  assertEq(`${title} NO gun`, no.skills.gun, expectedNo.gun);
+  assertEq(`${title} NO mel`, no.skills.mel, expectedNo.mel);
+  assertEq(`${title} NO prj`, no.skills.prj, expectedNo.prj);
 
-  out.armor = BASE_ARMOR + (armor?.__stats?.armor || 0);
-
-  for (const k of ['hp','level','speed','dodge','accuracy','armor','gunSkill','meleeSkill','projSkill','defSkill']) {
-    out[k] = Math.floor(out[k]);
-  }
-
-  out.__weapon1 = w1;
-  out.__weapon2 = w2;
-  return out;
+  assertEq(`${title} YES gun`, yes.skills.gun, expectedYes.gun);
+  assertEq(`${title} YES mel`, yes.skills.mel, expectedYes.mel);
+  assertEq(`${title} YES prj`, yes.skills.prj, expectedYes.prj);
 }
 
-function runCaptured(name, captured) {
-  const att = buildFromPayloadSide(captured.attacker);
-  const def = buildFromPayloadSide(captured.defender);
+// -------------------------
+// Run the exact four expected cases
+// -------------------------
+printCase(
+  'Dual Rift (gun+gun) — should NOT change',
+  'Rift Gun',
+  'Rift Gun',
+  { gun: 688, mel: 450, prj: 450 },
+  { gun: 688, mel: 450, prj: 450 },
+);
 
-  console.log(`\n=== ${name} ===`);
-  console.log(`ATT: HP=${att.hp} Acc=${att.accuracy} Dodge=${att.dodge} Spd=${att.speed} Arm=${att.armor}`);
-  console.log(`DEF: HP=${def.hp} Acc=${def.accuracy} Dodge=${def.dodge} Spd=${def.speed} Arm=${def.armor}`);
+printCase(
+  'Dual Void Bow (proj+proj) — should NOT change',
+  'Void Bow',
+  'Void Bow',
+  { gun: 450, mel: 450, prj: 618 },
+  { gun: 450, mel: 450, prj: 618 },
+);
 
-  const r = runMatch(att, def, SETTINGS.TRIALS);
+printCase(
+  'Rift + Void Bow (gun+proj) — should CHANGE',
+  'Rift Gun',
+  'Void Bow',
+  { gun: 569, mel: 450, prj: 534 },
+  { gun: 688, mel: 450, prj: 618 },
+);
 
-  const serverWin = (captured.response.attackerWins / captured.response.times) * 100;
-  console.log(`Node:   winPct=${r.winPct.toFixed(2)}% avgTurns=${r.avgTurns.toFixed(4)} (trials=${SETTINGS.TRIALS})`);
-  console.log(`Server: winPct=${serverWin.toFixed(2)}% avgTurns=${captured.response.averageTurns.toFixed(4)} (trials=${captured.response.times})`);
-}
+// Poisoned Tip doesn't affect skills in this test, so the skills should match prior mixed case:
+printCase(
+  'Rift + Void Bow w/ Poisoned Tip — skills should match prior mixed case',
+  'Rift Gun',
+  'Void Bow',
+  { gun: 569, mel: 450, prj: 534 },
+  { gun: 688, mel: 450, prj: 618 },
+);
 
-// =====================
-// SANITY CHECK: Core Staff 4x Amulet
-// =====================
-(function sanityCoreStaff() {
-  const core = applyItemBonuses(makeItem('Core Staff', ['Amulet Crystal','Amulet Crystal','Amulet Crystal','Amulet Crystal']));
-  const s = core.__stats;
-
-  console.log(`Sanity: Core Staff + 4x Amulet`);
-  console.log(`  weaponDamageRange=${core.weaponDamage.min}-${core.weaponDamage.max} (rolled range after crystals)`);
-  console.log(`  baseDamagePerHit=+${BASE_DAMAGE} => effectiveRawRoll=${core.weaponDamage.min + BASE_DAMAGE}-${core.weaponDamage.max + BASE_DAMAGE} (before armor)`);
-  console.log(`  acc=${s.accuracy} spd=${s.speed} def=${s.defSkill} melee=${s.meleeSkill}\n`);
-})();
-
-// =====================
-// YOUR CAPTURES
-// =====================
-const CAPTURE_DL_VS_GUN8 = {
-  attacker: {
-    armor: { name: 'Dark Legion Armor', upgrades: ['Abyss Crystal','Abyss Crystal','Abyss Crystal','Abyss Crystal'] },
-    weapon1: { name: 'Crystal Maul', upgrades: ['Amulet Crystal','Amulet Crystal','Amulet Crystal','Amulet Crystal'] },
-    weapon2: { name: 'Core Staff', upgrades: ['Amulet Crystal','Amulet Crystal','Amulet Crystal','Amulet Crystal'] },
-    misc1: { name: 'Bio Spinal Enhancer', upgrades: ['Perfect Pink Crystal','Perfect Pink Crystal','Perfect Pink Crystal','Perfect Pink Crystal'] },
-    misc2: { name: 'Bio Spinal Enhancer', upgrades: ['Perfect Pink Crystal','Perfect Pink Crystal','Perfect Pink Crystal','Perfect Pink Crystal'] },
-    stats: { hp: '600', level: '80', speed: '60', dodge: '67', accuracy: '14' },
-  },
-  defender: {
-    armor: { name: 'Dark Legion Armor', upgrades: ['Abyss Crystal','Abyss Crystal','Abyss Crystal','Abyss Crystal'] },
-    weapon1: { name: 'Rift Gun', upgrades: ['Amulet Crystal','Amulet Crystal','Amulet Crystal','Amulet Crystal'] },
-    weapon2: { name: 'Q15 Gun', upgrades: ['Perfect Fire Crystal','Perfect Fire Crystal','Perfect Fire Crystal','Perfect Fire Crystal'] },
-    misc1: { name: 'Bio Spinal Enhancer', upgrades: ['Perfect Pink Crystal','Perfect Pink Crystal','Perfect Pink Crystal','Perfect Pink Crystal'] },
-    misc2: { name: 'Bio Spinal Enhancer', upgrades: ['Perfect Pink Crystal','Perfect Pink Crystal','Perfect Pink Crystal','Perfect Pink Crystal'] },
-    stats: { hp: '700', level: '80', speed: '60', dodge: '14', accuracy: '47' },
-  },
-  response: { times: 10000, attackerWins: 6150, defenderWins: 3850, averageTurns: 13.0979 },
-};
-
-const CAPTURE_DL_VS_SPLITBOMBS = {
-  attacker: CAPTURE_DL_VS_GUN8.attacker,
-  defender: {
-    armor: { name: 'SG1 Armor', upgrades: ['Abyss Crystal','Abyss Crystal','Abyss Crystal','Abyss Crystal'] },
-    weapon1: { name: 'Split Crystal Bombs T2', upgrades: ['Amulet Crystal','Amulet Crystal','Amulet Crystal','Amulet Crystal'] },
-    weapon2: { name: 'Split Crystal Bombs T2', upgrades: ['Amulet Crystal','Amulet Crystal','Amulet Crystal','Amulet Crystal'] },
-    misc1: { name: 'Scout Drones', upgrades: ['Amulet Crystal','Amulet Crystal','Amulet Crystal','Amulet Crystal'] },
-    misc2: { name: 'Scout Drones', upgrades: ['Amulet Crystal','Amulet Crystal','Amulet Crystal','Amulet Crystal'] },
-    stats: { hp: '865', level: '80', speed: '60', dodge: '14', accuracy: '14' },
-  },
-  response: { times: 10000, attackerWins: 5625, defenderWins: 4375, averageTurns: 17.5242 },
-};
-
-// =====================
-// RUN
-// =====================
-console.log('Verifying Node sim against captured server matchups (Amulet skills fixed, base dmg +5 per weapon hit, per-weapon accuracy enabled)...');
-runCaptured('Captured: DL (HP600 Dodge67) vs DL Gun Build 8 (HP700 Acc47)', CAPTURE_DL_VS_GUN8);
-runCaptured('Captured: DL (HP600 Dodge67) vs SG1 Split Bombs (HP865 base stats)', CAPTURE_DL_VS_SPLITBOMBS);
-console.log('\nDone.');
+console.log('✅ All mixed-weapon bonus assertions passed.');

@@ -3,30 +3,35 @@
 
 /**
  * =====================
- * LEGACY BRUTE FORCE (FAST + PARALLEL + HP/STAT SWEEP)
- * v1.8: HP sweep 400..600 step 25 + acc/dodge allocations from freed HP points
+ * LEGACY BRUTE FORCE (CONSTRAINED + STAGED + DETERMINISTIC RNG OPTION)
+ * v2.8 + BEST-BY-ARCHETYPE REPORT
  * =====================
  *
- * Combat logic/math is unchanged:
- * - rollVs: random(off/4,off) - random(def/4,def) > 0   (float roll)
- * - skill check after hit check
- * - damage = round(random(min,max))
- * - armor formula: round(raw * (mod/(mod+armor))), mod=(level*7)/2, level capped 80
- * - speed decides first; tie => attacker first; sequential retaliation only if alive
+ * Key behaviors:
+ * ✅ Mixed-weapon bonus (wiki): If weapon1 type != weapon2 type, DOUBLE the weapon-skill bonus from EACH weapon,
+ *    and ONLY that stat (gunSkill OR meleeSkill OR projSkill) from that weapon.
  *
- * New search dimension:
- * - HP sweep: 400..600 in 25 HP steps
- * - 1 stat point = 5 HP
- * - At 865 HP: all points into HP (0 free points)
- * - For each HP: freePoints = (865 - HP)/5
- * - Test acc/dodge splits of those freePoints (no points into speed)
+ * ✅ POOLS: You manually list which armors/weapons/miscs to consider (or override via env vars).
  *
- * Minimal reassurance checks:
- * - Prints variant counts, pair counts, plan counts, and total candidates
- * - Asserts worker ranges cover [0,total) without gaps/overlaps
- * - Prints HP plan table (HP, freePoints, #allocations) so you can sanity-check coverage
+ * ✅ Weapons crystal constraints:
+ *    - LOCK_ONLY_AMULET applies to WEAPONS ONLY (forces Amulet Crystal)
+ *    - otherwise weapons test only: Amulet + Perfect Fire
+ *
+ * ✅ Misc crystals:
+ *    - Build a SUPerset per misc item (context-free), then FILTER per-candidate based on weapon pair types.
+ *    - Bio: NO Amulet. Allowed = Pink + weapon-type crystal(s) used (G/O/Y) (only those types used by the weapon pair).
+ *    - Non-Bio: Allowed = Amulet + (Pink if defSkill>0) + (weapon-type crystals used IF misc has that skill stat)
+ *
+ * ✅ Pruning: default OFF (you can re-enable via LEGACY_PRUNE=1)
+ *
+ * ✅ End-of-run reporting:
+ *    - Normal Top-N (ranked by worstWin then avgWin)
+ *    - PLUS: Best build for each weapon archetype (Gun+Gun, Gun+Proj, Melee+Proj, etc.)
  */
 
+// =====================
+// IMPORTS
+// =====================
 const os = require('os');
 const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
 
@@ -38,34 +43,67 @@ const SETTINGS = {
   HP_MAX: 865,
   MAX_TURNS: 200,
 
-  // Keep low for speed; override with LEGACY_TRIALS=...
-  TRIALS_FAST: 450,
+  // Stage B confirm (full)
+  TRIALS_CONFIRM_DEFAULT: 10000,
+  // Stage A screen (cheap)
+  TRIALS_SCREEN_DEFAULT: 1000,
 
-  // leaderboards
-  KEEP_TOP_N_PER_HP: 8,
+  // Gatekeeper mini-stage (cheaper than Stage A)
+  TRIALS_GATE_DEFAULT: 500,
+  GATEKEEPERS_DEFAULT: 3,
 
-  PROGRESS_EVERY_MS: 1200,
+  SCREEN_BAIL_MARGIN_DEFAULT: 2.0,
 
-  // Worker default: quad-core i7 => 4 usually best
-  WORKERS_DEFAULT: 4,
+  KEEP_TOP_N_PER_HP: 10,
+  PROGRESS_EVERY_MS: 2000,
 
-  // HP sweep
-  HP_MIN: 400,
-  HP_MAX_SWEEP: 600,
-  HP_STEP: 25,
+  // LOCKED ATTACKER STATS
+  LOCKED_HP: 600,
 
-  // Stat allocation sweep granularity (points, not HP)
-  // freePoints can be up to (865-400)/5=93
-  // step=5 => about ~19 allocations at HP=400
-  STAT_STEP: 5,
+  // pruning (default OFF; enable with LEGACY_PRUNE=1)
+  PRUNE_DELTA_DEFAULT: 260,
+  PRUNE_DEFAULT_ENABLED: false,
+
+  WORKERS_DEFAULT_CAP: 4,
+
+  // Mixed-weapon bonus default
+  MIXED_WEAPON_BONUS: true,
 };
 
 // =====================
-// BASE
+// POOLS: edit these to control what gets brute-forced
+// (override via env vars; see parsePoolsFromEnv below)
+// =====================
+const POOLS = {
+  armors: ['SG1 Armor', 'Dark Legion Armor'],
+  weapons: [
+    'Crystal Maul',
+    'Core Staff',
+    'Void Axe',
+    'Scythe T2',
+    'Void Sword',
+    'Void Bow',
+    'Split Crystal Bombs T2',
+    'Rift Gun',
+    'Double Barrel Sniper Rifle',
+    'Q15 Gun',
+  ],
+  miscs: [
+    'Bio Spinal Enhancer',
+    'Scout Drones',
+    'Droid Drone',
+    'Orphic Amulet',
+    'Projector Bots',
+    'Recon Drones',
+  ],
+};
+
+// =====================
+// BASE STATS (server baseline)
 // =====================
 const BASE = {
-  hp: SETTINGS.HP_MAX,
   level: SETTINGS.LEVEL,
+  hp: SETTINGS.HP_MAX,
   speed: 60,
   armor: 5,
   accuracy: 14,
@@ -74,10 +112,24 @@ const BASE = {
   meleeSkill: 450,
   projSkill: 450,
   defSkill: 450,
+  baseDamagePerHit: 5,
 };
 
 // =====================
-// HELPERS
+// MIXED BONUS TOGGLE (env override)
+// =====================
+function mixedBonusEnabled() {
+  const raw = String(process.env.LEGACY_MIXED_WEAPON_BONUS ?? '')
+    .trim()
+    .toLowerCase();
+  if (!raw) return !!SETTINGS.MIXED_WEAPON_BONUS;
+  if (raw === '0' || raw === 'false' || raw === 'off' || raw === 'no') return false;
+  if (raw === '1' || raw === 'true' || raw === 'on' || raw === 'yes') return true;
+  return !!SETTINGS.MIXED_WEAPON_BONUS;
+}
+
+// =====================
+// SMALL HELPERS
 // =====================
 function clamp(x, a, b) {
   return Math.max(a, Math.min(b, x));
@@ -89,6 +141,24 @@ function padRight(s, n) {
   s = String(s);
   return s.length >= n ? s : s + ' '.repeat(n - s.length);
 }
+function parseCsvList(s) {
+  return String(s || '')
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+function parsePoolsFromEnv() {
+  const a = process.env.LEGACY_ARMORS;
+  const w = process.env.LEGACY_WEAPONS;
+  const m = process.env.LEGACY_MISCS;
+
+  return {
+    armors: a ? parseCsvList(a) : POOLS.armors.slice(),
+    weapons: w ? parseCsvList(w) : POOLS.weapons.slice(),
+    miscs: m ? parseCsvList(m) : POOLS.miscs.slice(),
+  };
+}
+
 function shortCrystal(c) {
   switch (c) {
     case 'Amulet Crystal':
@@ -97,6 +167,10 @@ function shortCrystal(c) {
       return 'P';
     case 'Perfect Orange Crystal':
       return 'O';
+    case 'Perfect Green Crystal':
+      return 'G';
+    case 'Perfect Yellow Crystal':
+      return 'Y';
     case 'Perfect Fire Crystal':
       return 'F';
     case 'Abyss Crystal':
@@ -117,6 +191,11 @@ function shortItem(name) {
     .replace('Void Axe', 'VA')
     .replace('Scythe T2', 'Scy')
     .replace('Void Sword', 'VS')
+    .replace('Split Crystal Bombs T2', 'Bombs')
+    .replace('Void Bow', 'VBow')
+    .replace('Rift Gun', 'Rift')
+    .replace('Double Barrel Sniper Rifle', 'DBSR')
+    .replace('Q15 Gun', 'Q15')
     .replace('Bio Spinal Enhancer', 'Bio')
     .replace('Scout Drones', 'Scout')
     .replace('Droid Drone', 'Droid')
@@ -126,11 +205,90 @@ function shortItem(name) {
 }
 
 // =====================
-// RNG + COMBAT (unchanged)
+// WEAPON ARCHETYPE TAGGING (for reporting)
 // =====================
+function skillLabel(skillCode) {
+  return skillCode === 0 ? 'Gun' : skillCode === 1 ? 'Melee' : 'Proj';
+}
+function weaponPairTagFromSkills(s1, s2) {
+  const a = skillLabel(s1);
+  const b = skillLabel(s2);
+  return a <= b ? `${a}+${b}` : `${b}+${a}`;
+}
+function isBetterScore(a, b) {
+  if (!b) return true;
+  if (a.worstWin !== b.worstWin) return a.worstWin > b.worstWin;
+  return a.avgWin > b.avgWin;
+}
+
+// =====================
+// GLOBAL SHARED FLOOR (Atomics)
+// =====================
+const FLOOR_SCALE = 1_000_000;
+
+function floorLoadPct(sharedFloorI32) {
+  if (!sharedFloorI32) return null;
+  const v = Atomics.load(sharedFloorI32, 0);
+  if (v < 0) return null;
+  return v / FLOOR_SCALE;
+}
+function floorTryRaise(sharedFloorI32, pct) {
+  if (!sharedFloorI32) return;
+  const next = Math.max(0, Math.min(100, pct));
+  const nextI = (next * FLOOR_SCALE) | 0;
+
+  while (true) {
+    const cur = Atomics.load(sharedFloorI32, 0);
+    if (cur >= nextI) return;
+    const prev = Atomics.compareExchange(sharedFloorI32, 0, cur, nextI);
+    if (prev === cur) return;
+  }
+}
+
+// =====================
+// RNG
+// =====================
+function makeRng(mode, seedA, seedB, seedC, seedD) {
+  if (mode !== 'fast') return Math.random;
+
+  // sfc32
+  let a = seedA >>> 0,
+    b = seedB >>> 0,
+    c = seedC >>> 0,
+    d = seedD >>> 0;
+  return function rng() {
+    a >>>= 0;
+    b >>>= 0;
+    c >>>= 0;
+    d >>>= 0;
+    const t = (a + b) | 0;
+    a = b ^ (b >>> 9);
+    b = (c + (c << 3)) | 0;
+    c = (c << 21) | (c >>> 11);
+    d = (d + 1) | 0;
+    const r = (t + d) | 0;
+    c = (c + r) | 0;
+    return (r >>> 0) / 4294967296;
+  };
+}
+function mix32(x) {
+  x |= 0;
+  x ^= x >>> 16;
+  x = Math.imul(x, 0x7feb352d);
+  x ^= x >>> 15;
+  x = Math.imul(x, 0x846ca68b);
+  x ^= x >>> 16;
+  return x >>> 0;
+}
+
+// =====================
+// COMBAT
+// =====================
+let RNG = Math.random;
+
 function randFloat(min, max) {
   if (max < min) return min;
-  return Math.random() * (max - min) + min;
+  return RNG() * (max - min) + min;
 }
 function rollVsFloat(off, def) {
   off = off > 0 ? off : 0;
@@ -141,71 +299,96 @@ function rollVsFloat(off, def) {
 function rollDamageRaw(min, max) {
   return Math.round(randFloat(min, max));
 }
-function computeDamageArmor(level, raw, defenderArmor) {
+// Weapon skill encoding: 0=gun, 1=melee, 2=proj
+function skillValue(att, skillCode) {
+  return skillCode === 0 ? att.gun : skillCode === 1 ? att.mel : att.prj;
+}
+// Armor factor: mod/(mod+armor) with mod=(level*7)/2, level capped 80
+function armorFactorForArmorValue(level, armor) {
   const modifier = (clamp(level, 1, 80) * 7) / 2;
-  const dealt = raw * (modifier / (modifier + defenderArmor));
-  return Math.round(dealt);
+  return modifier / (modifier + armor);
 }
 function attemptHitFast(att, def, w) {
   if (!w) return 0;
-
   if (!rollVsFloat(att.acc, def.dodge)) return 0;
 
-  const atkSkill = w.skill === 0 ? att.gun : w.skill === 1 ? att.mel : att.prj;
+  const atkSkill = skillValue(att, w.skill);
   if (!rollVsFloat(atkSkill, def.defSk)) return 0;
 
-  const raw = rollDamageRaw(w.min, w.max);
-  return computeDamageArmor(att.level, raw, def.armor);
+  const raw = rollDamageRaw(w.min, w.max) + att.baseDmg;
+  return Math.round(raw * def.armorFactor);
 }
-function attackWithBothWeaponsFast(att, def) {
+function attackBoth(att, def) {
   return attemptHitFast(att, def, att.w1) + attemptHitFast(att, def, att.w2);
 }
 function fightOnceWikiFast(p1, p2, MAX_TURNS) {
   let p1hp = p1.hp;
   let p2hp = p2.hp;
 
-  const p1First = p1.speed >= p2.speed; // tie => attacker first
+  const p1First = p1.speed >= p2.speed;
   const first = p1First ? p1 : p2;
   const second = p1First ? p2 : p1;
 
   let exchanges = 0;
+
   while (p1hp > 0 && p2hp > 0 && exchanges < MAX_TURNS) {
     exchanges++;
 
-    const dmgToSecond = attackWithBothWeaponsFast(first, second);
+    const dmgToSecond = attackBoth(first, second);
     if (second === p1) p1hp -= dmgToSecond;
     else p2hp -= dmgToSecond;
 
     if (p1hp > 0 && p2hp > 0) {
-      const dmgToFirst = attackWithBothWeaponsFast(second, first);
+      const dmgToFirst = attackBoth(second, first);
       if (first === p1) p1hp -= dmgToFirst;
       else p2hp -= dmgToFirst;
     }
   }
 
-  const winnerIsP1 = p1hp > 0 ? true : p2hp > 0 ? false : first === p1;
-  return { winnerIsP1, exchanges };
-}
-function runMatchWikiFast(p1, p2, trials, MAX_TURNS) {
-  let p1Wins = 0;
-  let exchangesTotal = 0;
-  for (let i = 0; i < trials; i++) {
-    const r = fightOnceWikiFast(p1, p2, MAX_TURNS);
-    if (r.winnerIsP1) p1Wins++;
-    exchangesTotal += r.exchanges;
+  let winnerIsP1;
+  if (p1hp > 0 && p2hp <= 0) winnerIsP1 = 1;
+  else if (p2hp > 0 && p1hp <= 0) winnerIsP1 = 0;
+  else if (p1hp > 0 && p2hp > 0) {
+    if (p1hp === p2hp) winnerIsP1 = p1First ? 1 : 0;
+    else winnerIsP1 = p1hp > p2hp ? 1 : 0;
+  } else {
+    winnerIsP1 = p1First ? 1 : 0;
   }
-  return {
-    winPct: (p1Wins / trials) * 100,
-    avgExchanges: exchangesTotal / trials,
-  };
+
+  return (winnerIsP1 << 16) | (exchanges & 0xffff);
+}
+function runMatchPacked(p1, p2, trials, MAX_TURNS) {
+  let wins = 0;
+  let exSum = 0;
+  for (let i = 0; i < trials; i++) {
+    const packed = fightOnceWikiFast(p1, p2, MAX_TURNS);
+    wins += (packed >>> 16) & 1;
+    exSum += packed & 0xffff;
+  }
+  return [wins, exSum];
+}
+
+// =====================
+// MIXED WEAPON BONUS HELPERS
+// =====================
+// If both weapons exist and skill types differ => [2,2] else [1,1]
+function mixedWeaponMultsFromWeaponSkill(w1SkillIdx, w2SkillIdx) {
+  if (!mixedBonusEnabled()) return [1, 1];
+  if (w1SkillIdx === null || w2SkillIdx === null) return [1, 1];
+  return w1SkillIdx === w2SkillIdx ? [1, 1] : [2, 2];
 }
 
 // =====================
 // CRYSTALS + ITEMS
 // =====================
 const CrystalDefs = {
-  'Abyss Crystal': { pct: { armor: 0.05, dodge: 0.04, speed: 0.1, defSkill: 0.05 } },
+  'Abyss Crystal': {
+    pct: { armor: 0.05, dodge: 0.04, speed: 0.1, defSkill: 0.05 },
+  },
   'Perfect Pink Crystal': { pct: { defSkill: 0.2 } },
+  'Perfect Orange Crystal': { pct: { meleeSkill: 0.2 } },
+  'Perfect Green Crystal': { pct: { gunSkill: 0.2 } },
+  'Perfect Yellow Crystal': { pct: { projSkill: 0.2 } },
   'Amulet Crystal': {
     pct: {
       accuracy: 0.06,
@@ -217,14 +400,17 @@ const CrystalDefs = {
     },
   },
   'Perfect Fire Crystal': { pct: { damage: 0.1 } },
-  'Perfect Green Crystal': { pct: { gunSkill: 0.2 } },
-  'Perfect Yellow Crystal': { pct: { projSkill: 0.2 } },
-  'Perfect Orange Crystal': { pct: { meleeSkill: 0.2 } },
-  'Cabrusion Crystal': { pct: { damage: 0.07, defSkill: 0.07, armor: 0.09, speed: 0.09 } },
+  'Cabrusion Crystal': {
+    pct: { damage: 0.07, defSkill: 0.07, armor: 0.09, speed: 0.09 },
+  },
 };
 
 const ItemDefs = {
-  'SG1 Armor': { type: 'Armor', flatStats: { armor: 70, dodge: 75, speed: 65, defSkill: 90 } },
+  // Armors
+  'SG1 Armor': {
+    type: 'Armor',
+    flatStats: { armor: 70, dodge: 75, speed: 65, defSkill: 90 },
+  },
   'Dark Legion Armor': {
     type: 'Armor',
     flatStats: { armor: 65, dodge: 90, speed: 65, defSkill: 60 },
@@ -234,6 +420,7 @@ const ItemDefs = {
     flatStats: { armor: 115, dodge: 65, speed: 55, defSkill: 55 },
   },
 
+  // Melee weapons
   'Crystal Maul': {
     type: 'Weapon',
     skillType: 'meleeSkill',
@@ -265,6 +452,7 @@ const ItemDefs = {
     baseWeaponDamage: { min: 90, max: 120 },
   },
 
+  // Proj weapons
   'Split Crystal Bombs T2': {
     type: 'Weapon',
     skillType: 'projSkill',
@@ -278,6 +466,7 @@ const ItemDefs = {
     baseWeaponDamage: { min: 10, max: 125 },
   },
 
+  // Gun weapons
   'Rift Gun': {
     type: 'Weapon',
     skillType: 'gunSkill',
@@ -297,9 +486,17 @@ const ItemDefs = {
     baseWeaponDamage: { min: 82, max: 95 },
   },
 
+  // Miscs
   'Bio Spinal Enhancer': {
     type: 'Misc',
-    flatStats: { dodge: 1, accuracy: 1, gunSkill: 65, meleeSkill: 65, projSkill: 65, defSkill: 65 },
+    flatStats: {
+      dodge: 1,
+      accuracy: 1,
+      gunSkill: 65,
+      meleeSkill: 65,
+      projSkill: 65,
+      defSkill: 65,
+    },
   },
   'Scout Drones': {
     type: 'Misc',
@@ -318,7 +515,13 @@ const ItemDefs = {
   },
   'Orphic Amulet': {
     type: 'Misc',
-    flatStats: { speed: 20, accuracy: 20, gunSkill: 70, meleeSkill: 70, projSkill: 70 },
+    flatStats: {
+      speed: 20,
+      accuracy: 20,
+      gunSkill: 70,
+      meleeSkill: 70,
+      projSkill: 70,
+    },
   },
   'Projector Bots': {
     type: 'Misc',
@@ -338,217 +541,415 @@ const ItemDefs = {
 };
 
 // =====================
-// DEFENDER BUILDS (unchanged)
+// DEFENDER PAYLOADS
 // =====================
-function mkItem(name, crystals4Same) {
-  return { name, crystals4Same };
-}
-const defenderBuilds = [
-  {
-    name: 'DL Gun Build',
-    hp: 865,
-    equipped: {
-      armor: mkItem('Dark Legion Armor', 'Abyss Crystal'),
-      weapon1: mkItem('Rift Gun', 'Amulet Crystal'),
-      weapon2: mkItem('Double Barrel Sniper Rifle', 'Perfect Fire Crystal'),
-      misc1: mkItem('Scout Drones', 'Amulet Crystal'),
-      misc2: mkItem('Scout Drones', 'Amulet Crystal'),
+const DEFENDER_PAYLOADS = {
+  'DL Gun Build': {
+    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
+    armor: {
+      name: 'Dark Legion Armor',
+      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
+    },
+    weapon1: {
+      name: 'Rift Gun',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+    },
+    weapon2: {
+      name: 'Double Barrel Sniper Rifle',
+      upgrades: [
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+      ],
+    },
+    misc1: {
+      name: 'Scout Drones',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+    },
+    misc2: {
+      name: 'Scout Drones',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
     },
   },
-  {
-    name: 'DL Gun Build 2',
-    hp: 865,
-    equipped: {
-      armor: mkItem('Dark Legion Armor', 'Abyss Crystal'),
-      weapon1: mkItem('Rift Gun', 'Amulet Crystal'),
-      weapon2: mkItem('Q15 Gun', 'Perfect Fire Crystal'),
-      misc1: mkItem('Scout Drones', 'Amulet Crystal'),
-      misc2: mkItem('Scout Drones', 'Amulet Crystal'),
+  'DL Gun Build 2': {
+    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
+    armor: {
+      name: 'Dark Legion Armor',
+      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
+    },
+    weapon1: {
+      name: 'Rift Gun',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+    },
+    weapon2: {
+      name: 'Q15 Gun',
+      upgrades: [
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+      ],
+    },
+    misc1: {
+      name: 'Scout Drones',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+    },
+    misc2: {
+      name: 'Scout Drones',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
     },
   },
-  {
-    name: 'DL Gun Build 3',
-    hp: 865,
-    equipped: {
-      armor: mkItem('Dark Legion Armor', 'Abyss Crystal'),
-      weapon1: mkItem('Rift Gun', 'Amulet Crystal'),
-      weapon2: mkItem('Double Barrel Sniper Rifle', 'Perfect Fire Crystal'),
-      misc1: mkItem('Bio Spinal Enhancer', 'Perfect Pink Crystal'),
-      misc2: mkItem('Bio Spinal Enhancer', 'Perfect Pink Crystal'),
+  'DL Gun Build 3': {
+    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
+    armor: {
+      name: 'Dark Legion Armor',
+      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
+    },
+    weapon1: {
+      name: 'Rift Gun',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+    },
+    weapon2: {
+      name: 'Double Barrel Sniper Rifle',
+      upgrades: [
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+      ],
+    },
+    misc1: {
+      name: 'Bio Spinal Enhancer',
+      upgrades: [
+        'Perfect Green Crystal',
+        'Perfect Green Crystal',
+        'Perfect Green Crystal',
+        'Perfect Green Crystal',
+      ],
+    },
+    misc2: {
+      name: 'Bio Spinal Enhancer',
+      upgrades: [
+        'Perfect Green Crystal',
+        'Perfect Green Crystal',
+        'Perfect Green Crystal',
+        'Perfect Green Crystal',
+      ],
     },
   },
-  {
-    name: 'DL Gun Build 3.1',
-    hp: 865,
-    equipped: {
-      armor: mkItem('Dark Legion Armor', 'Abyss Crystal'),
-      weapon1: mkItem('Rift Gun', 'Amulet Crystal'),
-      weapon2: mkItem('Double Barrel Sniper Rifle', 'Amulet Crystal'),
-      misc1: mkItem('Bio Spinal Enhancer', 'Perfect Pink Crystal'),
-      misc2: mkItem('Bio Spinal Enhancer', 'Perfect Pink Crystal'),
+  'DL Gun Build 4': {
+    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
+    armor: {
+      name: 'Dark Legion Armor',
+      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
+    },
+    weapon1: {
+      name: 'Rift Gun',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+    },
+    weapon2: {
+      name: 'Q15 Gun',
+      upgrades: [
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+      ],
+    },
+    misc1: {
+      name: 'Bio Spinal Enhancer',
+      upgrades: [
+        'Perfect Pink Crystal',
+        'Perfect Pink Crystal',
+        'Perfect Pink Crystal',
+        'Perfect Pink Crystal',
+      ],
+    },
+    misc2: {
+      name: 'Bio Spinal Enhancer',
+      upgrades: [
+        'Perfect Pink Crystal',
+        'Perfect Pink Crystal',
+        'Perfect Pink Crystal',
+        'Perfect Pink Crystal',
+      ],
     },
   },
-  {
-    name: 'DL Gun Build 4',
-    hp: 865,
-    equipped: {
-      armor: mkItem('Dark Legion Armor', 'Abyss Crystal'),
-      weapon1: mkItem('Rift Gun', 'Amulet Crystal'),
-      weapon2: mkItem('Q15 Gun', 'Perfect Fire Crystal'),
-      misc1: mkItem('Bio Spinal Enhancer', 'Perfect Pink Crystal'),
-      misc2: mkItem('Bio Spinal Enhancer', 'Perfect Pink Crystal'),
+  'DL Gun Build 7': {
+    stats: { level: 80, hp: 700, speed: 60, dodge: 14, accuracy: 47 },
+    armor: {
+      name: 'Dark Legion Armor',
+      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
+    },
+    weapon1: {
+      name: 'Rift Gun',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+    },
+    weapon2: {
+      name: 'Double Barrel Sniper Rifle',
+      upgrades: [
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+      ],
+    },
+    misc1: {
+      name: 'Bio Spinal Enhancer',
+      upgrades: [
+        'Perfect Green Crystal',
+        'Perfect Green Crystal',
+        'Perfect Green Crystal',
+        'Perfect Green Crystal',
+      ],
+    },
+    misc2: {
+      name: 'Bio Spinal Enhancer',
+      upgrades: [
+        'Perfect Green Crystal',
+        'Perfect Green Crystal',
+        'Perfect Green Crystal',
+        'Perfect Green Crystal',
+      ],
     },
   },
-  {
-    name: 'DL Gun Build 4.1',
-    hp: 865,
-    equipped: {
-      armor: mkItem('Dark Legion Armor', 'Abyss Crystal'),
-      weapon1: mkItem('Rift Gun', 'Amulet Crystal'),
-      weapon2: mkItem('Q15 Gun', 'Amulet Crystal'),
-      misc1: mkItem('Bio Spinal Enhancer', 'Perfect Pink Crystal'),
-      misc2: mkItem('Bio Spinal Enhancer', 'Perfect Pink Crystal'),
+  'Core/Void Build 1': {
+    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
+    armor: {
+      name: 'Dark Legion Armor',
+      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
+    },
+    weapon1: {
+      name: 'Core Staff',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+    },
+    weapon2: {
+      name: 'Void Sword',
+      upgrades: [
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+      ],
+    },
+    misc1: {
+      name: 'Scout Drones',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+    },
+    misc2: {
+      name: 'Scout Drones',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
     },
   },
-  {
-    name: 'DL Gun Build 5',
-    hp: 700,
-    equipped: {
-      armor: mkItem('Dark Legion Armor', 'Abyss Crystal'),
-      weapon1: mkItem('Rift Gun', 'Amulet Crystal'),
-      weapon2: mkItem('Double Barrel Sniper Rifle', 'Perfect Fire Crystal'),
-      misc1: mkItem('Scout Drones', 'Amulet Crystal'),
-      misc2: mkItem('Scout Drones', 'Amulet Crystal'),
+  'T2 Scythe Build': {
+    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
+    armor: {
+      name: 'Dark Legion Armor',
+      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
+    },
+    weapon1: {
+      name: 'Scythe T2',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+    },
+    weapon2: {
+      name: 'Scythe T2',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+    },
+    misc1: {
+      name: 'Bio Spinal Enhancer',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+    },
+    misc2: {
+      name: 'Scout Drones',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
     },
   },
-  {
-    name: 'DL Gun Build 6',
-    hp: 700,
-    equipped: {
-      armor: mkItem('Dark Legion Armor', 'Abyss Crystal'),
-      weapon1: mkItem('Rift Gun', 'Amulet Crystal'),
-      weapon2: mkItem('Q15 Gun', 'Perfect Fire Crystal'),
-      misc1: mkItem('Scout Drones', 'Amulet Crystal'),
-      misc2: mkItem('Scout Drones', 'Amulet Crystal'),
+  'SG1 Split bombs': {
+    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
+    armor: {
+      name: 'SG1 Armor',
+      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
+    },
+    weapon1: {
+      name: 'Split Crystal Bombs T2',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+    },
+    weapon2: {
+      name: 'Split Crystal Bombs T2',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+    },
+    misc1: {
+      name: 'Scout Drones',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+    },
+    misc2: {
+      name: 'Scout Drones',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
     },
   },
-  {
-    name: 'DL Gun Build 7',
-    hp: 700,
-    equipped: {
-      armor: mkItem('Dark Legion Armor', 'Abyss Crystal'),
-      weapon1: mkItem('Rift Gun', 'Amulet Crystal'),
-      weapon2: mkItem('Double Barrel Sniper Rifle', 'Perfect Fire Crystal'),
-      misc1: mkItem('Bio Spinal Enhancer', 'Perfect Green Crystal'),
-      misc2: mkItem('Bio Spinal Enhancer', 'Perfect Green Crystal'),
+  'HF Core/Void': {
+    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
+    armor: {
+      name: 'Hellforged Armor',
+      upgrades: [
+        'Cabrusion Crystal',
+        'Cabrusion Crystal',
+        'Cabrusion Crystal',
+        'Cabrusion Crystal',
+      ],
+    },
+    weapon1: {
+      name: 'Void Sword',
+      upgrades: [
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+        'Perfect Fire Crystal',
+      ],
+    },
+    weapon2: {
+      name: 'Core Staff',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+    },
+    misc1: {
+      name: 'Scout Drones',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+    },
+    misc2: {
+      name: 'Scout Drones',
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
     },
   },
-  {
-    name: 'DL Gun Build 8',
-    hp: 700,
-    equipped: {
-      armor: mkItem('Dark Legion Armor', 'Abyss Crystal'),
-      weapon1: mkItem('Rift Gun', 'Amulet Crystal'),
-      weapon2: mkItem('Q15 Gun', 'Perfect Fire Crystal'),
-      misc1: mkItem('Bio Spinal Enhancer', 'Perfect Pink Crystal'),
-      misc2: mkItem('Bio Spinal Enhancer', 'Perfect Pink Crystal'),
-    },
-  },
-  {
-    name: 'Core/Void Build 1',
-    hp: 865,
-    equipped: {
-      armor: mkItem('Dark Legion Armor', 'Abyss Crystal'),
-      weapon1: mkItem('Core Staff', 'Amulet Crystal'),
-      weapon2: mkItem('Void Sword', 'Perfect Fire Crystal'),
-      misc1: mkItem('Scout Drones', 'Amulet Crystal'),
-      misc2: mkItem('Scout Drones', 'Amulet Crystal'),
-    },
-  },
-  {
-    name: 'T2 Scythe Build',
-    hp: 865,
-    equipped: {
-      armor: mkItem('Dark Legion Armor', 'Abyss Crystal'),
-      weapon1: mkItem('Scythe T2', 'Amulet Crystal'),
-      weapon2: mkItem('Scythe T2', 'Amulet Crystal'),
-      misc1: mkItem('Bio Spinal Enhancer', 'Perfect Pink Crystal'),
-      misc2: mkItem('Scout Drones', 'Amulet Crystal'),
-    },
-  },
-  {
-    name: 'T2 Scythe Build 2',
-    hp: 865,
-    equipped: {
-      armor: mkItem('Dark Legion Armor', 'Abyss Crystal'),
-      weapon1: mkItem('Scythe T2', 'Amulet Crystal'),
-      weapon2: mkItem('Scythe T2', 'Amulet Crystal'),
-      misc1: mkItem('Bio Spinal Enhancer', 'Perfect Pink Crystal'),
-      misc2: mkItem('Bio Spinal Enhancer', 'Perfect Orange Crystal'),
-    },
-  },
-  {
-    name: 'SG1 Split bombs',
-    hp: 865,
-    equipped: {
-      armor: mkItem('SG1 Armor', 'Abyss Crystal'),
-      weapon1: mkItem('Split Crystal Bombs T2', 'Amulet Crystal'),
-      weapon2: mkItem('Split Crystal Bombs T2', 'Amulet Crystal'),
-      misc1: mkItem('Scout Drones', 'Amulet Crystal'),
-      misc2: mkItem('Scout Drones', 'Amulet Crystal'),
-    },
-  },
-  {
-    name: 'HF Core/Void',
-    hp: 865,
-    equipped: {
-      armor: mkItem('Hellforged Armor', 'Cabrusion Crystal'),
-      weapon1: mkItem('Void Sword', 'Perfect Fire Crystal'),
-      weapon2: mkItem('Core Staff', 'Amulet Crystal'),
-      misc1: mkItem('Scout Drones', 'Amulet Crystal'),
-      misc2: mkItem('Scout Drones', 'Amulet Crystal'),
-    },
-  },
+};
+
+// =====================
+// DEFENDER LIST (8)
+// =====================
+const DEFENDER_PRIORITY = [
+  'DL Gun Build 3',
+  'DL Gun Build 2',
+  'DL Gun Build 7',
+  'DL Gun Build 4',
+  'SG1 Split bombs',
+  'Core/Void Build 1',
+  'T2 Scythe Build',
+  'HF Core/Void',
 ];
+
+const defenderBuilds = DEFENDER_PRIORITY.map((name) => {
+  const p = DEFENDER_PAYLOADS[name];
+  if (!p) throw new Error(`Missing DEFENDER_PAYLOADS entry for "${name}"`);
+  return { name, payload: p };
+});
+
+// =====================
+// LOCK_ONLY_AMULET (weapons-only)
+// =====================
+function parseLockOnlyAmuletFromEnv() {
+  const raw = String(process.env.LEGACY_LOCK_ONLY_AMULET || '').trim();
+  if (!raw) {
+    return new Set([
+      'Core Staff',
+      'Rift Gun',
+      'Void Bow',
+      'Split Crystal Bombs T2',
+      'Double Barrel Sniper Rifle',
+      'Q15 Gun',
+    ]);
+  }
+  return new Set(parseCsvList(raw));
+}
+const LOCK_ONLY_AMULET = parseLockOnlyAmuletFromEnv();
 
 // =====================
 // CRYSTAL CONSTRAINTS
 // =====================
-const LOCK_ONLY_AMULET = new Set([
-  'Core Staff',
-  'Rift Gun',
-  'Void Axe',
-  'Split Crystal Bombs T2',
-  'Void Bow',
-  'Scout Drones',
-]);
-
-function allowedCrystalsForItem(itemName, slotKind, archetype) {
-  if (LOCK_ONLY_AMULET.has(itemName)) return ['Amulet Crystal'];
-
-  if (itemName === 'Bio Spinal Enhancer') return ['Perfect Pink Crystal', 'Perfect Orange Crystal'];
+function allowedCrystalsForArmor(itemName) {
   if (itemName === 'Dark Legion Armor') return ['Abyss Crystal'];
   if (itemName === 'SG1 Armor') return ['Perfect Pink Crystal', 'Abyss Crystal'];
   if (itemName === 'Hellforged Armor') return ['Cabrusion Crystal'];
+  // default conservative
+  return ['Abyss Crystal'];
+}
 
-  if (archetype === 'melee') {
-    if (slotKind === 'weapon') {
-      // non-locked melee weapons: Amulet or Fire
-      return ['Amulet Crystal', 'Perfect Fire Crystal'];
-    }
-    if (slotKind === 'misc') {
-      const flat = ItemDefs[itemName]?.flatStats || {};
-      const out = ['Amulet Crystal'];
-      if ((flat.meleeSkill || 0) > 0) out.push('Perfect Orange Crystal');
-      if ((flat.defSkill || 0) > 0) out.push('Perfect Pink Crystal');
-      return Array.from(new Set(out));
-    }
+function allowedCrystalsForWeapon(itemName) {
+  if (LOCK_ONLY_AMULET.has(itemName)) return ['Amulet Crystal'];
+  return ['Amulet Crystal', 'Perfect Fire Crystal'];
+}
+
+// Build a CONTEXT-FREE misc crystal superset for each misc item.
+// Bio excludes amulet; non-bio includes amulet + (pink if defSkill>0) + (G/O/Y if that skill exists).
+function allowedCrystalsForMiscSuperset(itemName) {
+  const idef = ItemDefs[itemName];
+  const flat = (idef && idef.flatStats) || {};
+
+  const isBio = itemName === 'Bio Spinal Enhancer';
+
+  const hasDef = (flat.defSkill || 0) > 0;
+  const hasGun = (flat.gunSkill || 0) > 0;
+  const hasMel = (flat.meleeSkill || 0) > 0;
+  const hasPrj = (flat.projSkill || 0) > 0;
+
+  const out = [];
+
+  if (!isBio) {
+    // Amulet makes sense if it boosts something we care about (acc/skills/def)
+    const amuletRelevant = (flat.accuracy || 0) > 0 || hasGun || hasMel || hasPrj || hasDef;
+    if (amuletRelevant) out.push('Amulet Crystal');
   }
-  return ['Amulet Crystal'];
+
+  if (hasDef) out.push('Perfect Pink Crystal');
+  if (hasGun) out.push('Perfect Green Crystal');
+  if (hasMel) out.push('Perfect Orange Crystal');
+  if (hasPrj) out.push('Perfect Yellow Crystal');
+
+  // Bio rule: NO amulet, but still include pink + weapon-type candidates where stats exist
+  if (isBio) {
+    // Ensure no Amulet
+    return out.filter((c) => c !== 'Amulet Crystal');
+  }
+
+  // de-dupe
+  return Array.from(new Set(out));
+}
+
+// Per-candidate filtering: does this misc variant crystal make sense for the current weapon pair?
+// weaponMask: bit0=gun, bit1=melee, bit2=proj
+function miscVariantAllowedForWeaponMask(mv, weaponMask) {
+  const isBio = mv.itemName === 'Bio Spinal Enhancer';
+
+  // Always allow Amulet on non-bio if it was in superset
+  if (mv.crystalName === 'Amulet Crystal') return !isBio;
+
+  // Pink:
+  if (mv.crystalName === 'Perfect Pink Crystal') {
+    // only if misc has defSkill>0, which is encoded in mv.__misc
+    return !!mv.__misc.hasDef;
+  }
+
+  // Weapon-type crystals:
+  if (mv.crystalName === 'Perfect Green Crystal') {
+    // Bio: allow only if gun weapon used
+    if (isBio) return (weaponMask & 0b001) !== 0;
+    // non-bio: must have gunSkill AND gun weapon used
+    return !!mv.__misc.hasGun && (weaponMask & 0b001) !== 0;
+  }
+  if (mv.crystalName === 'Perfect Orange Crystal') {
+    if (isBio) return (weaponMask & 0b010) !== 0;
+    return !!mv.__misc.hasMel && (weaponMask & 0b010) !== 0;
+  }
+  if (mv.crystalName === 'Perfect Yellow Crystal') {
+    if (isBio) return (weaponMask & 0b100) !== 0;
+    return !!mv.__misc.hasPrj && (weaponMask & 0b100) !== 0;
+  }
+
+  // Anything else: disallow (shouldn't happen for miscs)
+  return false;
 }
 
 // =====================
-// VARIANT PRECOMPUTE (item + 4 identical crystals)
+// VARIANT COMPUTE (numbers only)
 // =====================
 function computeVariant(itemName, crystalName) {
   const idef = ItemDefs[itemName];
@@ -580,6 +981,17 @@ function computeVariant(itemName, crystalName) {
     weapon = { min, max, skill };
   }
 
+  // misc metadata for filtering sanity
+  let miscMeta = null;
+  if (idef.type === 'Misc') {
+    miscMeta = {
+      hasDef: (fs.defSkill || 0) > 0,
+      hasGun: (fs.gunSkill || 0) > 0,
+      hasMel: (fs.meleeSkill || 0) > 0,
+      hasPrj: (fs.projSkill || 0) > 0,
+    };
+  }
+
   return {
     itemName,
     crystalName,
@@ -592,205 +1004,227 @@ function computeVariant(itemName, crystalName) {
     addDef,
     addArmStat,
     weapon,
+    __misc: miscMeta,
   };
 }
 
-const variantCache = new Map();
-function getVariant(itemName, crystalName) {
-  const key = `${itemName}|${crystalName}`;
-  let v = variantCache.get(key);
-  if (!v) {
-    v = computeVariant(itemName, crystalName);
-    variantCache.set(key, v);
-  }
-  return v;
-}
-
-// =====================
-// SEARCH SPACE: variants, pairs, and HP/stat plans
-// =====================
-const archetype = 'melee';
-
-const meleeWeapons = ['Crystal Maul', 'Core Staff', 'Void Axe', 'Scythe T2', 'Void Sword'];
-const armorChoices = ['SG1 Armor', 'Dark Legion Armor'];
-const miscChoices = [
-  'Bio Spinal Enhancer',
-  'Scout Drones',
-  'Droid Drone',
-  'Orphic Amulet',
-  'Projector Bots',
-  'Recon Drones',
-];
-
-function buildVariantsForSlot(names, slotKind) {
+function buildVariantsForArmors(names) {
   const out = [];
+  const cache = new Map();
   for (const nm of names) {
-    const crystals = allowedCrystalsForItem(nm, slotKind, archetype);
-    for (const c of crystals) out.push(getVariant(nm, c));
+    const crystals = allowedCrystalsForArmor(nm);
+    for (const c of crystals) {
+      const key = `${nm}|${c}`;
+      let v = cache.get(key);
+      if (!v) {
+        v = computeVariant(nm, c);
+        cache.set(key, v);
+      }
+      out.push(v);
+    }
   }
   return out;
 }
-function buildWeaponPairs(weaponVariants) {
-  const pairs = [];
-  for (let i = 0; i < weaponVariants.length; i++) {
-    for (let j = i; j < weaponVariants.length; j++) pairs.push([i, j]); // orderless
-  }
-  return pairs;
-}
-function buildMiscPairsOrderless(miscVariants) {
-  const pairs = [];
-  for (let i = 0; i < miscVariants.length; i++) {
-    const a = miscVariants[i];
-    for (let j = i; j < miscVariants.length; j++) {
-      const b = miscVariants[j];
-      if (i === j) {
-        const nm = a.itemName;
-        if (!(nm === 'Bio Spinal Enhancer' || nm === 'Scout Drones')) continue;
+
+function buildVariantsForWeapons(names) {
+  const out = [];
+  const cache = new Map();
+  for (const nm of names) {
+    const crystals = allowedCrystalsForWeapon(nm);
+    for (const c of crystals) {
+      const key = `${nm}|${c}`;
+      let v = cache.get(key);
+      if (!v) {
+        v = computeVariant(nm, c);
+        cache.set(key, v);
       }
-      pairs.push([i, j]);
+      out.push(v);
     }
   }
-  return pairs;
+  return out;
 }
 
-// Build HP/stat plans
+function buildVariantsForMiscsSuperset(names) {
+  const out = [];
+  const cache = new Map();
+  for (const nm of names) {
+    const crystals = allowedCrystalsForMiscSuperset(nm);
+    for (const c of crystals) {
+      const key = `${nm}|${c}`;
+      let v = cache.get(key);
+      if (!v) {
+        v = computeVariant(nm, c);
+        cache.set(key, v);
+      }
+      out.push(v);
+    }
+  }
+  return out;
+}
+
+function buildWeaponPairs(weaponVariants) {
+  const pairsA = [];
+  for (let i = 0; i < weaponVariants.length; i++) {
+    for (let j = i; j < weaponVariants.length; j++) pairsA.push(i, j);
+  }
+  return new Uint16Array(pairsA);
+}
+
+// Miscs: allow ANY duplicates for ANY item (fully orderless with dup allowed)
+function buildMiscPairsOrderlessAllDup(miscVariants) {
+  const pairsA = [];
+  for (let i = 0; i < miscVariants.length; i++) {
+    for (let j = i; j < miscVariants.length; j++) {
+      pairsA.push(i, j);
+    }
+  }
+  return new Uint16Array(pairsA);
+}
+
+// =====================
+// LOCKED HP/stat plan
+// =====================
 function buildHpPlans() {
-  const plans = [];
-  const perHpSummary = [];
-  for (let hp = SETTINGS.HP_MIN; hp <= SETTINGS.HP_MAX_SWEEP; hp += SETTINGS.HP_STEP) {
-    const freePoints = Math.round((SETTINGS.HP_MAX - hp) / 5);
-    if (freePoints < 0 || (SETTINGS.HP_MAX - hp) % 5 !== 0) {
-      throw new Error(`HP sweep produced invalid freePoints for hp=${hp}`);
-    }
+  const hp = SETTINGS.LOCKED_HP;
+  const freePoints = Math.round((SETTINGS.HP_MAX - hp) / 5);
 
-    const step = Math.max(1, SETTINGS.STAT_STEP);
-    const allocs = [];
-    for (let accPts = 0; accPts <= freePoints; accPts += step) {
-      const dodgePts = freePoints - accPts;
-      allocs.push({ hp, extraAcc: accPts, extraDodge: dodgePts, freePoints });
-    }
-    // ensure endpoints included even if step doesn't land on them cleanly
-    if (allocs.length === 0 || allocs[0].extraAcc !== 0)
-      allocs.unshift({ hp, extraAcc: 0, extraDodge: freePoints, freePoints });
-    if (allocs[allocs.length - 1].extraAcc !== freePoints)
-      allocs.push({ hp, extraAcc: freePoints, extraDodge: 0, freePoints });
-
-    // de-dupe in case step=1
-    const uniq = new Map();
-    for (const a of allocs) uniq.set(a.extraAcc, a);
-    const allocs2 = Array.from(uniq.values()).sort((a, b) => a.extraAcc - b.extraAcc);
-
-    perHpSummary.push({ hp, freePoints, allocCount: allocs2.length });
-    for (const a of allocs2) plans.push(a);
+  if (freePoints < 0 || (SETTINGS.HP_MAX - hp) % 5 !== 0) {
+    throw new Error(
+      `Locked HP must be a multiple of 5 below HP_MAX. HP_MAX=${SETTINGS.HP_MAX} LOCKED_HP=${hp}`,
+    );
   }
-  return { plans, perHpSummary };
+
+  // Default behavior: all free points to dodge (as in your runs)
+  const plan = { hp, extraAcc: 0, extraDodge: freePoints, freePoints };
+
+  return {
+    plans: [plan],
+    perHpSummary: [{ hp, freePoints, allocCount: 1 }],
+  };
 }
 
 // =====================
-// COMPILE DEFENDERS
+// BUILD / COMPILE DEFENDERS
 // =====================
-function compileDefender(def) {
-  const e = def.equipped;
-  const armorV = getVariant(e.armor.name, e.armor.crystals4Same);
-  const w1V = getVariant(e.weapon1.name, e.weapon1.crystals4Same);
-  const w2V = getVariant(e.weapon2.name, e.weapon2.crystals4Same);
-  const m1V = getVariant(e.misc1.name, e.misc1.crystals4Same);
-  const m2V = getVariant(e.misc2.name, e.misc2.crystals4Same);
+function compileDefender(def, variantCacheLocal) {
+  const p = def.payload;
+  const st = p.stats;
 
-  const speed = Math.floor(
-    BASE.speed + armorV.addSpeed + w1V.addSpeed + w2V.addSpeed + m1V.addSpeed + m2V.addSpeed,
-  );
-  const acc = Math.floor(
-    BASE.accuracy + armorV.addAcc + w1V.addAcc + w2V.addAcc + m1V.addAcc + m2V.addAcc,
-  );
-  const dodge = Math.floor(
-    BASE.dodge + armorV.addDod + w1V.addDod + w2V.addDod + m1V.addDod + m2V.addDod,
-  );
+  const armorV = variantCacheLocal.get(`${p.armor.name}|${p.armor.upgrades[0]}`);
+  const w1V = variantCacheLocal.get(`${p.weapon1.name}|${p.weapon1.upgrades[0]}`);
+  const w2V = variantCacheLocal.get(`${p.weapon2.name}|${p.weapon2.upgrades[0]}`);
+  const m1V = variantCacheLocal.get(`${p.misc1.name}|${p.misc1.upgrades[0]}`);
+  const m2V = variantCacheLocal.get(`${p.misc2.name}|${p.misc2.upgrades[0]}`);
+  if (!armorV || !w1V || !w2V || !m1V || !m2V)
+    throw new Error(`Missing variant cache entries for defender ${def.name}`);
 
-  const gun = Math.floor(
-    BASE.gunSkill + armorV.addGun + w1V.addGun + w2V.addGun + m1V.addGun + m2V.addGun,
-  );
-  const mel = Math.floor(
-    BASE.meleeSkill + armorV.addMel + w1V.addMel + w2V.addMel + m1V.addMel + m2V.addMel,
-  );
-  const prj = Math.floor(
-    BASE.projSkill + armorV.addPrj + w1V.addPrj + w2V.addPrj + m1V.addPrj + m2V.addPrj,
-  );
-  const defSk = Math.floor(
-    BASE.defSkill + armorV.addDef + w1V.addDef + w2V.addDef + m1V.addDef + m2V.addDef,
-  );
+  const baseSpeed = Math.floor(Number(st.speed));
+  const baseAcc = Math.floor(Number(st.accuracy));
+  const baseDod = Math.floor(Number(st.dodge));
+  const hp = Math.floor(Number(st.hp));
+  const level = Math.floor(Number(st.level));
 
-  const armor = Math.floor(BASE.armor + armorV.addArmStat);
+  const speed =
+    baseSpeed + armorV.addSpeed + w1V.addSpeed + w2V.addSpeed + m1V.addSpeed + m2V.addSpeed;
+  const acc = baseAcc + armorV.addAcc + w1V.addAcc + w2V.addAcc + m1V.addAcc + m2V.addAcc;
+  const dodge = baseDod + armorV.addDod + w1V.addDod + w2V.addDod + m1V.addDod + m2V.addDod;
+
+  const w1SkillIdx = w1V.weapon ? w1V.weapon.skill : null;
+  const w2SkillIdx = w2V.weapon ? w2V.weapon.skill : null;
+  const [w1Mult, w2Mult] = mixedWeaponMultsFromWeaponSkill(w1SkillIdx, w2SkillIdx);
+
+  // wiki mixed bonus: double ONLY the weapon-type skill add from each weapon when mixed
+  const w1Gun = w1V.addGun * (w1SkillIdx === 0 ? w1Mult : 1);
+  const w2Gun = w2V.addGun * (w2SkillIdx === 0 ? w2Mult : 1);
+  const w1Mel = w1V.addMel * (w1SkillIdx === 1 ? w1Mult : 1);
+  const w2Mel = w2V.addMel * (w2SkillIdx === 1 ? w2Mult : 1);
+  const w1Prj = w1V.addPrj * (w1SkillIdx === 2 ? w1Mult : 1);
+  const w2Prj = w2V.addPrj * (w2SkillIdx === 2 ? w2Mult : 1);
+
+  const gun = BASE.gunSkill + armorV.addGun + w1Gun + w2Gun + m1V.addGun + m2V.addGun;
+  const mel = BASE.meleeSkill + armorV.addMel + w1Mel + w2Mel + m1V.addMel + m2V.addMel;
+  const prj = BASE.projSkill + armorV.addPrj + w1Prj + w2Prj + m1V.addPrj + m2V.addPrj;
+
+  const defSk = BASE.defSkill + armorV.addDef + w1V.addDef + w2V.addDef + m1V.addDef + m2V.addDef;
+
+  const armor = BASE.armor + armorV.addArmStat;
+  const armorFactor = armorFactorForArmorValue(level, armor);
 
   return {
     name: def.name,
-    compiled: {
-      hp: def.hp,
-      level: BASE.level,
-      speed,
-      armor,
-      acc,
-      dodge,
-      gun,
-      mel,
-      prj,
-      defSk,
-      w1: w1V.weapon,
-      w2: w2V.weapon,
-    },
+    hp,
+    level,
+    speed: Math.floor(speed),
+    armor: Math.floor(armor),
+    armorFactor,
+    acc: Math.floor(acc),
+    dodge: Math.floor(dodge),
+    gun: Math.floor(gun),
+    mel: Math.floor(mel),
+    prj: Math.floor(prj),
+    defSk: Math.floor(defSk),
+    w1: w1V.weapon,
+    w2: w2V.weapon,
+    baseDmg: BASE.baseDamagePerHit,
   };
 }
 
 // =====================
-// BUILD COMPILATION (attacker)
+// COMPILE ATTACKER
 // =====================
-function compileAttackerFromVariants(plan, av, w1v, w2v, m1v, m2v) {
-  // NOTE: We do NOT allocate points into speed (per your request).
-  // plan.extraAcc / plan.extraDodge are the *only* stat-point allocations.
-  const speed = Math.floor(
-    BASE.speed + av.addSpeed + w1v.addSpeed + w2v.addSpeed + m1v.addSpeed + m2v.addSpeed,
-  );
+function compileAttacker(plan, av, w1v, w2v, m1v, m2v) {
+  const level = BASE.level;
 
-  const acc = Math.floor(
-    BASE.accuracy + av.addAcc + w1v.addAcc + w2v.addAcc + m1v.addAcc + m2v.addAcc + plan.extraAcc,
-  );
-  const dodge = Math.floor(
-    BASE.dodge + av.addDod + w1v.addDod + w2v.addDod + m1v.addDod + m2v.addDod + plan.extraDodge,
-  );
+  const speed =
+    BASE.speed + av.addSpeed + w1v.addSpeed + w2v.addSpeed + m1v.addSpeed + m2v.addSpeed;
 
-  const gun = Math.floor(
-    BASE.gunSkill + av.addGun + w1v.addGun + w2v.addGun + m1v.addGun + m2v.addGun,
-  );
-  const mel = Math.floor(
-    BASE.meleeSkill + av.addMel + w1v.addMel + w2v.addMel + m1v.addMel + m2v.addMel,
-  );
-  const prj = Math.floor(
-    BASE.projSkill + av.addPrj + w1v.addPrj + w2v.addPrj + m1v.addPrj + m2v.addPrj,
-  );
-  const defSk = Math.floor(
-    BASE.defSkill + av.addDef + w1v.addDef + w2v.addDef + m1v.addDef + m2v.addDef,
-  );
+  const acc =
+    BASE.accuracy + av.addAcc + w1v.addAcc + w2v.addAcc + m1v.addAcc + m2v.addAcc + plan.extraAcc;
 
-  const armor = Math.floor(BASE.armor + av.addArmStat);
+  const dodge =
+    BASE.dodge + av.addDod + w1v.addDod + w2v.addDod + m1v.addDod + m2v.addDod + plan.extraDodge;
+
+  const w1SkillIdx = w1v.weapon ? w1v.weapon.skill : null;
+  const w2SkillIdx = w2v.weapon ? w2v.weapon.skill : null;
+  const [w1Mult, w2Mult] = mixedWeaponMultsFromWeaponSkill(w1SkillIdx, w2SkillIdx);
+
+  // wiki mixed bonus: double ONLY the weapon-type skill add from each weapon when mixed
+  const w1Gun = w1v.addGun * (w1SkillIdx === 0 ? w1Mult : 1);
+  const w2Gun = w2v.addGun * (w2SkillIdx === 0 ? w2Mult : 1);
+  const w1Mel = w1v.addMel * (w1SkillIdx === 1 ? w1Mult : 1);
+  const w2Mel = w2v.addMel * (w2SkillIdx === 1 ? w2Mult : 1);
+  const w1Prj = w1v.addPrj * (w1SkillIdx === 2 ? w1Mult : 1);
+  const w2Prj = w2v.addPrj * (w2SkillIdx === 2 ? w2Mult : 1);
+
+  const gun = BASE.gunSkill + av.addGun + w1Gun + w2Gun + m1v.addGun + m2v.addGun;
+  const mel = BASE.meleeSkill + av.addMel + w1Mel + w2Mel + m1v.addMel + m2v.addMel;
+  const prj = BASE.projSkill + av.addPrj + w1Prj + w2Prj + m1v.addPrj + m2v.addPrj;
+
+  const defSk = BASE.defSkill + av.addDef + w1v.addDef + w2v.addDef + m1v.addDef + m2v.addDef;
+
+  const armor = BASE.armor + av.addArmStat;
+  const armorFactor = armorFactorForArmorValue(level, armor);
 
   return {
     hp: plan.hp,
-    level: BASE.level,
-    speed,
-    armor,
-    acc,
-    dodge,
-    gun,
-    mel,
-    prj,
-    defSk,
+    level,
+    speed: Math.floor(speed),
+    armor: Math.floor(armor),
+    armorFactor,
+    acc: Math.floor(acc),
+    dodge: Math.floor(dodge),
+    gun: Math.floor(gun),
+    mel: Math.floor(mel),
+    prj: Math.floor(prj),
+    defSk: Math.floor(defSk),
     w1: w1v.weapon,
     w2: w2v.weapon,
+    baseDmg: BASE.baseDamagePerHit,
   };
 }
 
 // =====================
-// LEADERBOARD + SCORING
+// LEADERBOARD
 // =====================
 function pushLeaderboard(lb, entry, keepN) {
   lb.push(entry);
@@ -798,35 +1232,8 @@ function pushLeaderboard(lb, entry, keepN) {
   if (lb.length > keepN) lb.length = keepN;
 }
 
-function evalCandidate(att, defendersCompiled, trials, MAX_TURNS) {
-  let sumWin = 0;
-  let sumEx = 0;
-  let worstWin = 101;
-  let worstName = '';
-
-  for (let i = 0; i < defendersCompiled.length; i++) {
-    const D = defendersCompiled[i];
-    const r = runMatchWikiFast(att, D.compiled, trials, MAX_TURNS);
-    sumWin += r.winPct;
-    sumEx += r.avgExchanges;
-    if (r.winPct < worstWin) {
-      worstWin = r.winPct;
-      worstName = D.name;
-    }
-  }
-
-  return {
-    avgWin: sumWin / defendersCompiled.length,
-    avgEx: sumEx / defendersCompiled.length,
-    worstWin,
-    worstName,
-  };
-}
-
-function buildLabel(plan, av, w1v, w2v, m1v, m2v, isBaseline = false) {
-  const prefix = isBaseline ? 'BASE ' : '';
+function buildLabel(plan, av, w1v, w2v, m1v, m2v) {
   return (
-    prefix +
     `HP${plan.hp} A${plan.extraAcc} D${plan.extraDodge} | ` +
     `${shortItem(av.itemName)}[${shortCrystal(av.crystalName)}] ` +
     `${shortItem(w1v.itemName)}[${shortCrystal(w1v.crystalName)}]+${shortItem(w2v.itemName)}[${shortCrystal(w2v.crystalName)}] ` +
@@ -835,56 +1242,330 @@ function buildLabel(plan, av, w1v, w2v, m1v, m2v, isBaseline = false) {
 }
 
 // =====================
-// WORKER LOGIC
+// STAGED EVALUATION (with Gatekeepers)
+// =====================
+function evalCandidateStaged({
+  att,
+  defenders,
+  maxTurns,
+  trialsGate,
+  gatekeepers,
+  trialsScreen,
+  trialsConfirm,
+  floorWorst,
+  bailMargin,
+  deterministic,
+  baseSeed,
+  candidateKey,
+  stageTagG = 0,
+  stageTagA = 1,
+  stageTagB = 2,
+}) {
+  function setDetRng(i, tag) {
+    const s = mix32((baseSeed ^ mix32(candidateKey ^ (i * 0x9e3779b9) ^ tag)) | 0);
+    RNG = makeRng('fast', s, s ^ 0xa341316c, s ^ 0xc8013ea4, s ^ 0xad90777d);
+  }
+
+  if (floorWorst !== null && gatekeepers > 0 && trialsGate > 0) {
+    let worstG = 101;
+    let worstNameG = '';
+
+    const gCount = Math.min(gatekeepers, defenders.length);
+    for (let i = 0; i < gCount; i++) {
+      if (deterministic) setDetRng(i, stageTagG);
+
+      const D = defenders[i];
+      const [wins] = runMatchPacked(att, D, trialsGate, maxTurns);
+      const winPct = (wins / trialsGate) * 100;
+
+      if (winPct < worstG) {
+        worstG = winPct;
+        worstNameG = D.name;
+
+        if (worstG + 1e-9 < floorWorst - bailMargin) {
+          return {
+            avgWin: -1,
+            avgEx: 0,
+            worstWin: worstG,
+            worstName: worstNameG,
+            bailed: true,
+            stage: 'G',
+          };
+        }
+      }
+    }
+  }
+
+  let worstA = 101;
+  let worstNameA = '';
+
+  for (let i = 0; i < defenders.length; i++) {
+    if (deterministic) setDetRng(i, stageTagA);
+
+    const D = defenders[i];
+    const [wins] = runMatchPacked(att, D, trialsScreen, maxTurns);
+    const winPct = (wins / trialsScreen) * 100;
+
+    if (winPct < worstA) {
+      worstA = winPct;
+      worstNameA = D.name;
+
+      if (floorWorst !== null && worstA + 1e-9 < floorWorst - bailMargin) {
+        return {
+          avgWin: -1,
+          avgEx: 0,
+          worstWin: worstA,
+          worstName: worstNameA,
+          bailed: true,
+          stage: 'A',
+        };
+      }
+    }
+  }
+
+  let sumWin = 0;
+  let sumEx = 0;
+  let worstWin = 101;
+  let worstName = '';
+
+  for (let i = 0; i < defenders.length; i++) {
+    if (deterministic) setDetRng(i, stageTagB);
+
+    const D = defenders[i];
+    const [wins, exSum] = runMatchPacked(att, D, trialsConfirm, maxTurns);
+    const winPct = (wins / trialsConfirm) * 100;
+    const avgEx = exSum / trialsConfirm;
+
+    sumWin += winPct;
+    sumEx += avgEx;
+
+    if (winPct < worstWin) {
+      worstWin = winPct;
+      worstName = D.name;
+
+      if (floorWorst !== null && worstWin + 1e-9 < floorWorst) {
+        return { avgWin: -1, avgEx: 0, worstWin, worstName, bailed: true, stage: 'B' };
+      }
+    }
+  }
+
+  return {
+    avgWin: sumWin / defenders.length,
+    avgEx: sumEx / defenders.length,
+    worstWin,
+    worstName,
+    bailed: false,
+    stage: 'B',
+  };
+}
+
+// =====================
+// SANITY CHECK (misc crystal rules)
+// =====================
+function printMiscSanityCheck(miscNames) {
+  console.log('=== SANITY CHECK: misc crystal rules ===');
+  console.log('Rule summary:');
+  console.log('  - Bio: allowed = Pink + weapon-type crystal(s) used; NO Amulet');
+  console.log(
+    '  - non-Bio: allowed = Amulet + (Pink if defSkill>0) + (weapon-type crystals used IF misc has that skill stat)',
+  );
+  console.log('');
+
+  console.log('Base misc superset crystals (context-free, before filtering by weapon pair):');
+
+  const baseSupersetByItem = {};
+  let supersetCount = 0;
+
+  for (const nm of miscNames) {
+    const crystals = allowedCrystalsForMiscSuperset(nm);
+    baseSupersetByItem[nm] = crystals.slice();
+
+    const fs = (ItemDefs[nm] && ItemDefs[nm].flatStats) || {};
+    const letters = crystals.map(shortCrystal).join('');
+    supersetCount += crystals.length;
+
+    const def = fs.defSkill || 0;
+    const gun = fs.gunSkill || 0;
+    const mel = fs.meleeSkill || 0;
+    const prj = fs.projSkill || 0;
+
+    console.log(
+      `  - ${padRight(nm, 18)} superset=[${letters}] (${crystals.length}) | ` +
+        `${def ? `Def${def} ` : ''}${gun ? `Gun${gun} ` : ''}${mel ? `Mel${mel} ` : ''}${prj ? `Prj${prj} ` : ''}`.trim(),
+    );
+  }
+
+  // Count miscVariants superset the same way buildVariantsForMiscsSuperset does:
+  const miscVariantsSuperset = buildVariantsForMiscsSuperset(miscNames);
+  const n = miscVariantsSuperset.length;
+  const pairs = (n * (n + 1)) / 2;
+
+  console.log('');
+  console.log(`Superset miscVariants count = ${n}`);
+  console.log(`Superset miscPairs(orderless, dup allowed) ~= n(n+1)/2 = ${Math.round(pairs)}`);
+  console.log('');
+  console.log('Allowed misc crystals AFTER weapon-pair filtering (shown as letters):');
+  console.log(
+    '(Also prints estimated effective miscVariants/miscPairs for that weapon archetype)\n',
+  );
+
+  const archetypes = [
+    { name: 'Melee+Melee', mask: 0b010 },
+    { name: 'Gun+Gun', mask: 0b001 },
+    { name: 'Proj+Proj', mask: 0b100 },
+    { name: 'Gun+Proj', mask: 0b001 | 0b100 },
+    { name: 'Gun+Melee', mask: 0b001 | 0b010 },
+    { name: 'Melee+Proj', mask: 0b010 | 0b100 },
+  ];
+
+  for (const arch of archetypes) {
+    console.log(`  WeaponPair ${arch.name}:`);
+
+    let effVariants = 0;
+
+    for (const nm of miscNames) {
+      const crystals = baseSupersetByItem[nm];
+      const kept = crystals.filter((c) => {
+        const v = computeVariant(nm, c);
+        return miscVariantAllowedForWeaponMask(v, arch.mask);
+      });
+      const lettersKept = kept.map(shortCrystal).join('');
+      const keepPct = crystals.length ? (kept.length / crystals.length) * 100 : 0;
+      const lettersAll = crystals.map(shortCrystal).join('');
+      console.log(
+        `    - ${padRight(nm, 18)} -> [${lettersKept}] (${kept.length})  vs superset(${crystals.length}) keep=${keepPct.toFixed(
+          1,
+        )}%`,
+      );
+      effVariants += kept.length;
+    }
+
+    const effPairs = (effVariants * (effVariants + 1)) / 2;
+    const keepVarPct = n ? (effVariants / n) * 100 : 0;
+    const keepPairPct = pairs ? (effPairs / pairs) * 100 : 0;
+
+    console.log(
+      `    => Effective miscVariants ~= ${effVariants} (keep ${keepVarPct.toFixed(
+        1,
+      )}% of superset), Effective miscPairs ~= ${Math.round(effPairs)} (keep ${keepPairPct.toFixed(1)}% of superset)\n`,
+    );
+  }
+
+  console.log('NOTE: These counts are an *estimate of search-space reduction* for miscs.');
+  console.log(
+    '      The code still builds a superset miscVariants list, then filters per-candidate based on the weapon pair.',
+  );
+  console.log('=== END SANITY CHECK ===\n');
+}
+
+// =====================
+// WORKER MAIN
 // =====================
 function workerMain() {
   const {
-    trials,
+    trialsConfirm,
+    trialsScreen,
+    trialsGate,
+    gatekeepers,
     maxTurns,
     keepTopNPerHp,
     progressEveryMs,
-
-    armorVariants,
-    weaponVariants,
-    miscVariants,
-    weaponPairs,
-    miscPairs,
-    defenders,
-
-    plans, // flattened HP/stat plans
-
     startIndex,
     endIndex,
-
-    // prune reference by plan: we pass a single conservative delta (not logic)
     pruneDelta,
+    pruneEnabled,
+    workerId,
+    rngMode,
+    rngSeed,
+    deterministic,
+    bailMargin,
+    sharedFloorBuf,
+    pools,
+    debugMixed,
+    debugMixedN,
   } = workerData;
 
-  const WP = weaponPairs.length;
-  const MP = miscPairs.length;
-  const AV = armorVariants.length;
+  const sharedFloorI32 = sharedFloorBuf ? new Int32Array(sharedFloorBuf) : null;
 
-  const perGear = AV * WP * MP;
-  const totalLocal = endIndex - startIndex;
+  if (rngMode === 'fast') {
+    const baseSeed = (Number(rngSeed) || 0) >>> 0;
+    const s0 = (baseSeed ^ (0x9e3779b9 * (workerId + 1))) >>> 0;
+    RNG = makeRng('fast', s0, s0 ^ 0xa341316c, s0 ^ 0xc8013ea4, s0 ^ 0xad90777d);
+  } else {
+    RNG = Math.random;
+  }
 
-  // per HP leaderboards (keyed by hp as string)
+  const weapons = pools.weapons;
+  const armorChoices = pools.armors;
+  const miscChoices = pools.miscs;
+
+  // Local variant cache
+  const localCache = new Map();
+  function getV(itemName, crystalName) {
+    const key = `${itemName}|${crystalName}`;
+    let v = localCache.get(key);
+    if (!v) {
+      v = computeVariant(itemName, crystalName);
+      localCache.set(key, v);
+    }
+    return v;
+  }
+
+  // Build variants
+  const armorVariants = [];
+  for (const nm of armorChoices) {
+    for (const c of allowedCrystalsForArmor(nm)) armorVariants.push(getV(nm, c));
+  }
+
+  const weaponVariants = [];
+  for (const nm of weapons) {
+    for (const c of allowedCrystalsForWeapon(nm)) weaponVariants.push(getV(nm, c));
+  }
+
+  // SUPerset misc variants
+  const miscVariants = [];
+  for (const nm of miscChoices) {
+    for (const c of allowedCrystalsForMiscSuperset(nm)) miscVariants.push(getV(nm, c));
+  }
+
+  const weaponPairs = buildWeaponPairs(weaponVariants);
+  const miscPairs = buildMiscPairsOrderlessAllDup(miscVariants);
+
+  const { plans } = buildHpPlans();
+
+  // Ensure defender variants exist in cache
+  for (const def of defenderBuilds) {
+    const p = def.payload;
+    getV(p.armor.name, p.armor.upgrades[0]);
+    getV(p.weapon1.name, p.weapon1.upgrades[0]);
+    getV(p.weapon2.name, p.weapon2.upgrades[0]);
+    getV(p.misc1.name, p.misc1.upgrades[0]);
+    getV(p.misc2.name, p.misc2.upgrades[0]);
+  }
+
+  const defenders = defenderBuilds.map((d) => compileDefender(d, localCache));
+
+  const WP = weaponPairs.length / 2;
+  const MP = miscPairs.length / 2;
+
   const topsByHp = Object.create(null);
+  const bestByTypeByHp = Object.create(null); // hpKey -> { type -> bestEntry }
 
   const t0 = nowMs();
   let lastProgress = t0;
-
   let processed = 0;
+
+  const detBaseSeed = (Number(rngSeed) || 0) >>> 0;
+
+  // debug counter (only worker 0 prints)
+  let debugPrinted = 0;
 
   for (let globalIdx = startIndex; globalIdx < endIndex; globalIdx++) {
     processed++;
 
-    // decode globalIdx into (planIdx, gearIdx)
-    const planIdx = Math.floor(globalIdx / perGear);
-    const gearIdx = globalIdx - planIdx * perGear;
+    const plan = plans[0];
+    const gearIdx = globalIdx;
 
-    const plan = plans[planIdx];
-
-    // decode gearIdx into (ai, wpi, mpi)
     const ai = Math.floor(gearIdx / (WP * MP));
     const rem = gearIdx - ai * (WP * MP);
     const wpi = Math.floor(rem / MP);
@@ -892,53 +1573,150 @@ function workerMain() {
 
     const av = armorVariants[ai];
 
-    const wp = weaponPairs[wpi];
-    const w1v = weaponVariants[wp[0]];
-    const w2v = weaponVariants[wp[1]];
+    const wpBase = wpi * 2;
+    const w1v = weaponVariants[weaponPairs[wpBase]];
+    const w2v = weaponVariants[weaponPairs[wpBase + 1]];
 
-    const mp = miscPairs[mpi];
-    const m1v = miscVariants[mp[0]];
-    const m2v = miscVariants[mp[1]];
+    const wpTag = weaponPairTagFromSkills(w1v.weapon.skill, w2v.weapon.skill);
 
-    // very cheap prune proxy (same style as before), but plan-aware on acc/dodge isn’t needed:
-    // We prune only on gear-dependent core melee survivability-ish stats (mel+def+armor).
-    // This does not change combat logic; it just skips clearly weak candidates.
-    const mel = BASE.meleeSkill + av.addMel + w1v.addMel + w2v.addMel + m1v.addMel + m2v.addMel;
-    const defSk = BASE.defSkill + av.addDef + w1v.addDef + w2v.addDef + m1v.addDef + m2v.addDef;
-    const armor = BASE.armor + av.addArmStat;
+    // Weapon mask for misc filtering
+    let weaponMask = 0;
+    weaponMask |= w1v.weapon.skill === 0 ? 0b001 : w1v.weapon.skill === 1 ? 0b010 : 0b100;
+    weaponMask |= w2v.weapon.skill === 0 ? 0b001 : w2v.weapon.skill === 1 ? 0b010 : 0b100;
 
-    // Baseline-ish reference per plan: we approximate by using "mel+def+armor + (some constant)".
-    // We keep it conservative: only skip if VERY far below.
-    if (mel + defSk + armor >= 1200 - pruneDelta) {
-      const att = compileAttackerFromVariants(plan, av, w1v, w2v, m1v, m2v);
-      const score = evalCandidate(att, defenders, trials, maxTurns);
+    const mpBase = mpi * 2;
+    const m1v = miscVariants[miscPairs[mpBase]];
+    const m2v = miscVariants[miscPairs[mpBase + 1]];
 
-      const hpKey = String(plan.hp);
-      let lb = topsByHp[hpKey];
-      if (!lb) lb = topsByHp[hpKey] = [];
+    // Per-candidate misc crystal sanity filter
+    if (
+      !miscVariantAllowedForWeaponMask(m1v, weaponMask) ||
+      !miscVariantAllowedForWeaponMask(m2v, weaponMask)
+    ) {
+      const t = nowMs();
+      if (t - lastProgress >= progressEveryMs) {
+        lastProgress = t;
+        parentPort.postMessage({ type: 'progress', processed, bestWorst: null, bestAvg: null });
+      }
+      continue;
+    }
 
+    // Optional prune (default OFF)
+    if (pruneEnabled) {
+      const w1SkillIdx = w1v.weapon ? w1v.weapon.skill : null;
+      const w2SkillIdx = w2v.weapon ? w2v.weapon.skill : null;
+      const [w1Mult, w2Mult] = mixedWeaponMultsFromWeaponSkill(w1SkillIdx, w2SkillIdx);
+
+      const w1Mel = w1v.addMel * (w1SkillIdx === 1 ? w1Mult : 1);
+      const w2Mel = w2v.addMel * (w2SkillIdx === 1 ? w2Mult : 1);
+
+      const mel = BASE.meleeSkill + av.addMel + w1Mel + w2Mel + m1v.addMel + m2v.addMel;
+      const defSk = BASE.defSkill + av.addDef + w1v.addDef + w2v.addDef + m1v.addDef + m2v.addDef;
+      const armor = BASE.armor + av.addArmStat;
+
+      if (mel + defSk + armor < 1200 - pruneDelta) {
+        const t = nowMs();
+        if (t - lastProgress >= progressEveryMs) {
+          lastProgress = t;
+          parentPort.postMessage({ type: 'progress', processed, bestWorst: null, bestAvg: null });
+        }
+        continue;
+      }
+    }
+
+    const att = compileAttacker(plan, av, w1v, w2v, m1v, m2v);
+
+    // Mixed debug (optional)
+    if (debugMixed && workerId === 0 && debugPrinted < debugMixedN) {
+      const s1 = w1v.weapon.skill;
+      const s2 = w2v.weapon.skill;
+      const isMixed = s1 !== s2;
+      if (isMixed || debugPrinted < Math.min(3, debugMixedN)) {
+        debugPrinted++;
+        const [m1, m2] = mixedWeaponMultsFromWeaponSkill(s1, s2);
+        const tag = isMixed ? 'MIXED' : 'SAME';
+        console.log(
+          `[DEBUG_MIXED] ${tag} | W1=${w1v.itemName}(skill=${s1}, mult=${m1}) W2=${w2v.itemName}(skill=${s2}, mult=${m2}) | FINAL skills: gun=${att.gun} mel=${att.mel} prj=${att.prj}`,
+        );
+      }
+    }
+
+    const hpKey = String(plan.hp);
+    let lb = topsByHp[hpKey];
+    if (!lb) lb = topsByHp[hpKey] = [];
+
+    const localFloor = lb.length >= keepTopNPerHp ? lb[lb.length - 1].worstWin : null;
+    const globalFloor = floorLoadPct(sharedFloorI32);
+    const floorWorst =
+      localFloor === null && globalFloor === null
+        ? null
+        : localFloor === null
+          ? globalFloor
+          : globalFloor === null
+            ? localFloor
+            : Math.max(localFloor, globalFloor);
+
+    const score = evalCandidateStaged({
+      att,
+      defenders,
+      maxTurns,
+      trialsGate,
+      gatekeepers,
+      trialsScreen,
+      trialsConfirm,
+      floorWorst,
+      bailMargin,
+      deterministic,
+      baseSeed: detBaseSeed,
+      candidateKey: globalIdx,
+    });
+
+    if (!score.bailed) {
+      // Track best-by-type per HP (even if it doesn't make Top-N)
+      let bestTypes = bestByTypeByHp[hpKey];
+      if (!bestTypes) bestTypes = bestByTypeByHp[hpKey] = Object.create(null);
+
+      const candidateEntry = {
+        wpTag,
+        label: buildLabel(plan, av, w1v, w2v, m1v, m2v),
+        ...score,
+        stats: {
+          hp: plan.hp,
+          extraAcc: plan.extraAcc,
+          extraDodge: plan.extraDodge,
+          speed: att.speed,
+          armor: att.armor,
+          acc: att.acc,
+          dodge: att.dodge,
+          mel: att.mel,
+          defSk: att.defSk,
+          gun: att.gun,
+          prj: att.prj,
+        },
+      };
+
+      if (isBetterScore(candidateEntry, bestTypes[wpTag])) {
+        bestTypes[wpTag] = candidateEntry;
+      }
+
+      // Keep normal Top-N leaderboard
       const floor = lb.length ? lb[lb.length - 1] : null;
       if (lb.length < keepTopNPerHp || score.worstWin >= floor.worstWin - 1e-9) {
-        const label = buildLabel(plan, av, w1v, w2v, m1v, m2v, false);
         pushLeaderboard(
           lb,
           {
-            label,
+            wpTag,
+            label: candidateEntry.label,
             ...score,
-            stats: {
-              hp: plan.hp,
-              extraAcc: plan.extraAcc,
-              extraDodge: plan.extraDodge,
-              speed: att.speed,
-              armor: att.armor,
-              acc: att.acc,
-              dodge: att.dodge,
-              mel: att.mel,
-              defSk: att.defSk,
-            },
+            stats: candidateEntry.stats,
           },
           keepTopNPerHp,
         );
+
+        if (lb.length >= keepTopNPerHp) {
+          const newLocalFloor = lb[lb.length - 1].worstWin;
+          floorTryRaise(sharedFloorI32, newLocalFloor);
+        }
       }
     }
 
@@ -946,26 +1724,18 @@ function workerMain() {
     if (t - lastProgress >= progressEveryMs) {
       lastProgress = t;
 
-      // compute best seen so far across all HPs (for progress display only)
       let bestWorst = null;
       let bestAvg = null;
-      for (const hpKey in topsByHp) {
-        const lb = topsByHp[hpKey];
-        if (!lb || !lb.length) continue;
-        const b = lb[0];
+      for (const k in topsByHp) {
+        const b = topsByHp[k] && topsByHp[k][0];
+        if (!b) continue;
         if (bestWorst === null || b.worstWin > bestWorst) {
           bestWorst = b.worstWin;
           bestAvg = b.avgWin;
         }
       }
 
-      parentPort.postMessage({
-        type: 'progress',
-        processed,
-        totalLocal,
-        bestWorst,
-        bestAvg,
-      });
+      parentPort.postMessage({ type: 'progress', processed, bestWorst, bestAvg });
     }
   }
 
@@ -973,6 +1743,7 @@ function workerMain() {
     type: 'done',
     processed,
     topsByHp,
+    bestByTypeByHp,
     elapsedSec: (nowMs() - t0) / 1000,
   });
 }
@@ -981,45 +1752,144 @@ function workerMain() {
 // MAIN THREAD
 // =====================
 async function main() {
-  // knobs
   const single = process.argv.includes('--single');
-  const cpuCount = os.cpus().length || 1;
+
+  const logical =
+    typeof os.availableParallelism === 'function'
+      ? os.availableParallelism()
+      : os.cpus().length || 1;
+
+  const physicalGuess = logical >= 8 ? Math.ceil(logical / 2) : logical;
+
   const envW = parseInt(process.env.LEGACY_WORKERS || '', 10);
+  const defaultWorkers = Math.min(physicalGuess, SETTINGS.WORKERS_DEFAULT_CAP);
+
   const workers = single
     ? 1
     : Number.isFinite(envW) && envW > 0
-      ? Math.min(envW, cpuCount)
-      : Math.min(SETTINGS.WORKERS_DEFAULT, cpuCount);
+      ? Math.min(envW, logical)
+      : defaultWorkers;
 
-  const envTrials = parseInt(process.env.LEGACY_TRIALS || '', 10);
-  const TRIALS = Number.isFinite(envTrials) && envTrials > 0 ? envTrials : SETTINGS.TRIALS_FAST;
+  const envConfirm = parseInt(process.env.LEGACY_TRIALS || '', 10);
+  const TRIALS_CONFIRM =
+    Number.isFinite(envConfirm) && envConfirm > 0 ? envConfirm : SETTINGS.TRIALS_CONFIRM_DEFAULT;
 
-  // Build space
-  const armorVariants = buildVariantsForSlot(armorChoices, 'armor');
-  const weaponVariants = buildVariantsForSlot(meleeWeapons, 'weapon');
-  const miscVariants = buildVariantsForSlot(miscChoices, 'misc');
+  const envScreen = parseInt(process.env.LEGACY_TRIALS_SCREEN || '', 10);
+  const TRIALS_SCREEN =
+    Number.isFinite(envScreen) && envScreen > 0 ? envScreen : SETTINGS.TRIALS_SCREEN_DEFAULT;
+
+  const envGate = parseInt(process.env.LEGACY_TRIALS_GATE || '', 10);
+  const TRIALS_GATE =
+    Number.isFinite(envGate) && envGate > 0 ? envGate : SETTINGS.TRIALS_GATE_DEFAULT;
+
+  const envGatekeepers = parseInt(process.env.LEGACY_GATEKEEPERS || '', 10);
+  const GATEKEEPERS =
+    Number.isFinite(envGatekeepers) && envGatekeepers >= 0
+      ? envGatekeepers
+      : SETTINGS.GATEKEEPERS_DEFAULT;
+
+  const envBailMargin = parseFloat(process.env.LEGACY_SCREEN_MARGIN || '');
+  const BAIL_MARGIN =
+    Number.isFinite(envBailMargin) && envBailMargin >= 0
+      ? envBailMargin
+      : SETTINGS.SCREEN_BAIL_MARGIN_DEFAULT;
+
+  // Prune (default OFF; enable with LEGACY_PRUNE=1/true/on)
+  const envPruneRaw = String(process.env.LEGACY_PRUNE ?? '')
+    .trim()
+    .toLowerCase();
+  const pruneEnabled = envPruneRaw
+    ? envPruneRaw === '1' || envPruneRaw === 'true' || envPruneRaw === 'on' || envPruneRaw === 'yes'
+    : !!SETTINGS.PRUNE_DEFAULT_ENABLED;
+
+  const pruneDelta = (() => {
+    const x = parseInt(process.env.LEGACY_PRUNE_DELTA || '', 10);
+    return Number.isFinite(x) ? x : SETTINGS.PRUNE_DELTA_DEFAULT;
+  })();
+
+  const rngMode = (process.env.LEGACY_RNG || 'fast').toLowerCase();
+  const rngSeed = parseInt(process.env.LEGACY_SEED || '', 10) || 123456789;
+  const deterministic =
+    process.env.LEGACY_DETERMINISTIC === '1' || process.env.LEGACY_DETERMINISTIC === 'true';
+
+  const pools = parsePoolsFromEnv();
+
+  const debugMixed =
+    process.env.LEGACY_DEBUG_MIXED === '1' || process.env.LEGACY_DEBUG_MIXED === 'true';
+  const debugMixedN = parseInt(process.env.LEGACY_DEBUG_MIXED_N || '', 10) || 12;
+
+  // Sanity check (optional but useful)
+  const sanity =
+    process.env.LEGACY_SANITY === '1' ||
+    process.env.LEGACY_SANITY === 'true' ||
+    process.env.LEGACY_SANITY === '';
+  // Default: print sanity unless explicitly disabled
+  if (process.env.LEGACY_SANITY_DISABLE !== '1' && process.env.LEGACY_SANITY_DISABLE !== 'true') {
+    printMiscSanityCheck(pools.miscs);
+  }
+
+  const armorVariants = buildVariantsForArmors(pools.armors);
+  const weaponVariants = buildVariantsForWeapons(pools.weapons);
+  const miscVariants = buildVariantsForMiscsSuperset(pools.miscs);
+
   const weaponPairs = buildWeaponPairs(weaponVariants);
-  const miscPairs = buildMiscPairsOrderless(miscVariants);
-  const defenders = defenderBuilds.map(compileDefender);
+  const miscPairs = buildMiscPairsOrderlessAllDup(miscVariants);
 
   const { plans, perHpSummary } = buildHpPlans();
 
-  // Minimal reassurance prints (counts + plan table)
-  const perGear = armorVariants.length * weaponPairs.length * miscPairs.length;
-  const totalCandidates = plans.length * perGear;
+  const WP = weaponPairs.length / 2;
+  const MP = miscPairs.length / 2;
+  const AV = armorVariants.length;
+
+  const perGear = AV * WP * MP;
+  const totalCandidates = perGear; // one locked plan
+
+  const sharedFloorBuf = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
+  const sharedFloorI32 = new Int32Array(sharedFloorBuf);
+  sharedFloorI32[0] = -1;
 
   console.log(
-    `LEGACY brute-force (v1.8) | melee attacker | defenders=${defenders.length} | trials/def=${TRIALS}`,
+    `LEGACY brute-force (v2.8) | defenders=${defenderBuilds.length} | trialsGate/def=${TRIALS_GATE} | trialsScreen/def=${TRIALS_SCREEN} | trialsConfirm/def=${TRIALS_CONFIRM}`,
   );
   console.log(
-    `Variants: armor=${armorVariants.length}, weapon=${weaponVariants.length}, misc=${miscVariants.length}`,
+    `Workers=${workers} (logical=${logical}, physicalGuess=${physicalGuess}) | RNG=${
+      rngMode === 'fast' ? 'fast(sfc32)' : 'Math.random'
+    } | deterministic=${deterministic ? 'ON' : 'OFF'} | baseDmgPerHit=+${BASE.baseDamagePerHit}`,
+  );
+  console.log(`Mixed weapon bonus: ${mixedBonusEnabled() ? 'ON' : 'OFF'}`);
+  console.log(`Prune: ${pruneEnabled ? `ON (delta=${pruneDelta})` : 'OFF'}`);
+  console.log(
+    `LOCK_ONLY_AMULET (weapons-only): ${LOCK_ONLY_AMULET.size ? Array.from(LOCK_ONLY_AMULET).join(', ') : '(none)'}`,
+  );
+  console.log('');
+  console.log(
+    `POOLS: armors=${pools.armors.length} weapons=${pools.weapons.length} miscs=${pools.miscs.length}`,
+  );
+  console.log(`  armors:  ${pools.armors.join(', ')}`);
+  console.log(`  weapons: ${pools.weapons.join(', ')}`);
+  console.log(`  miscs:   ${pools.miscs.join(', ')}`);
+  console.log('');
+
+  console.log(
+    `Variants (supersets): armor=${armorVariants.length}, weapon=${weaponVariants.length}, misc=${miscVariants.length}`,
+  );
+  console.log(`Pairs(orderless): weaponPairs=${WP}, miscPairs=${MP} (ALL misc duplicates allowed)`);
+
+  const locked = plans[0];
+  console.log(
+    `LOCKED attacker plan: HP=${locked.hp} extraAcc=${locked.extraAcc} extraDodge=${locked.extraDodge} (freePoints=${locked.freePoints})`,
   );
   console.log(
-    `Pairs(orderless): weaponPairs=${weaponPairs.length}, miscPairs=${miscPairs.length} (Bio+Bio and Scout+Scout allowed)`,
+    `Gatekeepers: N=${GATEKEEPERS} trialsGate=${TRIALS_GATE} (only matters once a floor exists)`,
   );
   console.log(
-    `HP sweep: ${SETTINGS.HP_MIN}..${SETTINGS.HP_MAX_SWEEP} step ${SETTINGS.HP_STEP} | statPoint=5HP | acc/dodge step=${SETTINGS.STAT_STEP}`,
+    `StageA bail margin: ${BAIL_MARGIN.toFixed(2)}% (bail if worst < floorWorst - margin)`,
   );
+  if (debugMixed) {
+    console.log(
+      `DEBUG: LEGACY_DEBUG_MIXED=1 enabled. Will print up to ${debugMixedN} mixed/non-mixed weapon lines from worker 0.`,
+    );
+  }
   console.log('HP plans (reassurance):');
   for (const r of perHpSummary) {
     console.log(
@@ -1027,125 +1897,23 @@ async function main() {
     );
   }
   console.log(
-    `Total plans=${plans.length} | perGear=${perGear} | totalCandidates=${totalCandidates}`,
+    `Total plans=${plans.length} | perGear=${perGear} | totalCandidates=${totalCandidates}\n`,
   );
-  console.log(`Workers=${workers}${single ? ' (single-thread forced)' : ''}\n`);
 
-  // Global per-HP leaderboards
   const globalByHp = Object.create(null);
-  for (const r of perHpSummary) globalByHp[String(r.hp)] = [];
-
-  // Conservative prune delta (kept large so we don't accidentally skip plausible stuff)
-  const pruneDelta = 260;
-
-  // Range partition assurance
-  function assertRangesCover(ranges, total) {
-    const sorted = ranges.slice().sort((a, b) => a[0] - b[0]);
-    if (sorted[0][0] !== 0) throw new Error('Worker ranges do not start at 0');
-    if (sorted[sorted.length - 1][1] !== total)
-      throw new Error('Worker ranges do not end at total');
-    for (let i = 1; i < sorted.length; i++) {
-      if (sorted[i][0] !== sorted[i - 1][1]) throw new Error('Worker ranges have gap/overlap');
-    }
+  const globalBestByTypeByHp = Object.create(null);
+  for (const r of perHpSummary) {
+    globalByHp[String(r.hp)] = [];
+    globalBestByTypeByHp[String(r.hp)] = Object.create(null);
   }
 
-  // Single-thread fallback
-  if (workers === 1) {
-    const t0 = nowMs();
-    let lastProgress = t0;
+  let liveBestWorst = null;
+  let liveBestAvg = null;
 
-    const WP = weaponPairs.length;
-    const MP = miscPairs.length;
-    const AV = armorVariants.length;
-
-    for (let globalIdx = 0; globalIdx < totalCandidates; globalIdx++) {
-      const planIdx = Math.floor(globalIdx / perGear);
-      const gearIdx = globalIdx - planIdx * perGear;
-
-      const plan = plans[planIdx];
-
-      const ai = Math.floor(gearIdx / (WP * MP));
-      const rem = gearIdx - ai * (WP * MP);
-      const wpi = Math.floor(rem / MP);
-      const mpi = rem - wpi * MP;
-
-      const av = armorVariants[ai];
-      const wp = weaponPairs[wpi];
-      const w1v = weaponVariants[wp[0]];
-      const w2v = weaponVariants[wp[1]];
-      const mp = miscPairs[mpi];
-      const m1v = miscVariants[mp[0]];
-      const m2v = miscVariants[mp[1]];
-
-      const mel = BASE.meleeSkill + av.addMel + w1v.addMel + w2v.addMel + m1v.addMel + m2v.addMel;
-      const defSk = BASE.defSkill + av.addDef + w1v.addDef + w2v.addDef + m1v.addDef + m2v.addDef;
-      const armor = BASE.armor + av.addArmStat;
-
-      if (mel + defSk + armor >= 1200 - pruneDelta) {
-        const att = compileAttackerFromVariants(plan, av, w1v, w2v, m1v, m2v);
-        const score = evalCandidate(att, defenders, TRIALS, SETTINGS.MAX_TURNS);
-
-        const hpKey = String(plan.hp);
-        const lb = globalByHp[hpKey];
-
-        const floor = lb.length ? lb[lb.length - 1] : null;
-        if (lb.length < SETTINGS.KEEP_TOP_N_PER_HP || score.worstWin >= floor.worstWin - 1e-9) {
-          const label = buildLabel(plan, av, w1v, w2v, m1v, m2v, false);
-          pushLeaderboard(
-            lb,
-            {
-              label,
-              ...score,
-              stats: {
-                hp: plan.hp,
-                extraAcc: plan.extraAcc,
-                extraDodge: plan.extraDodge,
-                speed: att.speed,
-                armor: att.armor,
-                acc: att.acc,
-                dodge: att.dodge,
-                mel: att.mel,
-                defSk: att.defSk,
-              },
-            },
-            SETTINGS.KEEP_TOP_N_PER_HP,
-          );
-        }
-      }
-
-      const t = nowMs();
-      if (t - lastProgress >= SETTINGS.PROGRESS_EVERY_MS) {
-        lastProgress = t;
-        const elapsed = (t - t0) / 1000;
-
-        // best overall across HPs for a quick progress line
-        let best = null;
-        for (const k in globalByHp) {
-          const lb = globalByHp[k];
-          if (!lb.length) continue;
-          if (!best || lb[0].worstWin > best.worstWin) best = lb[0];
-        }
-
-        process.stdout.write(
-          `\rtested=${globalIdx + 1}/${totalCandidates} elapsed=${elapsed.toFixed(1)}s bestWorst=${best ? best.worstWin.toFixed(2) : '—'}% bestAvg=${best ? best.avgWin.toFixed(2) : '—'}%   `,
-        );
-      }
-    }
-
-    process.stdout.write('\n');
-    const elapsedAll = (nowMs() - t0) / 1000;
-    printResults(globalByHp, elapsedAll, totalCandidates);
-    return;
-  }
-
-  // =====================
-  // PARALLEL WORKERS
-  // =====================
   const start = nowMs();
   let lastRender = start;
   const processedByWorker = new Array(workers).fill(0);
 
-  // partition [0,totalCandidates)
   const perWorker = Math.floor(totalCandidates / workers);
   const ranges = [];
   for (let w = 0; w < workers; w++) {
@@ -1153,7 +1921,6 @@ async function main() {
     const e = w === workers - 1 ? totalCandidates : (w + 1) * perWorker;
     ranges.push([s, e]);
   }
-  assertRangesCover(ranges, totalCandidates);
 
   await new Promise((resolve, reject) => {
     let doneCount = 0;
@@ -1163,24 +1930,26 @@ async function main() {
 
       const wk = new Worker(__filename, {
         workerData: {
-          trials: TRIALS,
+          workerId: w,
+          trialsConfirm: TRIALS_CONFIRM,
+          trialsScreen: TRIALS_SCREEN,
+          trialsGate: TRIALS_GATE,
+          gatekeepers: GATEKEEPERS,
+          bailMargin: BAIL_MARGIN,
           maxTurns: SETTINGS.MAX_TURNS,
           keepTopNPerHp: SETTINGS.KEEP_TOP_N_PER_HP,
           progressEveryMs: SETTINGS.PROGRESS_EVERY_MS,
-
-          armorVariants,
-          weaponVariants,
-          miscVariants,
-          weaponPairs,
-          miscPairs,
-          defenders,
-
-          plans,
-
           startIndex,
           endIndex,
-
           pruneDelta,
+          pruneEnabled,
+          rngMode: rngMode === 'fast' ? 'fast' : 'math',
+          rngSeed,
+          deterministic,
+          sharedFloorBuf,
+          pools,
+          debugMixed,
+          debugMixedN,
         },
       });
 
@@ -1190,22 +1959,26 @@ async function main() {
         if (msg.type === 'progress') {
           processedByWorker[w] = msg.processed || processedByWorker[w];
 
+          if (typeof msg.bestWorst === 'number') {
+            if (liveBestWorst === null || msg.bestWorst > liveBestWorst) {
+              liveBestWorst = msg.bestWorst;
+              liveBestAvg = msg.bestAvg;
+            }
+          }
+
           const t = nowMs();
           if (t - lastRender >= SETTINGS.PROGRESS_EVERY_MS) {
             lastRender = t;
             const doneProcessed = processedByWorker.reduce((a, b) => a + b, 0);
             const elapsed = (t - start) / 1000;
-
-            // best overall across HPs for progress
-            let best = null;
-            for (const k in globalByHp) {
-              const lb = globalByHp[k];
-              if (!lb.length) continue;
-              if (!best || lb[0].worstWin > best.worstWin) best = lb[0];
-            }
+            const sharedFloor = floorLoadPct(sharedFloorI32);
 
             process.stdout.write(
-              `\rtested~=${Math.min(doneProcessed, totalCandidates)}/${totalCandidates} elapsed=${elapsed.toFixed(1)}s bestWorst=${best ? best.worstWin.toFixed(2) : '—'}% bestAvg=${best ? best.avgWin.toFixed(2) : '—'}%   `,
+              `\rtested~=${Math.min(doneProcessed, totalCandidates)}/${totalCandidates} elapsed=${elapsed.toFixed(
+                1,
+              )}s sharedFloor=${sharedFloor !== null ? sharedFloor.toFixed(2) : '—'}% bestWorst=${
+                liveBestWorst !== null ? liveBestWorst.toFixed(2) : '—'
+              }% bestAvg=${liveBestAvg !== null ? liveBestAvg.toFixed(2) : '—'}%   `,
             );
           }
         }
@@ -1213,7 +1986,6 @@ async function main() {
         if (msg.type === 'done') {
           processedByWorker[w] = msg.processed || processedByWorker[w];
 
-          // merge per-HP leaderboards
           const topsByHp = msg.topsByHp || {};
           for (const hpKey in topsByHp) {
             const localLB = topsByHp[hpKey];
@@ -1221,6 +1993,22 @@ async function main() {
 
             const globalLB = globalByHp[hpKey] || (globalByHp[hpKey] = []);
             for (const e of localLB) pushLeaderboard(globalLB, e, SETTINGS.KEEP_TOP_N_PER_HP);
+          }
+
+          // Merge best-by-type
+          const bestByType = msg.bestByTypeByHp || {};
+          for (const hpKey in bestByType) {
+            const types = bestByType[hpKey];
+            if (!types) continue;
+
+            let g = globalBestByTypeByHp[hpKey];
+            if (!g) g = globalBestByTypeByHp[hpKey] = Object.create(null);
+
+            for (const typeKey in types) {
+              const cand = types[typeKey];
+              if (!cand) continue;
+              if (isBetterScore(cand, g[typeKey])) g[typeKey] = cand;
+            }
           }
 
           doneCount++;
@@ -1237,10 +2025,10 @@ async function main() {
 
   process.stdout.write('\n');
   const elapsedAll = (nowMs() - start) / 1000;
-  printResults(globalByHp, elapsedAll, totalCandidates);
+  printResults(globalByHp, globalBestByTypeByHp, elapsedAll, totalCandidates);
 }
 
-function printResults(globalByHp, elapsedSec, totalCandidates) {
+function printResults(globalByHp, globalBestByTypeByHp, elapsedSec, totalCandidates) {
   console.log(`\nDone. tested=${totalCandidates} | elapsed=${elapsedSec.toFixed(1)}s`);
   console.log(`Per-HP Top ${SETTINGS.KEEP_TOP_N_PER_HP} (ranked by worstWin, then avgWin)\n`);
 
@@ -1280,8 +2068,43 @@ function printResults(globalByHp, elapsedSec, totalCandidates) {
 
     const best = lb[0].stats;
     console.log(
-      `Best stats: Acc=${best.acc} Dod=${best.dodge} Mel=${best.mel} Def=${best.defSk} Arm=${best.armor} Spd=${best.speed} (alloc A${best.extraAcc} D${best.extraDodge})\n`,
+      `Best stats: Acc=${best.acc} Dod=${best.dodge} Gun=${best.gun} Prj=${best.prj} Mel=${best.mel} Def=${best.defSk} Arm=${best.armor} Spd=${best.speed} (alloc A${best.extraAcc} D${best.extraDodge})\n`,
     );
+
+    // Best-by-archetype table
+    const bestTypes = globalBestByTypeByHp[String(hp)] || {};
+    const typeKeys = Object.keys(bestTypes);
+    if (typeKeys.length) {
+      console.log('Best by weapon archetype:');
+      typeKeys.sort((a, b) => {
+        const A = bestTypes[a];
+        const B = bestTypes[b];
+        return B.worstWin - A.worstWin || B.avgWin - A.avgWin;
+      });
+
+      console.log(
+        padRight('Type', 12) +
+          padRight('Worst%', 8) +
+          padRight('WorstVs', 20) +
+          padRight('Avg%', 7) +
+          padRight('AvgEx', 7) +
+          'Build',
+      );
+      console.log('─'.repeat(105));
+
+      for (const t of typeKeys) {
+        const e = bestTypes[t];
+        console.log(
+          padRight(t, 12) +
+            padRight(e.worstWin.toFixed(2), 8) +
+            padRight(e.worstName, 20) +
+            padRight(e.avgWin.toFixed(2), 7) +
+            padRight(e.avgEx.toFixed(2), 7) +
+            e.label,
+        );
+      }
+      console.log('');
+    }
   }
 }
 
