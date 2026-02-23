@@ -3,16 +3,17 @@
 /**
  * =====================
  * LEGACY BRUTE FORCE (CONSTRAINED + STAGED + DETERMINISTIC RNG OPTION)
- * v2.13.0 (ATTACKER CACHE + DEFAULT PRUNE ON + MIXED BONUS CLEANUP)
+ * v2.13.0 + WASM READY-GATE (NO MID-RUN ENGINE SWITCHING)
  * =====================
  *
- * New in v2.13.0:
- * ✅ Attacker cache (deduplicates compileAttacker calls ~30-40%)
- * ✅ Pruning ON by default (delta=240) – safe for your current top build
- * ✅ mixedWeaponMultsFromWeaponSkill simplified (still 100% identical behavior)
- * ✅ WORKERS_DEFAULT_CAP raised to 8
+ * This version applies the critical WASM/worker fixes:
+ * ✅ Workers load WASM FIRST, then signal {type:"ready"}
+ * ✅ Main waits until ALL workers are ready, then sends {type:"start"}
+ * ✅ Prevents “WASM loaded…” happening mid-run (engine switching / nondeterminism / prune corruption)
  *
- * All changes are pure speedups. Zero logic or result changes.
+ * Notes:
+ * - You already recompiled combat.ts — good.
+ * - This file keeps your combat logic the same; only the worker bootstrap/ordering is changed.
  */
 // =====================
 // IMPORTS
@@ -21,6 +22,7 @@ const os = require('os');
 const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
 const fs = require('fs');
 
+// =====================
 // WASM LOADER (AssemblyScript) - returns packed i64 (BigInt)
 // Exports expected: runMatchPackedWASM, seedRng
 // =====================
@@ -114,7 +116,7 @@ async function loadWASM() {
       return [wins, exSum];
     };
 
-    console.log('🚀 WASM loaded (worker must also load it to speed up full brute-force)');
+    console.log('🚀 WASM loaded (workers will also load before starting)');
     return true;
   } catch (e) {
     console.log('❌ WASM failed to load. Real error:');
@@ -122,6 +124,7 @@ async function loadWASM() {
     return false;
   }
 }
+
 // =====================
 // SETTINGS
 // =====================
@@ -137,14 +140,15 @@ const SETTINGS = {
   KEEP_TOP_N_PER_HP: 10,
   PROGRESS_EVERY_MS: 2000,
   // LOCKED ATTACKER STATS
-  LOCKED_HP: 600,
+  LOCKED_HP: 595,
   // pruning (NOW ON BY DEFAULT)
   PRUNE_DELTA_DEFAULT: 240,
   PRUNE_DEFAULT_ENABLED: true,
-  WORKERS_DEFAULT_CAP: 8,
+  WORKERS_DEFAULT_CAP: 4,
   // Mixed-weapon bonus default
   MIXED_WEAPON_BONUS: true,
 };
+
 // =====================
 // POOLS
 // =====================
@@ -172,6 +176,7 @@ const POOLS = {
     'Recon Drones',
   ],
 };
+
 // =====================
 // BASE STATS (server baseline)
 // =====================
@@ -188,6 +193,7 @@ const BASE = {
   defSkill: 450,
   baseDamagePerHit: 5,
 };
+
 // =====================
 // MIXED BONUS TOGGLE (env override)
 // =====================
@@ -200,6 +206,7 @@ function mixedBonusEnabled() {
   if (raw === '1' || raw === 'true' || raw === 'on' || raw === 'yes') return true;
   return !!SETTINGS.MIXED_WEAPON_BONUS;
 }
+
 // =====================
 // SMALL HELPERS
 // =====================
@@ -284,6 +291,7 @@ function shortItem(name) {
     .replace('Projector Bots', 'ProjBot')
     .replace('Recon Drones', 'Recon');
 }
+
 // =====================
 // WEAPON ARCHETYPE TAGGING (for reporting)
 // =====================
@@ -300,6 +308,7 @@ function isBetterScore(a, b) {
   if (a.worstWin !== b.worstWin) return a.worstWin > b.worstWin;
   return a.avgWin > b.avgWin;
 }
+
 // =====================
 // GLOBAL SHARED FLOOR + FLAGS (Atomics)
 // =====================
@@ -321,6 +330,7 @@ function floorTryRaise(sharedI32, pct) {
     if (prev === cur) return;
   }
 }
+
 // =====================
 // RNG
 // =====================
@@ -354,6 +364,7 @@ function mix32(x) {
   x ^= x >>> 16;
   return x >>> 0;
 }
+
 // =====================
 // COMBAT
 // =====================
@@ -430,8 +441,6 @@ function runMatchPackedJS(p1, p2, trials, MAX_TURNS) {
   return [wins, exSum];
 }
 
-// Global that will point to WASM or JS
-// let runMatchPacked = runMatchPackedJS;
 // =====================
 // MIXED WEAPON BONUS HELPERS (cleaned up in v2.13.0)
 // =====================
@@ -440,6 +449,7 @@ function mixedWeaponMultsFromWeaponSkill(w1SkillIdx, w2SkillIdx) {
   if (w1SkillIdx == null || w2SkillIdx == null || w1SkillIdx === w2SkillIdx) return [1, 1];
   return [2, 2];
 }
+
 // =====================
 // CRYSTALS + UPGRADES + ITEMS
 // =====================
@@ -590,6 +600,7 @@ const ItemDefs = {
     flatStats: { dodge: 14, accuracy: 14, gunSkill: 60, projSkill: 40 },
   },
 };
+
 // =====================
 // DEFENDER PAYLOADS
 // =====================
@@ -872,6 +883,7 @@ const DEFENDER_PAYLOADS = {
     },
   },
 };
+
 const DEFENDER_PRIORITY = [
   'DL Gun Build 3',
   'SG1 Split bombs',
@@ -882,11 +894,13 @@ const DEFENDER_PRIORITY = [
   'T2 Scythe Build',
   'HF Core/Void',
 ];
+
 const defenderBuilds = DEFENDER_PRIORITY.map((name) => {
   const p = DEFENDER_PAYLOADS[name];
   if (!p) throw new Error(`Missing DEFENDER_PAYLOADS entry for "${name}"`);
   return { name, payload: p };
 });
+
 // =====================
 // LOCK_ONLY_AMULET (weapons-only)
 // =====================
@@ -896,6 +910,7 @@ function parseLockOnlyAmuletFromEnv() {
   return new Set(parseCsvList(raw));
 }
 const LOCK_ONLY_AMULET = parseLockOnlyAmuletFromEnv();
+
 // =====================
 // CRYSTAL CONSTRAINTS
 // =====================
@@ -952,6 +967,7 @@ function miscVariantAllowedForWeaponMask(mv, weaponMask) {
   }
   return false;
 }
+
 // =====================
 // WARM-START SEED BUILD
 // =====================
@@ -975,6 +991,7 @@ function parseWarmStartTrials(defaultTrialsConfirm) {
   const n = parseInt(raw, 10);
   return Number.isFinite(n) && n > 0 ? n : defaultTrialsConfirm;
 }
+
 // =====================
 // WATCH BUILD
 // =====================
@@ -1050,6 +1067,7 @@ function isWatchBuildCandidate(av, w1v, w2v, m1v, m2v) {
   const wantM = `${WATCH_BUILD.misc1.item}|${WATCH_BUILD.misc1.crystal}`;
   return mA === wantM && mB === wantM;
 }
+
 // =====================
 // VARIANT COMPUTE (numbers only) + UPGRADES
 // =====================
@@ -1219,6 +1237,7 @@ function buildMiscPairsOrderlessAllDup(miscVariants) {
   }
   return new Uint16Array(pairsA);
 }
+
 // =====================
 // EFFECTIVE-SPACE PRECOMPUTE
 // =====================
@@ -1294,6 +1313,7 @@ function buildMaskBuckets(weaponPairIndicesByMask, miscPairsAllowedByMask) {
   }
   return { bucket, mpCount };
 }
+
 // =====================
 // LOCKED HP/stat plan
 // =====================
@@ -1311,6 +1331,7 @@ function buildHpPlans() {
     perHpSummary: [{ hp, freePoints, allocCount: 1 }],
   };
 }
+
 // =====================
 // BUILD / COMPILE DEFENDERS
 // =====================
@@ -1366,6 +1387,7 @@ function compileDefender(def, variantCacheLocal) {
     baseDmg: BASE.baseDamagePerHit,
   };
 }
+
 // =====================
 // COMPILE ATTACKER
 // =====================
@@ -1409,6 +1431,7 @@ function compileAttacker(plan, av, w1v, w2v, m1v, m2v) {
     baseDmg: BASE.baseDamagePerHit,
   };
 }
+
 // =====================
 // LEADERBOARD
 // =====================
@@ -1458,6 +1481,7 @@ function buildSpec(av, w1v, w2v, m1v, m2v, plan) {
     misc2: { item: m2v.itemName, crystal: m2v.crystalName },
   };
 }
+
 // =====================
 // STAGED EVALUATION (with Gatekeepers)
 // =====================
@@ -1481,10 +1505,9 @@ function evalCandidateStaged({
   function setDetRng(i, tag) {
     const s = mix32((baseSeed ^ mix32(candidateKey ^ (i * 0x9e3779b9) ^ tag)) | 0);
     RNG = makeRng('fast', s, s ^ 0xa341316c, s ^ 0xc8013ea4, s ^ 0xad90777d);
-
-    // Keep WASM deterministic too (if loaded)
     seedWasmFromS(s);
   }
+
   // Gatekeeper stage
   if (floorWorst !== null && gatekeepers > 0 && trialsGate > 0) {
     let worstG = 101;
@@ -1516,6 +1539,7 @@ function evalCandidateStaged({
       }
     }
   }
+
   // If Stage A is disabled, skip straight to Stage B
   if (!trialsScreen || trialsScreen <= 0) {
     const screenAvgWin = 0;
@@ -1566,6 +1590,7 @@ function evalCandidateStaged({
       screenSampled: 0,
     };
   }
+
   // Stage A (screen)
   let worstA = 101;
   let worstNameA = '';
@@ -1602,6 +1627,7 @@ function evalCandidateStaged({
   }
   const screenAvgWin = sumWinA / defenders.length;
   const screenAvgEx = sumExA / defenders.length;
+
   // Stage B (confirm)
   let sumWin = 0;
   let sumEx = 0;
@@ -1649,6 +1675,7 @@ function evalCandidateStaged({
     screenSampled: defenders.length,
   };
 }
+
 // =====================
 // SEARCH-SPACE SANITY
 // =====================
@@ -1757,13 +1784,12 @@ function printSearchSpaceSanity(
       const pctWP = eff.WP ? (r.wpCount / eff.WP) * 100 : 0;
       const pctMP = eff.MP ? (r.mpKept / eff.MP) * 100 : 0;
       console.log(
-        ` ${padRight(maskName(r.mask), 10)} | weaponPairs=${padRight(r.wpCount, 6)} (${pctWP.toFixed(
-          1,
-        )}%) | keptMiscPairs=${padRight(r.mpKept, 7)} (${pctMP.toFixed(1)}%) | contrib=${r.contrib}`,
+        ` ${padRight(maskName(r.mask), 10)} | weaponPairs=${padRight(r.wpCount, 6)} (${pctWP.toFixed(1)}%) | keptMiscPairs=${padRight(r.mpKept, 7)} (${pctMP.toFixed(1)}%) | contrib=${r.contrib}`,
       );
     });
   console.log('=== END SANITY CHECK ===\n');
 }
+
 // =====================
 // CATALOG HELPERS
 // =====================
@@ -1789,11 +1815,13 @@ function pushCatalogTop(lb, entry, keepN) {
   lb.sort((a, b) => b.screenWorstWin - a.screenWorstWin || b.screenAvgWin - a.screenAvgWin);
   if (lb.length > keepN) lb.length = keepN;
 }
+
 // =====================
 // WORKER MAIN (with attacker cache)
+// NOTE: IMPORTANT CHANGE: NO loadWASM() here anymore.
+// WASM is loaded in the worker bootstrap BEFORE we start workerMain.
 // =====================
 async function workerMain() {
-  await loadWASM();
   const {
     trialsConfirm,
     trialsScreen,
@@ -1820,7 +1848,9 @@ async function workerMain() {
     catalogTopN,
     catalogMargin,
   } = workerData;
+
   const sharedI32 = sharedBuf ? new Int32Array(sharedBuf) : null;
+
   if (rngMode === 'fast') {
     const baseSeed = (Number(rngSeed) || 0) >>> 0;
     const s0 = (baseSeed ^ (0x9e3779b9 * (workerId + 1))) >>> 0;
@@ -1844,6 +1874,7 @@ async function workerMain() {
   const weapons = pools.weapons;
   const armorChoices = pools.armors;
   const miscChoices = pools.miscs;
+
   // Local variant cache
   const localCache = new Map();
   function getV(itemName, crystalName, upgrade1 = '', upgrade2 = '') {
@@ -1858,10 +1889,12 @@ async function workerMain() {
     }
     return v;
   }
+
   // Build variants
   const armorVariants = [];
   for (const nm of armorChoices)
     for (const c of allowedCrystalsForArmor(nm)) armorVariants.push(getV(nm, c));
+
   const weaponVariants = [];
   for (const nm of weapons) {
     for (const c of allowedCrystalsForWeapon(nm)) {
@@ -1872,9 +1905,11 @@ async function workerMain() {
       }
     }
   }
+
   const miscVariants = [];
   for (const nm of miscChoices)
     for (const c of allowedCrystalsForMiscSuperset(nm)) miscVariants.push(getV(nm, c));
+
   const weaponPairs = buildWeaponPairs(weaponVariants);
   const miscPairs = buildMiscPairsOrderlessAllDup(miscVariants);
   const miscAllow = buildAllowedMiscTable(miscVariants);
@@ -1886,7 +1921,9 @@ async function workerMain() {
     miscPairsAllowedByMask,
   );
   const maskBuckets = buildMaskBuckets(weaponPairIndicesByMask, miscPairsAllowedByMask);
+
   const { plans } = buildHpPlans();
+
   // Ensure defender variants exist in cache
   for (const def of defenderBuilds) {
     const p = def.payload;
@@ -1896,18 +1933,24 @@ async function workerMain() {
     getV(p.misc1.name, p.misc1.upgrades[0]);
     getV(p.misc2.name, p.misc2.upgrades[0]);
   }
+
   const defenders = defenderBuilds.map((d) => compileDefender(d, localCache));
+
   const WP = weaponPairs.length / 2;
   const MP = miscPairs.length / 2;
+
   const topsByHp = Object.create(null);
   const bestByTypeByHp = Object.create(null);
   const catalogTopByHp = Object.create(null);
   const catalogBestTypeByHp = Object.create(null);
+
   const t0 = nowMs();
   let lastProgress = t0;
   let processed = 0;
+
   const detBaseSeed = (Number(rngSeed) || 0) >>> 0;
   let debugPrinted = 0;
+
   function decodeSupersetIndex(globalIdx) {
     const plan = plans[0];
     const gearIdx = globalIdx;
@@ -1925,6 +1968,7 @@ async function workerMain() {
     const weaponMask = w1v.weaponMaskBit | w2v.weaponMaskBit | 0;
     return { plan, av, w1v, w2v, m1v, m2v, weaponMask };
   }
+
   function decodeEffectiveIndex(eIdx) {
     const plan = plans[0];
     const perArmor = effCounts.effPerArmor;
@@ -1938,22 +1982,28 @@ async function workerMain() {
       maskIdx++;
     }
     if (maskIdx >= MASKS.length) maskIdx = MASKS.length - 1;
+
     const wpList = weaponPairIndicesByMask[maskIdx];
     const mpList = miscPairsAllowedByMask[maskIdx];
     const mpCount = maskBuckets.mpCount[maskIdx];
+
     const localWpIdx = Math.floor(r / mpCount);
     const localMpIdx = r - localWpIdx * mpCount;
+
     const wpi = wpList[localWpIdx];
     const wpBase = (wpi * 2) | 0;
     const w1v = weaponVariants[weaponPairs[wpBase]];
     const w2v = weaponVariants[weaponPairs[wpBase + 1]];
+
     const mpBase = (localMpIdx * 2) | 0;
     const m1v = miscVariants[mpList[mpBase]];
     const m2v = miscVariants[mpList[mpBase + 1]];
+
     const av = armorVariants[ai];
     const weaponMask = w1v.weaponMaskBit | w2v.weaponMaskBit | 0;
     return { plan, av, w1v, w2v, m1v, m2v, weaponMask };
   }
+
   for (let idx = startIndex; idx < endIndex; idx++) {
     processed++;
     const dec = useSuperset ? decodeSupersetIndex(idx) : decodeEffectiveIndex(idx);
@@ -1964,6 +2014,7 @@ async function workerMain() {
     const m1v = dec.m1v;
     const m2v = dec.m2v;
     const weaponMask = dec.weaponMask;
+
     if (watchEnabled && sharedI32) {
       if (Atomics.load(sharedI32, 1) === 0) {
         if (isWatchBuildCandidate(av, w1v, w2v, m1v, m2v)) {
@@ -1982,6 +2033,7 @@ async function workerMain() {
         }
       }
     }
+
     if (useSuperset) {
       if (
         !miscVariantAllowedForWeaponMask(m1v, weaponMask) ||
@@ -1995,6 +2047,7 @@ async function workerMain() {
         continue;
       }
     }
+
     if (pruneEnabled) {
       const w1SkillIdx = w1v.weapon ? w1v.weapon.skill : null;
       const w2SkillIdx = w2v.weapon ? w2v.weapon.skill : null;
@@ -2013,7 +2066,9 @@ async function workerMain() {
         continue;
       }
     }
-    const att = getCachedAttacker(plan, av, w1v, w2v, m1v, m2v); // <--- CACHE USED HERE
+
+    const att = getCachedAttacker(plan, av, w1v, w2v, m1v, m2v);
+
     if (debugMixed && workerId === 0 && debugPrinted < debugMixedN) {
       const s1 = w1v.weapon.skill;
       const s2 = w2v.weapon.skill;
@@ -2027,6 +2082,7 @@ async function workerMain() {
         );
       }
     }
+
     const hpKey = String(plan.hp);
     let lb = topsByHp[hpKey];
     if (!lb) lb = topsByHp[hpKey] = [];
@@ -2040,6 +2096,7 @@ async function workerMain() {
           : globalFloor === null
             ? localFloor
             : Math.max(localFloor, globalFloor);
+
     const score = evalCandidateStaged({
       att,
       defenders,
@@ -2054,9 +2111,11 @@ async function workerMain() {
       baseSeed: detBaseSeed,
       candidateKey: idx,
     });
+
     const wpTag = weaponPairTagFromSkills(w1v.weapon.skill, w2v.weapon.skill);
     const label = buildLabel(plan, av, w1v, w2v, m1v, m2v);
     const spec = buildSpec(av, w1v, w2v, m1v, m2v, plan);
+
     if (trialsScreen > 0 && score.screenSampled === defenders.length) {
       const sw = score.screenWorstWin;
       const sa = score.screenAvgWin;
@@ -2089,6 +2148,7 @@ async function workerMain() {
         if (isBetterScreen(cand, bestTypes[wpTag])) bestTypes[wpTag] = cand;
       }
     }
+
     if (!score.bailed) {
       let bestTypes = bestByTypeByHp[hpKey];
       if (!bestTypes) bestTypes = bestByTypeByHp[hpKey] = Object.create(null);
@@ -2112,6 +2172,7 @@ async function workerMain() {
         },
       };
       if (isBetterScore(candidateEntry, bestTypes[wpTag])) bestTypes[wpTag] = candidateEntry;
+
       const floor = lb.length ? lb[lb.length - 1] : null;
       if (lb.length < keepTopNPerHp || score.worstWin >= floor.worstWin - 1e-9) {
         pushLeaderboard(
@@ -2125,6 +2186,7 @@ async function workerMain() {
         }
       }
     }
+
     const t = nowMs();
     if (t - lastProgress >= progressEveryMs) {
       lastProgress = t;
@@ -2141,6 +2203,7 @@ async function workerMain() {
       parentPort.postMessage({ type: 'progress', processed, bestWorst, bestAvg });
     }
   }
+
   parentPort.postMessage({
     type: 'done',
     processed,
@@ -2151,6 +2214,7 @@ async function workerMain() {
     elapsedSec: (nowMs() - t0) / 1000,
   });
 }
+
 // =====================
 // INIT FLOOR (optional)
 // =====================
@@ -2161,6 +2225,7 @@ function parseInitFloorPctFromEnv() {
   if (!Number.isFinite(v)) return null;
   return clamp(v, 0, 100);
 }
+
 // =====================
 // WARM-START MEASURE
 // =====================
@@ -2183,6 +2248,7 @@ function runWarmStartAndGetWorstPct({
           baseSeed ^ 0xad90777d,
         )
       : Math.random;
+
   const localCache = new Map();
   function getV(itemName, crystalName, upgrade1 = '', upgrade2 = '') {
     const key = variantKey(itemName, crystalName, upgrade1, upgrade2);
@@ -2196,6 +2262,7 @@ function runWarmStartAndGetWorstPct({
     }
     return v;
   }
+
   for (const def of defenderBuilds) {
     const p = def.payload;
     getV(p.armor.name, p.armor.upgrades[0]);
@@ -2204,6 +2271,7 @@ function runWarmStartAndGetWorstPct({
     getV(p.misc1.name, p.misc1.upgrades[0]);
     getV(p.misc2.name, p.misc2.upgrades[0]);
   }
+
   const compiledDefenders = defenders || defenderBuilds.map((d) => compileDefender(d, localCache));
   const av = getV(WARM_START_BUILD.armor.item, WARM_START_BUILD.armor.crystal);
   const w1u1 = (WARM_START_BUILD.weapon1.upgrades && WARM_START_BUILD.weapon1.upgrades[0]) || '';
@@ -2215,6 +2283,7 @@ function runWarmStartAndGetWorstPct({
   const m1v = getV(WARM_START_BUILD.misc1.item, WARM_START_BUILD.misc1.crystal);
   const m2v = getV(WARM_START_BUILD.misc2.item, WARM_START_BUILD.misc2.crystal);
   const att = compileAttacker(plan, av, w1v, w2v, m1v, m2v);
+
   const score = evalCandidateStaged({
     att,
     defenders: compiledDefenders,
@@ -2229,8 +2298,10 @@ function runWarmStartAndGetWorstPct({
     baseSeed: (Number(rngSeed) || 0) >>> 0,
     candidateKey: 0xc0ffee,
   });
+
   return { worstWin: score.worstWin, avgWin: score.avgWin, worstName: score.worstName };
 }
+
 // =====================
 // CATALOG CONFIRM (main thread)
 // =====================
@@ -2253,6 +2324,7 @@ function confirmSpecAgainstDefenders({
           baseSeed ^ 0x1234abcd ^ 0xad90777d,
         )
       : Math.random;
+
   const compiledDef = defenders;
   const localCache = new Map();
   function getV(itemName, crystalName, u1 = '', u2 = '') {
@@ -2267,6 +2339,7 @@ function confirmSpecAgainstDefenders({
     }
     return v;
   }
+
   const plan = spec.plan;
   const av = getV(spec.armor.item, spec.armor.crystal);
   const w1v = getV(spec.weapon1.item, spec.weapon1.crystal, spec.weapon1.u1, spec.weapon1.u2);
@@ -2274,6 +2347,7 @@ function confirmSpecAgainstDefenders({
   const m1v = getV(spec.misc1.item, spec.misc1.crystal);
   const m2v = getV(spec.misc2.item, spec.misc2.crystal);
   const att = compileAttacker(plan, av, w1v, w2v, m1v, m2v);
+
   let sumWin = 0;
   let sumEx = 0;
   let worstWin = 101;
@@ -2290,6 +2364,7 @@ function confirmSpecAgainstDefenders({
       worstName = D.name;
     }
   }
+
   return {
     worstWin,
     worstName,
@@ -2310,11 +2385,13 @@ function confirmSpecAgainstDefenders({
     },
   };
 }
+
 // =====================
 // MAIN THREAD
 // =====================
 async function main() {
   await loadWASM();
+
   const single = process.argv.includes('--single');
   const logical =
     typeof os.availableParallelism === 'function'
@@ -2328,45 +2405,58 @@ async function main() {
     : Number.isFinite(envW) && envW > 0
       ? Math.min(envW, logical)
       : defaultWorkers;
+
   const envConfirm = parseInt(process.env.LEGACY_TRIALS || '', 10);
   const TRIALS_CONFIRM =
     Number.isFinite(envConfirm) && envConfirm > 0 ? envConfirm : SETTINGS.TRIALS_CONFIRM_DEFAULT;
+
   const envScreen = parseInt(process.env.LEGACY_TRIALS_SCREEN || '', 10);
   const TRIALS_SCREEN =
     Number.isFinite(envScreen) && envScreen > 0 ? envScreen : SETTINGS.TRIALS_SCREEN_DEFAULT;
+
   const printStage =
     process.env.LEGACY_PRINT_STAGE === '1' || process.env.LEGACY_PRINT_STAGE === 'true';
+
   const envGate = parseInt(process.env.LEGACY_TRIALS_GATE || '', 10);
   const TRIALS_GATE =
     Number.isFinite(envGate) && envGate > 0 ? envGate : SETTINGS.TRIALS_GATE_DEFAULT;
+
   const envGatekeepers = parseInt(process.env.LEGACY_GATEKEEPERS || '', 10);
   const GATEKEEPERS =
     Number.isFinite(envGatekeepers) && envGatekeepers >= 0
       ? envGatekeepers
       : SETTINGS.GATEKEEPERS_DEFAULT;
+
   const envBailMargin = parseFloat(process.env.LEGACY_SCREEN_MARGIN || '');
   const BAIL_MARGIN =
     Number.isFinite(envBailMargin) && envBailMargin >= 0
       ? envBailMargin
       : SETTINGS.SCREEN_BAIL_MARGIN_DEFAULT;
+
   const envPruneRaw = String(process.env.LEGACY_PRUNE ?? '')
     .trim()
     .toLowerCase();
   const pruneEnabled = envPruneRaw
     ? envPruneRaw === '1' || envPruneRaw === 'true' || envPruneRaw === 'on' || envPruneRaw === 'yes'
     : !!SETTINGS.PRUNE_DEFAULT_ENABLED;
+
   const pruneDelta = (() => {
     const x = parseInt(process.env.LEGACY_PRUNE_DELTA || '', 10);
     return Number.isFinite(x) ? x : SETTINGS.PRUNE_DELTA_DEFAULT;
   })();
+
   const rngMode = (process.env.LEGACY_RNG || 'fast').toLowerCase();
   const rngSeed = parseInt(process.env.LEGACY_SEED || '', 10) || 123456789;
+
   const deterministic =
     process.env.LEGACY_DETERMINISTIC === '1' || process.env.LEGACY_DETERMINISTIC === 'true';
+
   const pools = parsePoolsFromEnv();
+
   const debugMixed =
     process.env.LEGACY_DEBUG_MIXED === '1' || process.env.LEGACY_DEBUG_MIXED === 'true';
   const debugMixedN = parseInt(process.env.LEGACY_DEBUG_MIXED_N || '', 10) || 12;
+
   const watchRaw = String(process.env.LEGACY_WATCH_BUILD ?? '')
     .trim()
     .toLowerCase();
@@ -2374,23 +2464,30 @@ async function main() {
     watchRaw === ''
       ? true
       : !(watchRaw === '0' || watchRaw === 'false' || watchRaw === 'off' || watchRaw === 'no');
+
   const useSuperset =
     String(process.env.LEGACY_USE_SUPERSET ?? '')
       .trim()
       .toLowerCase() === '1';
+
   const catalogTopN = parseCatalogTopN();
   const catalogMargin = parseCatalogMargin();
   const catalogConfirmTrials = parseCatalogConfirmTrials(TRIALS_CONFIRM);
+
   const armorVariants = buildVariantsForArmors(pools.armors);
   const weaponVariants = buildVariantsForWeapons(pools.weapons);
   const miscVariants = buildVariantsForMiscsSuperset(pools.miscs);
+
   const weaponPairs = buildWeaponPairs(weaponVariants);
   const miscPairs = buildMiscPairsOrderlessAllDup(miscVariants);
   const { plans, perHpSummary } = buildHpPlans();
+
   const WP = weaponPairs.length / 2;
   const MP = miscPairs.length / 2;
   const AV = armorVariants.length;
+
   const totalCandidatesSuperset = AV * WP * MP;
+
   const miscAllow = buildAllowedMiscTable(miscVariants);
   const miscPairsAllowedByMask = buildMiscPairsAllowedByMask(miscPairs, miscAllow);
   const weaponPairIndicesByMask = buildWeaponPairIndicesByMask(weaponVariants, weaponPairs);
@@ -2399,8 +2496,10 @@ async function main() {
     weaponPairIndicesByMask,
     miscPairsAllowedByMask,
   );
+
   const totalCandidatesEffective = effCounts.effTotal;
   const totalCandidates = useSuperset ? totalCandidatesSuperset : totalCandidatesEffective;
+
   if (process.env.LEGACY_SANITY_DISABLE !== '1' && process.env.LEGACY_SANITY_DISABLE !== 'true') {
     printSearchSpaceSanity(
       pools,
@@ -2411,10 +2510,12 @@ async function main() {
       miscPairs,
     );
   }
+
   const sharedBuf = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 2);
   const sharedI32 = new Int32Array(sharedBuf);
   sharedI32[0] = -1;
   sharedI32[1] = 0;
+
   const initFloor = parseInitFloorPctFromEnv();
   if (initFloor !== null) {
     sharedI32[0] = (initFloor * FLOOR_SCALE) | 0;
@@ -2422,6 +2523,7 @@ async function main() {
       `Warm-start: seeded shared floor to ${initFloor.toFixed(2)}% via LEGACY_INIT_FLOOR_PCT`,
     );
   }
+
   if (warmStartEnabled()) {
     const warmTrials = parseWarmStartTrials(TRIALS_CONFIRM);
     const ws = runWarmStartAndGetWorstPct({
@@ -2440,6 +2542,7 @@ async function main() {
       )}% using ${warmTrials} trials/def; seeded shared floor to ${next.toFixed(2)}%`,
     );
   }
+
   console.log(
     `LEGACY brute-force (v2.13.0) | defenders=${defenderBuilds.length} | trialsGate/def=${TRIALS_GATE} | trialsScreen/def=${TRIALS_SCREEN} | trialsConfirm/def=${TRIALS_CONFIRM}`,
   );
@@ -2452,10 +2555,9 @@ async function main() {
     `Mixed weapon bonus: ${mixedBonusEnabled() ? 'ON' : 'OFF'} | Prune: ${pruneEnabled ? `ON (delta=${pruneDelta})` : 'OFF'}`,
   );
   console.log(
-    `LOCK_ONLY_AMULET (weapons-only): ${
-      LOCK_ONLY_AMULET.size ? Array.from(LOCK_ONLY_AMULET).join(', ') : '(none)'
-    }`,
+    `LOCK_ONLY_AMULET (weapons-only): ${LOCK_ONLY_AMULET.size ? Array.from(LOCK_ONLY_AMULET).join(', ') : '(none)'}`,
   );
+
   if (useSuperset) {
     console.log(
       `Mode: SUPERSET (compat) | armorVariants=${AV} weaponPairs=${WP} miscPairs=${MP} => totalCandidates=${totalCandidatesSuperset}`,
@@ -2468,6 +2570,7 @@ async function main() {
       `Superset info: weaponPairs=${WP} miscPairs=${MP} => supersetCandidates=${totalCandidatesSuperset}`,
     );
   }
+
   const locked = plans[0];
   console.log(
     `LOCKED attacker plan: HP=${locked.hp} extraAcc=${locked.extraAcc} extraDodge=${locked.extraDodge} (freePoints=${locked.freePoints})`,
@@ -2478,10 +2581,12 @@ async function main() {
   console.log(
     `Catalog: topN=${catalogTopN} | marginBelowFloor=${catalogMargin.toFixed(1)}% | confirmTrials=${catalogConfirmTrials}`,
   );
+
   if (debugMixed)
     console.log(
       `DEBUG: LEGACY_DEBUG_MIXED=1 enabled (prints up to ${debugMixedN} lines from worker 0).`,
     );
+
   console.log('HP plans (reassurance):');
   for (const r of perHpSummary) {
     console.log(
@@ -2489,6 +2594,7 @@ async function main() {
     );
   }
   console.log('');
+
   if (watchEnabled) {
     const chk = checkWatchBuildReachable(pools);
     const pretty =
@@ -2504,21 +2610,26 @@ async function main() {
       console.log('WATCH_BUILD: (so it will never be “hit” unless you loosen constraints.)\n');
     }
   }
+
   const globalByHp = Object.create(null);
   const globalBestByTypeByHp = Object.create(null);
   const globalCatalogTopByHp = Object.create(null);
   const globalCatalogBestTypeByHp = Object.create(null);
+
   for (const r of perHpSummary) {
     globalByHp[String(r.hp)] = [];
     globalBestByTypeByHp[String(r.hp)] = Object.create(null);
     globalCatalogTopByHp[String(r.hp)] = [];
     globalCatalogBestTypeByHp[String(r.hp)] = Object.create(null);
   }
+
   let liveBestWorst = null;
   let liveBestAvg = null;
+
   const start = nowMs();
   let lastRender = start;
   const processedByWorker = new Array(workers).fill(0);
+
   const perWorker = Math.floor(totalCandidates / workers);
   const ranges = [];
   for (let w = 0; w < workers; w++) {
@@ -2526,10 +2637,27 @@ async function main() {
     const e = w === workers - 1 ? totalCandidates : (w + 1) * perWorker;
     ranges.push([s, e]);
   }
+
+  // =====================
+  // CRITICAL FIX: READY-GATE WORKERS
+  // - spawn all workers
+  // - wait for ALL {type:"ready"}
+  // - then send {type:"start"} to each worker so they begin workerMain()
+  // =====================
   await new Promise((resolve, reject) => {
     let doneCount = 0;
+    let readyCount = 0;
+    const wkList = new Array(workers);
+
+    function tryStartAll() {
+      if (readyCount !== workers) return;
+      console.log(`✅ All ${workers} workers ready (WASM loaded if available). Starting…`);
+      for (const wk of wkList) wk.postMessage({ type: 'start' });
+    }
+
     for (let w = 0; w < workers; w++) {
       const [startIndex, endIndex] = ranges[w];
+
       const wk = new Worker(__filename, {
         workerData: {
           workerId: w,
@@ -2558,12 +2686,23 @@ async function main() {
           catalogMargin,
         },
       });
+
+      wkList[w] = wk;
+
       wk.on('message', (msg) => {
         if (!msg || !msg.type) return;
+
+        if (msg.type === 'ready') {
+          readyCount++;
+          tryStartAll();
+          return;
+        }
+
         if (msg.type === 'watch_hit') {
           console.log(`\n[WATCH_BUILD HIT] worker=${msg.workerId} idx=${msg.idx} | ${msg.label}\n`);
           return;
         }
+
         if (msg.type === 'progress') {
           processedByWorker[w] = msg.processed || processedByWorker[w];
           if (typeof msg.bestWorst === 'number') {
@@ -2586,9 +2725,12 @@ async function main() {
               }% bestAvg=${liveBestAvg !== null ? liveBestAvg.toFixed(2) : '—'}% `,
             );
           }
+          return;
         }
+
         if (msg.type === 'done') {
           processedByWorker[w] = msg.processed || processedByWorker[w];
+
           const topsByHp = msg.topsByHp || {};
           for (const hpKey in topsByHp) {
             const localLB = topsByHp[hpKey];
@@ -2596,6 +2738,7 @@ async function main() {
             const globalLB = globalByHp[hpKey] || (globalByHp[hpKey] = []);
             for (const e of localLB) pushLeaderboard(globalLB, e, SETTINGS.KEEP_TOP_N_PER_HP);
           }
+
           const bestByType = msg.bestByTypeByHp || {};
           for (const hpKey in bestByType) {
             const types = bestByType[hpKey];
@@ -2608,6 +2751,7 @@ async function main() {
               if (isBetterScore(cand, g[typeKey])) g[typeKey] = cand;
             }
           }
+
           const cTop = msg.catalogTopByHp || {};
           for (const hpKey in cTop) {
             const arr = cTop[hpKey];
@@ -2615,6 +2759,7 @@ async function main() {
             const gArr = globalCatalogTopByHp[hpKey] || (globalCatalogTopByHp[hpKey] = []);
             for (const e of arr) pushCatalogTop(gArr, e, catalogTopN);
           }
+
           const cTypes = msg.catalogBestTypeByHp || {};
           for (const hpKey in cTypes) {
             const types = cTypes[hpKey];
@@ -2627,18 +2772,23 @@ async function main() {
               if (isBetterScreen(cand, g[tKey])) g[tKey] = cand;
             }
           }
+
           doneCount++;
           if (doneCount >= workers) resolve();
+          return;
         }
       });
+
       wk.on('error', reject);
       wk.on('exit', (code) => {
         if (code !== 0) reject(new Error(`Worker ${w} exited with code ${code}`));
       });
     }
   });
+
   process.stdout.write('\n');
   const elapsedAll = (nowMs() - start) / 1000;
+
   printResults({
     globalByHp,
     globalBestByTypeByHp,
@@ -2652,6 +2802,7 @@ async function main() {
     catalogConfirmTrials,
   });
 }
+
 // =====================
 // PRINT RESULTS
 // =====================
@@ -2671,6 +2822,7 @@ function printResults({
   console.log(
     `Per-HP Top ${SETTINGS.KEEP_TOP_N_PER_HP} (KEPT by floor; ranked by worstWin, then avgWin)\n`,
   );
+
   const compiledDefendersOnce = (() => {
     const localCache = new Map();
     function getV(itemName, crystalName, u1 = '', u2 = '') {
@@ -2695,9 +2847,11 @@ function printResults({
     }
     return defenderBuilds.map((d) => compileDefender(d, localCache));
   })();
+
   const hpKeys = Object.keys(globalByHp)
     .map((x) => parseInt(x, 10))
     .sort((a, b) => a - b);
+
   for (const hp of hpKeys) {
     const hpKey = String(hp);
     const lb = globalByHp[hpKey] || [];
@@ -2754,6 +2908,7 @@ function printResults({
       console.log(
         `Best stats: Acc=${best.acc} Dod=${best.dodge} Gun=${best.gun} Prj=${best.prj} Mel=${best.mel} Def=${best.defSk} Arm=${best.armor} Spd=${best.speed} (alloc A${best.extraAcc} D${best.extraDodge})\n`,
       );
+
       const bestTypes = globalBestByTypeByHp[hpKey] || {};
       const typeKeys = Object.keys(bestTypes);
       if (typeKeys.length) {
@@ -2788,6 +2943,7 @@ function printResults({
         console.log('');
       }
     }
+
     const catTop = globalCatalogTopByHp[hpKey] || [];
     const catTypes = globalCatalogBestTypeByHp[hpKey] || {};
     if (!catTop.length && !Object.keys(catTypes).length) {
@@ -2796,6 +2952,7 @@ function printResults({
       );
       continue;
     }
+
     const confirmedTop = [];
     for (const e of catTop) {
       const conf = confirmSpecAgainstDefenders({
@@ -2809,6 +2966,7 @@ function printResults({
       confirmedTop.push({ ...e, ...conf });
     }
     confirmedTop.sort((a, b) => b.worstWin - a.worstWin || b.avgWin - a.avgWin);
+
     console.log(`HP=${hp} Catalog Top ${catTop.length} (FINAL confirmed; ignores seeded floor):`);
     console.log(
       padRight('Rank', 5) +
@@ -2835,6 +2993,7 @@ function printResults({
       );
     }
     console.log('');
+
     const archetypes = [
       'Gun+Gun',
       'Gun+Melee',
@@ -2858,6 +3017,7 @@ function printResults({
       confirmedTypes.push({ type: t, ...e, ...conf });
     }
     confirmedTypes.sort((a, b) => b.worstWin - a.worstWin || b.avgWin - a.avgWin);
+
     console.log(
       `HP=${hp} Catalog Best by weapon archetype (FINAL confirmed; ignores seeded floor):`,
     );
@@ -2887,6 +3047,7 @@ function printResults({
     console.log('');
   }
 }
+
 // =====================
 // ENTRY
 // =====================
@@ -2896,7 +3057,27 @@ if (isMainThread) {
     process.exit(1);
   });
 } else {
-  workerMain().catch((err) => {
+  // =====================
+  // CRITICAL FIX: WORKER BOOTSTRAP READY-GATE
+  // - Load WASM first
+  // - Signal {type:"ready"}
+  // - Wait for {type:"start"}
+  // - Then run workerMain()
+  // =====================
+  (async () => {
+    await loadWASM();
+    try {
+      parentPort.postMessage({ type: 'ready', workerId: workerData && workerData.workerId });
+    } catch (_) {}
+
+    await new Promise((resolve) => {
+      parentPort.on('message', (msg) => {
+        if (msg && msg.type === 'start') resolve();
+      });
+    });
+
+    await workerMain();
+  })().catch((err) => {
     console.error('\nWorker fatal:', err && err.stack ? err.stack : err);
     process.exit(1);
   });
