@@ -1,140 +1,17 @@
-LEGACY brute-force (v2.1 staged FIXED) | melee attacker | defenders=12 | trialsScreen/def=450 | trialsConfirm/def=450
-Workers=4 (logical=8, physicalGuess=4) | RNG=fast(sfc32) | deterministic=ON | baseDmgPerHit=+5
-Variants: armor=3, weapon=8, misc=11
-Pairs(orderless): weaponPairs=36, miscPairs=58 (Bio+Bio and Scout+Scout allowed)
-HP sweep: 400..600 step 25 | statPoint=5HP | acc/dodge step=5
-Prune: ON (delta=260)
-StageA bail margin: 2.00% (bail if worst < floorWorst - margin)
-HP plans (reassurance):
-  HP=400 freePoints=93 allocs=20  (acc+dodge=93, speed=0)
-  HP=425 freePoints=88 allocs=19  (acc+dodge=88, speed=0)
-  HP=450 freePoints=83 allocs=18  (acc+dodge=83, speed=0)
-  HP=475 freePoints=78 allocs=17  (acc+dodge=78, speed=0)
-  HP=500 freePoints=73 allocs=16  (acc+dodge=73, speed=0)
-  HP=525 freePoints=68 allocs=15  (acc+dodge=68, speed=0)
-  HP=550 freePoints=63 allocs=14  (acc+dodge=63, speed=0)
-  HP=575 freePoints=58 allocs=13  (acc+dodge=58, speed=0)
-  HP=600 freePoints=53 allocs=12  (acc+dodge=53, speed=0)
-Total plans=144 | perGear=6264 | totalCandidates=902016
+no the mk4 gun can take 4 crystals plus it has 2 upgrade slots. the void bow can take 4 crystals plus one upgrade slot. 
 
-tested~=901662/902016 elapsed=364.0s bestWorst=52.89% bestAvg=63.43%
+Name : Bio Gun Mk4
+Level Req. : 80
+Price : 30000c
+Description : The best technology suited for the most elite warriors of the Outcasts.
 
-Done. tested=902016 | elapsed=364.5s
-Per-HP Top 8 (ranked by worstWin, then avgWin)
+Damage : 76 to 91
+Armor : No Bonus
+Accuracy : Adds 47
+Speed : Adds 50
+D. Skill : Adds 15
+G. Skill : Adds 42
 
-HP=400
-Rank Worst%  WorstVs             Avg%   AvgEx  Build
-─────────────────────────────────────────────────────────────────────────────────────────────────────────
-#1   39.78   DL Gun Build 7      51.61  11.01  HP400 A0 D93 | DLArm[B] CM[A]+CS[A] Bio[P]+Bio[P]
-#2   37.11   DL Gun Build 3      51.30  10.92  HP400 A0 D93 | DLArm[B] CM[F]+CS[A] Bio[P]+Bio[P]
-#3   36.44   DL Gun Build 3      50.48  11.70  HP400 A0 D93 | DLArm[B] CM[F]+CS[A] Bio[P]+ProjBot[P]
-#4   35.33   DL Gun Build 7      49.61  11.54  HP400 A5 D88 | DLArm[B] CM[F]+CS[A] Bio[P]+ProjBot[P]
-#5   35.33   DL Gun Build 7      46.91  11.36  HP400 A0 D93 | SG1[B] CM[A]+CS[A] Bio[P]+ProjBot[A]
-#6   35.11   DL Gun Build 3      49.87  11.45  HP400 A0 D93 | DLArm[B] CM[F]+CS[A] Bio[P]+ProjBot[A]
-#7   35.11   DL Gun Build 3      49.70  10.84  HP400 A0 D93 | SG1[B] CM[A]+CS[A] Bio[P]+Bio[P]
-#8   35.11   DL Gun Build 7      47.98  10.43  HP400 A0 D93 | SG1[B] CM[F]+CS[A] Bio[O]+ProjBot[P]
-Best stats: Acc=203 Dod=214 Mel=734 Def=826 Arm=83 Spd=226 (alloc A0 D93)
+in the "slot1" upgrade slot you can either put one of two upgrades, faster reload 4 which gives +5% acc and +5% damage or enhanced scope 4, which gives 10% acc, and in slot 2 upgrade slot you can put faster ammo 4 which gives +20% damage, or tracer rounds 4 which gives +15% acc and +5% damage.
 
-HP=425
-Rank Worst%  WorstVs             Avg%   AvgEx  Build
-─────────────────────────────────────────────────────────────────────────────────────────────────────────
-#1   41.56   DL Gun Build 3      51.72  10.84  HP425 A5 D83 | DLArm[B] CM[F]+CS[A] Bio[P]+Bio[P]
-#2   41.33   DL Gun Build 3      51.65  11.39  HP425 A5 D83 | DLArm[B] CM[F]+CS[A] Bio[P]+ProjBot[A]
-#3   41.11   DL Gun Build 2      52.20  11.74  HP425 A0 D88 | DLArm[B] CM[A]+CS[A] Bio[P]+ProjBot[A]
-#4   40.44   DL Gun Build        52.33  11.88  HP425 A0 D88 | DLArm[B] CM[F]+CS[A] Bio[P]+ProjBot[P]
-#5   40.22   DL Gun Build 3      54.43  11.20  HP425 A0 D88 | DLArm[B] CM[A]+CS[A] Bio[P]+Bio[P]
-#6   40.00   DL Gun Build 2      52.67  10.79  HP425 A0 D88 | DLArm[B] CM[A]+CS[A] Bio[O]+ProjBot[P]
-#7   40.00   DL Gun Build 2      52.26  11.59  HP425 A0 D88 | DLArm[B] CM[F]+CS[A] Bio[P]+ProjBot[A]
-#8   40.00   DL Gun Build 3      49.67  11.61  HP425 A0 D88 | SG1[B] CM[A]+CS[A] Bio[P]+ProjBot[A]
-Best stats: Acc=185 Dod=204 Mel=734 Def=826 Arm=83 Spd=226 (alloc A5 D83)
-
-HP=450
-Rank Worst%  WorstVs             Avg%   AvgEx  Build
-─────────────────────────────────────────────────────────────────────────────────────────────────────────
-#1   42.00   DL Gun Build 7      54.26  10.99  HP450 A5 D78 | DLArm[B] CM[A]+CS[A] Bio[P]+Bio[P]
-#2   41.33   DL Gun Build 3      52.50  11.14  HP450 A0 D83 | SG1[B] CM[A]+CS[A] Bio[P]+Bio[P]
-#3   41.11   DL Gun Build 7      54.07  11.19  HP450 A0 D83 | DLArm[B] CM[A]+CS[A] Bio[P]+Bio[P]
-#4   39.56   DL Gun Build 3      51.93  11.83  HP450 A0 D83 | DLArm[B] CM[A]+CS[A] Bio[P]+ProjBot[A]
-#5   39.33   DL Gun Build 7      51.93  11.52  HP450 A0 D83 | SG1[B] CM[F]+CS[A] Bio[P]+ProjBot[A]
-#6   39.11   DL Gun Build 3      52.35  10.80  HP450 A0 D83 | DLArm[B] CM[F]+CS[A] Bio[O]+ProjBot[P]
-#7   38.89   DL Gun Build 7      53.76  12.07  HP450 A0 D83 | DLArm[B] CM[A]+CS[A] Bio[P]+ProjBot[P]
-#8   38.89   DL Gun Build 3      51.91  10.71  HP450 A0 D83 | SG1[B] CM[F]+CS[A] Bio[O]+ProjBot[P]
-Best stats: Acc=208 Dod=199 Mel=734 Def=826 Arm=83 Spd=226 (alloc A5 D78)
-
-HP=475
-Rank Worst%  WorstVs             Avg%   AvgEx  Build
-─────────────────────────────────────────────────────────────────────────────────────────────────────────
-#1   44.89   DL Gun Build        56.63  12.25  HP475 A0 D78 | DLArm[B] CM[F]+CS[A] Bio[P]+ProjBot[P]
-#2   44.44   DL Gun Build 3      56.50  11.16  HP475 A5 D73 | DLArm[B] CM[F]+CS[A] Bio[P]+Bio[P]
-#3   43.33   DL Gun Build 2      55.50  10.76  HP475 A0 D78 | DLArm[B] CM[F]+CS[A] Bio[O]+ProjBot[A]
-#4   43.33   DL Gun Build 3      55.07  11.05  HP475 A5 D73 | SG1[B] CM[A]+CS[A] Bio[P]+Bio[P]
-#5   43.11   DL Gun Build 3      56.24  11.19  HP475 A5 D73 | DLArm[B] CM[A]+CS[A] Bio[P]+Bio[P]
-#6   42.44   DL Gun Build        56.31  11.07  HP475 A0 D78 | DLArm[B] CM[A]+CS[A] Bio[O]+ProjBot[P]
-#7   42.22   DL Gun Build 2      53.85  10.78  HP475 A0 D78 | DLArm[B] CM[A]+CS[A] Bio[O]+ProjBot[A]
-#8   42.00   DL Gun Build 3      55.35  12.27  HP475 A0 D78 | DLArm[B] CM[A]+CS[A] Bio[P]+ProjBot[P]
-Best stats: Acc=189 Dod=223 Mel=684 Def=781 Arm=83 Spd=226 (alloc A0 D78)
-
-HP=500
-Rank Worst%  WorstVs             Avg%   AvgEx  Build
-─────────────────────────────────────────────────────────────────────────────────────────────────────────
-#1   45.56   DL Gun Build 3      60.17  11.46  HP500 A0 D73 | DLArm[B] CM[A]+CS[A] Bio[P]+Bio[P]
-#2   44.44   DL Gun Build 3      58.13  10.98  HP500 A0 D73 | DLArm[B] CM[F]+CS[A] Bio[O]+ProjBot[P]
-#3   44.22   DL Gun Build        56.85  11.07  HP500 A0 D73 | DLArm[B] CM[A]+CS[A] Bio[O]+ProjBot[P]
-#4   44.00   DL Gun Build 7      58.26  12.35  HP500 A0 D73 | DLArm[B] CM[A]+CS[A] Bio[P]+ProjBot[P]
-#5   44.00   DL Gun Build 3      57.24  11.97  HP500 A0 D73 | DLArm[B] CM[F]+CS[A] Bio[P]+ProjBot[A]
-#6   44.00   DL Gun Build 7      56.41  12.11  HP500 A0 D73 | DLArm[B] CM[A]+CS[A] Bio[P]+ProjBot[A]
-#7   43.78   DL Gun Build 2      56.52  10.87  HP500 A0 D73 | DLArm[B] CM[F]+CS[A] Bio[O]+ProjBot[A]
-#8   43.78   DL Gun Build 3      56.22  11.33  HP500 A0 D73 | SG1[B] CM[A]+CS[A] Bio[P]+Bio[P]
-Best stats: Acc=203 Dod=194 Mel=734 Def=826 Arm=83 Spd=226 (alloc A0 D73)
-
-HP=525
-Rank Worst%  WorstVs             Avg%   AvgEx  Build
-─────────────────────────────────────────────────────────────────────────────────────────────────────────
-#1   46.22   DL Gun Build 3      60.37  11.52  HP525 A0 D68 | DLArm[B] CM[A]+CS[A] Bio[P]+Bio[P]
-#2   46.22   DL Gun Build 3      59.06  12.25  HP525 A0 D68 | DLArm[B] CM[F]+CS[A] Bio[P]+ProjBot[P]
-#3   45.78   DL Gun Build 3      55.04  10.78  HP525 A0 D68 | SG1[B] CM[A]+CS[A] Bio[O]+ProjBot[A]
-#4   45.33   DL Gun Build 3      56.63  10.98  HP525 A10 D58 | SG1[B] CM[F]+CS[A] Bio[P]+Bio[P]
-#5   45.11   DL Gun Build 3      58.09  10.44  HP525 A0 D68 | SG1[B] CM[A]+CS[A] Bio[P]+Bio[O]
-#6   44.89   DL Gun Build 3      56.83  11.25  HP525 A5 D63 | SG1[B] CM[A]+CS[A] Bio[P]+Bio[P]
-#7   44.67   DL Gun Build 3      56.39  11.02  HP525 A10 D58 | SG1[B] CM[A]+CS[A] Bio[P]+Bio[P]
-#8   44.44   DL Gun Build 7      56.98  10.80  HP525 A0 D68 | DLArm[B] CM[F]+CS[A] Bio[O]+ProjBot[A]
-Best stats: Acc=203 Dod=189 Mel=734 Def=826 Arm=83 Spd=226 (alloc A0 D68)
-
-HP=550
-Rank Worst%  WorstVs             Avg%   AvgEx  Build
-─────────────────────────────────────────────────────────────────────────────────────────────────────────
-#1   50.67   DL Gun Build 3      60.89  11.31  HP550 A5 D58 | DLArm[B] CM[F]+CS[A] Bio[P]+Bio[P]
-#2   50.22   DL Gun Build 7      60.57  12.47  HP550 A0 D63 | DLArm[B] CM[F]+CS[A] Bio[P]+ProjBot[P]
-#3   46.67   DL Gun Build 3      62.57  11.64  HP550 A0 D63 | DLArm[B] CM[A]+CS[A] Bio[P]+Bio[P]
-#4   46.22   DL Gun Build 3      61.09  11.14  HP550 A0 D63 | DLArm[B] CM[F]+CS[A] Bio[O]+ProjBot[P]
-#5   46.22   DL Gun Build 3      56.30  10.83  HP550 A0 D63 | SG1[B] CM[F]+CS[A] Bio[O]+ProjBot[A]
-#6   46.00   DL Gun Build 3      60.85  11.44  HP550 A5 D58 | DLArm[B] CM[A]+CS[A] Bio[P]+Bio[P]
-#7   45.78   DL Gun Build 3      60.35  12.52  HP550 A0 D63 | DLArm[B] CM[A]+CS[A] Bio[P]+ProjBot[P]
-#8   45.78   DL Gun Build 3      57.81  11.90  HP550 A5 D58 | DLArm[B] CM[F]+CS[A] Bio[P]+ProjBot[A]
-Best stats: Acc=185 Dod=179 Mel=734 Def=826 Arm=83 Spd=226 (alloc A5 D58)
-
-HP=575
-Rank Worst%  WorstVs             Avg%   AvgEx  Build
-─────────────────────────────────────────────────────────────────────────────────────────────────────────
-#1   50.22   DL Gun Build 3      61.54  11.59  HP575 A0 D58 | SG1[B] CM[A]+CS[A] Bio[P]+Bio[P]
-#2   48.89   DL Gun Build 3      59.76  11.31  HP575 A5 D53 | SG1[B] CM[F]+CS[A] Bio[P]+Bio[P]
-#3   48.44   DL Gun Build 3      60.96  11.36  HP575 A5 D53 | SG1[B] CM[A]+CS[A] Bio[P]+Bio[P]
-#4   48.22   DL Gun Build 3      59.57  10.56  HP575 A0 D58 | SG1[B] CM[F]+CS[A] Bio[P]+Bio[O]
-#5   47.33   DL Gun Build 7      59.61  11.28  HP575 A0 D58 | DLArm[B] CM[A]+CS[A] Bio[O]+ProjBot[P]
-#6   47.11   DL Gun Build 3      61.63  11.59  HP575 A0 D58 | DLArm[B] CM[F]+CS[A] Bio[P]+Bio[P]
-#7   47.11   DL Gun Build 3      60.98  11.22  HP575 A0 D58 | DLArm[B] CM[F]+CS[A] Bio[O]+ProjBot[P]
-#8   46.67   DL Gun Build 3      58.33  12.16  HP575 A0 D58 | SG1[B] CM[A]+CS[A] Bio[P]+ProjBot[A]
-Best stats: Acc=203 Dod=161 Mel=734 Def=862 Arm=89 Spd=226 (alloc A0 D58)
-
-HP=600
-Rank Worst%  WorstVs             Avg%   AvgEx  Build
-─────────────────────────────────────────────────────────────────────────────────────────────────────────
-#1   52.89   DL Gun Build 3      63.43  12.67  HP600 A0 D53 | DLArm[B] CM[A]+CS[A] Bio[P]+ProjBot[P]
-#2   51.78   DL Gun Build 3      62.93  12.57  HP600 A0 D53 | DLArm[B] CM[F]+CS[A] Bio[P]+ProjBot[P]
-#3   50.67   HF Core/Void        62.39  10.77  HP600 A0 D53 | DLArm[B] CM[A]+CS[A] Bio[P]+Bio[O]
-#4   50.44   DL Gun Build 3      63.52  11.62  HP600 A0 D53 | SG1[B] CM[A]+CS[A] Bio[P]+Bio[P]
-#5   49.78   DL Gun Build 3      64.85  11.75  HP600 A0 D53 | DLArm[B] CM[A]+CS[A] Bio[P]+Bio[P]
-#6   49.78   DL Gun Build 3      60.83  10.63  HP600 A0 D53 | SG1[B] CM[A]+CS[A] Bio[P]+Bio[O]
-#7   49.78   DL Gun Build 3      60.65  12.59  HP600 A0 D53 | SG1[B] CM[A]+CS[A] Bio[P]+ProjBot[P]
-#8   49.56   DL Gun Build 3      62.67  11.55  HP600 A0 D53 | SG1[B] CM[F]+CS[A] Bio[P]+Bio[P]
-Best stats: Acc=212 Dod=198 Mel=684 Def=781 Arm=83 Spd=226 (alloc A0 D53)
+for the void bow you can only add 1 upgrade slot, either laser sight or poisoned tip. poisoned tip increases damage by 10% and laser sight increases accuracy by 14%. 
