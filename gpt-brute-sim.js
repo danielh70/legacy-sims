@@ -38,7 +38,6 @@ const SETTINGS = {
 
   TRIALS_CONFIRM_DEFAULT: 20000,
   TRIALS_SCREEN_DEFAULT: 2000,
-
   TRIALS_GATE_DEFAULT: 500,
   GATEKEEPERS_DEFAULT: 4,
 
@@ -52,9 +51,9 @@ const SETTINGS = {
 
   // pruning (default OFF; enable with LEGACY_PRUNE=1)
   PRUNE_DELTA_DEFAULT: 260,
-  PRUNE_DEFAULT_ENABLED: false,
+  PRUNE_DEFAULT_ENABLED: true,
 
-  WORKERS_DEFAULT_CAP: 4,
+  WORKERS_DEFAULT_CAP: 12,
 
   // Mixed-weapon bonus default
   MIXED_WEAPON_BONUS: true,
@@ -64,27 +63,27 @@ const SETTINGS = {
 // POOLS
 // =====================
 const POOLS = {
-  armors: ['SG1 Armor', 'Dark Legion Armor', 'Hellforged Armor'],
+  armors: ["SG1 Armor", "Dark Legion Armor", "Hellforged Armor"],
   weapons: [
-    'Crystal Maul',
-    'Core Staff',
-    'Void Axe',
-    'Scythe T2',
-    'Void Sword',
-    'Void Bow',
-    'Split Crystal Bombs T2',
-    'Rift Gun',
-    'Double Barrel Sniper Rifle',
-    'Q15 Gun',
-    'Bio Gun Mk4',
+    "Crystal Maul",
+    "Core Staff",
+    "Void Axe",
+    "Scythe T2",
+    "Void Sword",
+    "Void Bow",
+    "Split Crystal Bombs T2",
+    "Rift Gun",
+    "Double Barrel Sniper Rifle",
+    "Q15 Gun",
+    "Bio Gun Mk4",
   ],
   miscs: [
-    'Bio Spinal Enhancer',
-    'Scout Drones',
-    'Droid Drone',
-    'Orphic Amulet',
-    'Projector Bots',
-    'Recon Drones',
+    "Bio Spinal Enhancer",
+    "Scout Drones",
+    "Droid Drone",
+    "Orphic Amulet",
+    "Projector Bots",
+    "Recon Drones",
   ],
 };
 
@@ -109,12 +108,14 @@ const BASE = {
 // MIXED BONUS TOGGLE (env override)
 // =====================
 function mixedBonusEnabled() {
-  const raw = String(process.env.LEGACY_MIXED_WEAPON_BONUS ?? '')
+  const raw = String(process.env.LEGACY_MIXED_WEAPON_BONUS ?? "")
     .trim()
     .toLowerCase();
   if (!raw) return !!SETTINGS.MIXED_WEAPON_BONUS;
-  if (raw === '0' || raw === 'false' || raw === 'off' || raw === 'no') return false;
-  if (raw === '1' || raw === 'true' || raw === 'on' || raw === 'yes') return true;
+  if (raw === "0" || raw === "false" || raw === "off" || raw === "no")
+    return false;
+  if (raw === "1" || raw === "true" || raw === "on" || raw === "yes")
+    return true;
   return !!SETTINGS.MIXED_WEAPON_BONUS;
 }
 
@@ -129,11 +130,11 @@ function nowMs() {
 }
 function padRight(s, n) {
   s = String(s);
-  return s.length >= n ? s : s + ' '.repeat(n - s.length);
+  return s.length >= n ? s : s + " ".repeat(n - s.length);
 }
 function parseCsvList(s) {
-  return String(s || '')
-    .split(',')
+  return String(s || "")
+    .split(",")
     .map((x) => x.trim())
     .filter(Boolean);
 }
@@ -151,67 +152,67 @@ function parsePoolsFromEnv() {
 
 function shortCrystal(c) {
   switch (c) {
-    case 'Amulet Crystal':
-      return 'A';
-    case 'Perfect Pink Crystal':
-      return 'P';
-    case 'Perfect Orange Crystal':
-      return 'O';
-    case 'Perfect Green Crystal':
-      return 'G';
-    case 'Perfect Yellow Crystal':
-      return 'Y';
-    case 'Perfect Fire Crystal':
-      return 'F';
-    case 'Abyss Crystal':
-      return 'B';
-    case 'Cabrusion Crystal':
-      return 'C';
+    case "Amulet Crystal":
+      return "A";
+    case "Perfect Pink Crystal":
+      return "P";
+    case "Perfect Orange Crystal":
+      return "O";
+    case "Perfect Green Crystal":
+      return "G";
+    case "Perfect Yellow Crystal":
+      return "Y";
+    case "Perfect Fire Crystal":
+      return "F";
+    case "Abyss Crystal":
+      return "B";
+    case "Cabrusion Crystal":
+      return "C";
     default:
-      return '?';
+      return "?";
   }
 }
 
 function shortUpgrade(u) {
-  if (!u || u === 'None') return '';
+  if (!u || u === "None") return "";
   return u
-    .replace('Faster Reload 4', 'FR4')
-    .replace('Enhanced Scope 4', 'ES4')
-    .replace('Faster Ammo 4', 'FA4')
-    .replace('Tracer Rounds 4', 'TR4')
-    .replace('Laser Sight', 'LS')
-    .replace('Poisoned Tip', 'PT');
+    .replace("Faster Reload 4", "FR4")
+    .replace("Enhanced Scope 4", "ES4")
+    .replace("Faster Ammo 4", "FA4")
+    .replace("Tracer Rounds 4", "TR4")
+    .replace("Laser Sight", "LS")
+    .replace("Poisoned Tip", "PT");
 }
 
 function shortItem(name) {
   return name
-    .replace('Dark Legion Armor', 'DLArm')
-    .replace('SG1 Armor', 'SG1')
-    .replace('Hellforged Armor', 'HF')
-    .replace('Crystal Maul', 'CM')
-    .replace('Core Staff', 'CS')
-    .replace('Void Axe', 'VA')
-    .replace('Scythe T2', 'Scy')
-    .replace('Void Sword', 'VS')
-    .replace('Split Crystal Bombs T2', 'Bombs')
-    .replace('Void Bow', 'VBow')
-    .replace('Rift Gun', 'Rift')
-    .replace('Double Barrel Sniper Rifle', 'DBSR')
-    .replace('Q15 Gun', 'Q15')
-    .replace('Bio Gun Mk4', 'Mk4')
-    .replace('Bio Spinal Enhancer', 'Bio')
-    .replace('Scout Drones', 'Scout')
-    .replace('Droid Drone', 'Droid')
-    .replace('Orphic Amulet', 'Orphic')
-    .replace('Projector Bots', 'ProjBot')
-    .replace('Recon Drones', 'Recon');
+    .replace("Dark Legion Armor", "DLArm")
+    .replace("SG1 Armor", "SG1")
+    .replace("Hellforged Armor", "HF")
+    .replace("Crystal Maul", "CM")
+    .replace("Core Staff", "CS")
+    .replace("Void Axe", "VA")
+    .replace("Scythe T2", "Scy")
+    .replace("Void Sword", "VS")
+    .replace("Split Crystal Bombs T2", "Bombs")
+    .replace("Void Bow", "VBow")
+    .replace("Rift Gun", "Rift")
+    .replace("Double Barrel Sniper Rifle", "DBSR")
+    .replace("Q15 Gun", "Q15")
+    .replace("Bio Gun Mk4", "Mk4")
+    .replace("Bio Spinal Enhancer", "Bio")
+    .replace("Scout Drones", "Scout")
+    .replace("Droid Drone", "Droid")
+    .replace("Orphic Amulet", "Orphic")
+    .replace("Projector Bots", "ProjBot")
+    .replace("Recon Drones", "Recon");
 }
 
 // =====================
 // WEAPON ARCHETYPE TAGGING (for reporting)
 // =====================
 function skillLabel(skillCode) {
-  return skillCode === 0 ? 'Gun' : skillCode === 1 ? 'Melee' : 'Proj';
+  return skillCode === 0 ? "Gun" : skillCode === 1 ? "Melee" : "Proj";
 }
 function weaponPairTagFromSkills(s1, s2) {
   const a = skillLabel(s1);
@@ -254,7 +255,7 @@ function floorTryRaise(sharedI32, pct) {
 // RNG
 // =====================
 function makeRng(mode, seedA, seedB, seedC, seedD) {
-  if (mode !== 'fast') return Math.random;
+  if (mode !== "fast") return Math.random;
 
   // sfc32
   let a = seedA >>> 0,
@@ -387,12 +388,14 @@ function mixedWeaponMultsFromWeaponSkill(w1SkillIdx, w2SkillIdx) {
 // CRYSTALS + UPGRADES + ITEMS
 // =====================
 const CrystalDefs = {
-  'Abyss Crystal': { pct: { armor: 0.05, dodge: 0.04, speed: 0.1, defSkill: 0.05 } },
-  'Perfect Pink Crystal': { pct: { defSkill: 0.2 } },
-  'Perfect Orange Crystal': { pct: { meleeSkill: 0.2 } },
-  'Perfect Green Crystal': { pct: { gunSkill: 0.2 } },
-  'Perfect Yellow Crystal': { pct: { projSkill: 0.2 } },
-  'Amulet Crystal': {
+  "Abyss Crystal": {
+    pct: { armor: 0.05, dodge: 0.04, speed: 0.1, defSkill: 0.05 },
+  },
+  "Perfect Pink Crystal": { pct: { defSkill: 0.2 } },
+  "Perfect Orange Crystal": { pct: { meleeSkill: 0.2 } },
+  "Perfect Green Crystal": { pct: { gunSkill: 0.2 } },
+  "Perfect Yellow Crystal": { pct: { projSkill: 0.2 } },
+  "Amulet Crystal": {
     pct: {
       accuracy: 0.06,
       damage: 0.06,
@@ -402,111 +405,123 @@ const CrystalDefs = {
       defSkill: 0.1,
     },
   },
-  'Perfect Fire Crystal': { pct: { damage: 0.1 } },
-  'Cabrusion Crystal': { pct: { damage: 0.07, defSkill: 0.07, armor: 0.09, speed: 0.09 } },
+  "Perfect Fire Crystal": { pct: { damage: 0.1 } },
+  "Cabrusion Crystal": {
+    pct: { damage: 0.07, defSkill: 0.07, armor: 0.09, speed: 0.09 },
+  },
 };
 
 const UpgradeDefs = {
-  'Faster Reload 4': { pct: { accuracy: 0.05, damage: 0.05 } },
-  'Enhanced Scope 4': { pct: { accuracy: 0.1 } },
-  'Faster Ammo 4': { pct: { damage: 0.2 } },
-  'Tracer Rounds 4': { pct: { accuracy: 0.15, damage: 0.05 } },
-  'Laser Sight': { pct: { accuracy: 0.14 } },
-  'Poisoned Tip': { pct: { damage: 0.1 } },
+  "Faster Reload 4": { pct: { accuracy: 0.05, damage: 0.05 } },
+  "Enhanced Scope 4": { pct: { accuracy: 0.1 } },
+  "Faster Ammo 4": { pct: { damage: 0.2 } },
+  "Tracer Rounds 4": { pct: { accuracy: 0.15, damage: 0.05 } },
+  "Laser Sight": { pct: { accuracy: 0.14 } },
+  "Poisoned Tip": { pct: { damage: 0.1 } },
 };
 
 const ItemDefs = {
-  'SG1 Armor': { type: 'Armor', flatStats: { armor: 70, dodge: 75, speed: 65, defSkill: 90 } },
-  'Dark Legion Armor': {
-    type: 'Armor',
+  "SG1 Armor": {
+    type: "Armor",
+    flatStats: { armor: 70, dodge: 75, speed: 65, defSkill: 90 },
+  },
+  "Dark Legion Armor": {
+    type: "Armor",
     flatStats: { armor: 65, dodge: 90, speed: 65, defSkill: 60 },
   },
-  'Hellforged Armor': {
-    type: 'Armor',
+  "Hellforged Armor": {
+    type: "Armor",
     flatStats: { armor: 115, dodge: 65, speed: 55, defSkill: 55 },
   },
 
-  'Crystal Maul': {
-    type: 'Weapon',
-    skillType: 'meleeSkill',
+  "Crystal Maul": {
+    type: "Weapon",
+    skillType: "meleeSkill",
     flatStats: { accuracy: 95 },
     baseWeaponDamage: { min: 95, max: 105 },
   },
-  'Core Staff': {
-    type: 'Weapon',
-    skillType: 'meleeSkill',
+  "Core Staff": {
+    type: "Weapon",
+    skillType: "meleeSkill",
     flatStats: { speed: 75, accuracy: 55, meleeSkill: 110, defSkill: 50 },
     baseWeaponDamage: { min: 50, max: 60 },
   },
-  'Void Axe': {
-    type: 'Weapon',
-    skillType: 'meleeSkill',
+  "Void Axe": {
+    type: "Weapon",
+    skillType: "meleeSkill",
     flatStats: { speed: 78, accuracy: 44, meleeSkill: 60, defSkill: 20 },
     baseWeaponDamage: { min: 68, max: 96 },
   },
-  'Scythe T2': {
-    type: 'Weapon',
-    skillType: 'meleeSkill',
+  "Scythe T2": {
+    type: "Weapon",
+    skillType: "meleeSkill",
     flatStats: { speed: 75, accuracy: 42, meleeSkill: 65, defSkill: 18 },
     baseWeaponDamage: { min: 80, max: 101 },
   },
-  'Void Sword': {
-    type: 'Weapon',
-    skillType: 'meleeSkill',
+  "Void Sword": {
+    type: "Weapon",
+    skillType: "meleeSkill",
     flatStats: { speed: 60, accuracy: 35, meleeSkill: 40, defSkill: 5 },
     baseWeaponDamage: { min: 90, max: 120 },
   },
 
-  'Split Crystal Bombs T2': {
-    type: 'Weapon',
-    skillType: 'projSkill',
+  "Split Crystal Bombs T2": {
+    type: "Weapon",
+    skillType: "projSkill",
     flatStats: { speed: 79, accuracy: 23, projSkill: 84, defSkill: 80 },
     baseWeaponDamage: { min: 55, max: 87 },
   },
-  'Void Bow': {
-    type: 'Weapon',
-    skillType: 'projSkill',
+  "Void Bow": {
+    type: "Weapon",
+    skillType: "projSkill",
     flatStats: { speed: 70, accuracy: 48, projSkill: 60, defSkill: 20 },
     baseWeaponDamage: { min: 25, max: 125 },
-    upgradeSlots: [['Laser Sight', 'Poisoned Tip']],
+    upgradeSlots: [["Laser Sight", "Poisoned Tip"]],
   },
 
-  'Rift Gun': {
-    type: 'Weapon',
-    skillType: 'gunSkill',
+  "Rift Gun": {
+    type: "Weapon",
+    skillType: "gunSkill",
     flatStats: { speed: 50, accuracy: 85, gunSkill: 85, defSkill: 5 },
     baseWeaponDamage: { min: 60, max: 65 },
   },
-  'Double Barrel Sniper Rifle': {
-    type: 'Weapon',
-    skillType: 'gunSkill',
+  "Double Barrel Sniper Rifle": {
+    type: "Weapon",
+    skillType: "gunSkill",
     flatStats: { accuracy: 95 },
     baseWeaponDamage: { min: 95, max: 105 },
   },
-  'Q15 Gun': {
-    type: 'Weapon',
-    skillType: 'gunSkill',
+  "Q15 Gun": {
+    type: "Weapon",
+    skillType: "gunSkill",
     flatStats: { speed: 120, accuracy: 42, gunSkill: 48, defSkill: 31 },
     baseWeaponDamage: { min: 82, max: 95 },
   },
 
-  'Bio Gun Mk4': {
-    type: 'Weapon',
-    skillType: 'gunSkill',
+  "Bio Gun Mk4": {
+    type: "Weapon",
+    skillType: "gunSkill",
     flatStats: { accuracy: 47, speed: 50, defSkill: 15, gunSkill: 42 },
     baseWeaponDamage: { min: 76, max: 91 },
     upgradeSlots: [
-      ['Faster Reload 4', 'Enhanced Scope 4'],
-      ['Faster Ammo 4', 'Tracer Rounds 4'],
+      ["Faster Reload 4", "Enhanced Scope 4"],
+      ["Faster Ammo 4", "Tracer Rounds 4"],
     ],
   },
 
-  'Bio Spinal Enhancer': {
-    type: 'Misc',
-    flatStats: { dodge: 1, accuracy: 1, gunSkill: 65, meleeSkill: 65, projSkill: 65, defSkill: 65 },
+  "Bio Spinal Enhancer": {
+    type: "Misc",
+    flatStats: {
+      dodge: 1,
+      accuracy: 1,
+      gunSkill: 65,
+      meleeSkill: 65,
+      projSkill: 65,
+      defSkill: 65,
+    },
   },
-  'Scout Drones': {
-    type: 'Misc',
+  "Scout Drones": {
+    type: "Misc",
     flatStats: {
       dodge: 5,
       accuracy: 32,
@@ -516,16 +531,22 @@ const ItemDefs = {
       defSkill: 30,
     },
   },
-  'Droid Drone': {
-    type: 'Misc',
+  "Droid Drone": {
+    type: "Misc",
     flatStats: { dodge: 14, accuracy: 14, gunSkill: 40, meleeSkill: 60 },
   },
-  'Orphic Amulet': {
-    type: 'Misc',
-    flatStats: { speed: 20, accuracy: 20, gunSkill: 70, meleeSkill: 70, projSkill: 70 },
+  "Orphic Amulet": {
+    type: "Misc",
+    flatStats: {
+      speed: 20,
+      accuracy: 20,
+      gunSkill: 70,
+      meleeSkill: 70,
+      projSkill: 70,
+    },
   },
-  'Projector Bots': {
-    type: 'Misc',
+  "Projector Bots": {
+    type: "Misc",
     flatStats: {
       dodge: 25,
       accuracy: 10,
@@ -535,8 +556,8 @@ const ItemDefs = {
       defSkill: 40,
     },
   },
-  'Recon Drones': {
-    type: 'Misc',
+  "Recon Drones": {
+    type: "Misc",
     flatStats: { dodge: 14, accuracy: 14, gunSkill: 60, projSkill: 40 },
   },
 };
@@ -545,294 +566,596 @@ const ItemDefs = {
 // DEFENDER PAYLOADS
 // =====================
 const DEFENDER_PAYLOADS = {
-  'DL Gun Build': {
+  "DL Gun Build": {
     stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
     armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
+      name: "Dark Legion Armor",
+      upgrades: [
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+      ],
     },
     weapon1: {
-      name: 'Rift Gun',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+      name: "Rift Gun",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
     },
     weapon2: {
-      name: 'Double Barrel Sniper Rifle',
+      name: "Double Barrel Sniper Rifle",
       upgrades: [
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
       ],
     },
     misc1: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+      name: "Scout Drones",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
     },
     misc2: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+      name: "Scout Drones",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
     },
   },
-  'DL Gun Build 2': {
+  "DL Gun Build 2": {
     stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
     armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
+      name: "Dark Legion Armor",
+      upgrades: [
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+      ],
     },
     weapon1: {
-      name: 'Rift Gun',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+      name: "Rift Gun",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
     },
     weapon2: {
-      name: 'Q15 Gun',
+      name: "Q15 Gun",
       upgrades: [
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
       ],
     },
     misc1: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+      name: "Scout Drones",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
     },
     misc2: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+      name: "Scout Drones",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
     },
   },
-  'DL Gun Build 3': {
+  "DL Gun Build 3": {
     stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
     armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
+      name: "Dark Legion Armor",
+      upgrades: [
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+      ],
     },
     weapon1: {
-      name: 'Rift Gun',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+      name: "Rift Gun",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
     },
     weapon2: {
-      name: 'Double Barrel Sniper Rifle',
+      name: "Double Barrel Sniper Rifle",
       upgrades: [
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
       ],
     },
     misc1: {
-      name: 'Bio Spinal Enhancer',
+      name: "Bio Spinal Enhancer",
       upgrades: [
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
+        "Perfect Green Crystal",
+        "Perfect Green Crystal",
+        "Perfect Green Crystal",
+        "Perfect Green Crystal",
       ],
     },
     misc2: {
-      name: 'Bio Spinal Enhancer',
+      name: "Bio Spinal Enhancer",
       upgrades: [
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
+        "Perfect Green Crystal",
+        "Perfect Green Crystal",
+        "Perfect Green Crystal",
+        "Perfect Green Crystal",
       ],
     },
   },
-  'DL Gun Build 4': {
+  "DL Gun Build 3.1": {
     stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
     armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
+      name: "Dark Legion Armor",
+      upgrades: [
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+      ],
     },
     weapon1: {
-      name: 'Rift Gun',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+      name: "Rift Gun",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
     },
     weapon2: {
-      name: 'Q15 Gun',
+      name: "Double Barrel Sniper Rifle",
       upgrades: [
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
       ],
     },
     misc1: {
-      name: 'Bio Spinal Enhancer',
+      name: "Bio Spinal Enhancer",
       upgrades: [
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
+        "Perfect Pink Crystal",
+        "Perfect Pink Crystal",
+        "Perfect Pink Crystal",
+        "Perfect Pink Crystal",
       ],
     },
     misc2: {
-      name: 'Bio Spinal Enhancer',
+      name: "Bio Spinal Enhancer",
       upgrades: [
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
+        "Perfect Pink Crystal",
+        "Perfect Pink Crystal",
+        "Perfect Pink Crystal",
+        "Perfect Pink Crystal",
       ],
     },
   },
-  'DL Gun Build 7': {
+  "DL Gun Build 4": {
+    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
+    armor: {
+      name: "Dark Legion Armor",
+      upgrades: [
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+      ],
+    },
+    weapon1: {
+      name: "Rift Gun",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
+    },
+    weapon2: {
+      name: "Q15 Gun",
+      upgrades: [
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
+      ],
+    },
+    misc1: {
+      name: "Bio Spinal Enhancer",
+      upgrades: [
+        "Perfect Pink Crystal",
+        "Perfect Pink Crystal",
+        "Perfect Pink Crystal",
+        "Perfect Pink Crystal",
+      ],
+    },
+    misc2: {
+      name: "Bio Spinal Enhancer",
+      upgrades: [
+        "Perfect Pink Crystal",
+        "Perfect Pink Crystal",
+        "Perfect Pink Crystal",
+        "Perfect Pink Crystal",
+      ],
+    },
+  },
+  "DL Gun Build 7": {
     stats: { level: 80, hp: 700, speed: 60, dodge: 14, accuracy: 47 },
     armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
+      name: "Dark Legion Armor",
+      upgrades: [
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+      ],
     },
     weapon1: {
-      name: 'Rift Gun',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+      name: "Rift Gun",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
     },
     weapon2: {
-      name: 'Double Barrel Sniper Rifle',
+      name: "Double Barrel Sniper Rifle",
       upgrades: [
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
       ],
     },
     misc1: {
-      name: 'Bio Spinal Enhancer',
+      name: "Bio Spinal Enhancer",
       upgrades: [
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
+        "Perfect Green Crystal",
+        "Perfect Green Crystal",
+        "Perfect Green Crystal",
+        "Perfect Green Crystal",
       ],
     },
     misc2: {
-      name: 'Bio Spinal Enhancer',
+      name: "Bio Spinal Enhancer",
       upgrades: [
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
+        "Perfect Green Crystal",
+        "Perfect Green Crystal",
+        "Perfect Green Crystal",
+        "Perfect Green Crystal",
       ],
     },
   },
-  'Core/Void Build 1': {
+  "Dual Rifts": {
     stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
     armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-    },
-    weapon1: {
-      name: 'Core Staff',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Void Sword',
+      name: "Dark Legion Armor",
       upgrades: [
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-      ],
-    },
-    misc1: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc2: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-  },
-  'T2 Scythe Build': {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-    },
-    weapon1: {
-      name: 'Scythe T2',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Scythe T2',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc1: {
-      name: 'Bio Spinal Enhancer',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc2: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-  },
-  'SG1 Split bombs': {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: {
-      name: 'SG1 Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-    },
-    weapon1: {
-      name: 'Split Crystal Bombs T2',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Split Crystal Bombs T2',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc1: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc2: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-  },
-  'HF Core/Void': {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: {
-      name: 'Hellforged Armor',
-      upgrades: [
-        'Cabrusion Crystal',
-        'Cabrusion Crystal',
-        'Cabrusion Crystal',
-        'Cabrusion Crystal',
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
       ],
     },
     weapon1: {
-      name: 'Void Sword',
+      name: "Rift Gun",
       upgrades: [
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
       ],
     },
     weapon2: {
-      name: 'Core Staff',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+      name: "Rift Gun",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
     },
     misc1: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+      name: "Bio Spinal Enhancer",
+      upgrades: [
+        "Perfect Pink Crystal",
+        "Perfect Pink Crystal",
+        "Perfect Pink Crystal",
+        "Perfect Pink Crystal",
+      ],
     },
     misc2: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
+      name: "Bio Spinal Enhancer",
+      upgrades: [
+        "Perfect Pink Crystal",
+        "Perfect Pink Crystal",
+        "Perfect Pink Crystal",
+        "Perfect Pink Crystal",
+      ],
+    },
+  },
+  "Core/Void Build 1": {
+    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
+    armor: {
+      name: "Dark Legion Armor",
+      upgrades: [
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+      ],
+    },
+    weapon1: {
+      name: "Core Staff",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
+    },
+    weapon2: {
+      name: "Void Sword",
+      upgrades: [
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
+      ],
+    },
+    misc1: {
+      name: "Scout Drones",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
+    },
+    misc2: {
+      name: "Scout Drones",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
+    },
+  },
+  "T2 Scythe Build": {
+    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
+    armor: {
+      name: "Dark Legion Armor",
+      upgrades: [
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+      ],
+    },
+    weapon1: {
+      name: "Scythe T2",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
+    },
+    weapon2: {
+      name: "Scythe T2",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
+    },
+    misc1: {
+      name: "Bio Spinal Enhancer",
+      upgrades: [
+        "Perfect Orange Crystal",
+        "Perfect Orange Crystal",
+        "Perfect Orange Crystal",
+        "Perfect Orange Crystal",
+      ],
+    },
+    misc2: {
+      name: "Scout Drones",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
+    },
+  },
+  "T2 Scythe/Cstaff": {
+    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
+    armor: {
+      name: "Dark Legion Armor",
+      upgrades: [
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+      ],
+    },
+    weapon1: {
+      name: "Scythe T2",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
+    },
+    weapon2: {
+      name: "Core Staff",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
+    },
+    misc1: {
+      name: "Scout Drones",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
+    },
+    misc2: {
+      name: "Scout Drones",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
+    },
+  },
+  "SG1 Split bombs": {
+    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
+    armor: {
+      name: "SG1 Armor",
+      upgrades: [
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+        "Abyss Crystal",
+      ],
+    },
+    weapon1: {
+      name: "Split Crystal Bombs T2",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
+    },
+    weapon2: {
+      name: "Split Crystal Bombs T2",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
+    },
+    misc1: {
+      name: "Scout Drones",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
+    },
+    misc2: {
+      name: "Scout Drones",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
+    },
+  },
+  "HF Core/Void": {
+    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
+    armor: {
+      name: "Hellforged Armor",
+      upgrades: [
+        "Cabrusion Crystal",
+        "Cabrusion Crystal",
+        "Cabrusion Crystal",
+        "Cabrusion Crystal",
+      ],
+    },
+    weapon1: {
+      name: "Void Sword",
+      upgrades: [
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
+        "Perfect Fire Crystal",
+      ],
+    },
+    weapon2: {
+      name: "Core Staff",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
+    },
+    misc1: {
+      name: "Scout Drones",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
+    },
+    misc2: {
+      name: "Scout Drones",
+      upgrades: [
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+        "Amulet Crystal",
+      ],
     },
   },
 };
 
 const DEFENDER_PRIORITY = [
-  'DL Gun Build 3',
-  'SG1 Split bombs',
-  'DL Gun Build 2',
-  'DL Gun Build 7',
-  'DL Gun Build 4',
-  'Core/Void Build 1',
-  'T2 Scythe Build',
-  'HF Core/Void',
+  "DL Gun Build 3",
+  "SG1 Split bombs",
+  "T2 Scythe/Cstaff",
+  "DL Gun Build 4",
+  "DL Gun Build 2",
+  "DL Gun Build 7",
+  "Core/Void Build 1",
+  "T2 Scythe Build",
+  "HF Core/Void",
+  "Dual Rifts",
+  "DL Gun Build 3.1",
 ];
 
 const defenderBuilds = DEFENDER_PRIORITY.map((name) => {

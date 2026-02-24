@@ -15,3 +15,13 @@ G. Skill : Adds 42
 in the "slot1" upgrade slot you can either put one of two upgrades, faster reload 4 which gives +5% acc and +5% damage or enhanced scope 4, which gives 10% acc, and in slot 2 upgrade slot you can put faster ammo 4 which gives +20% damage, or tracer rounds 4 which gives +15% acc and +5% damage.
 
 for the void bow you can only add 1 upgrade slot, either laser sight or poisoned tip. poisoned tip increases damage by 10% and laser sight increases accuracy by 14%. 
+
+
+
+I'd like to add a few more items to the script, but i know each item definition is referenced in more than once place in the script so i'd like you 
+to add the items and their stats/name wherever its relevant (including the function that shortens/abbreviates the name of it and everywhere else it should be applied)
+
+weapons:
+
+Alien Staff: 50 speed, 34 accuracy, damage 89-112, proj skill 48, d skill 8, weapon type: projectile
+Reaper Axe: 65 speed, 48 accuracy, 84-108 damage, 80 m skill, 10 d skill, weapon type: melee
