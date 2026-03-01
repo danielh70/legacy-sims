@@ -1,27 +1,524 @@
-no the mk4 gun can take 4 crystals plus it has 2 upgrade slots. the void bow can take 4 crystals plus one upgrade slot. 
+DL gun build:
 
-Name : Bio Gun Mk4
-Level Req. : 80
-Price : 30000c
-Description : The best technology suited for the most elite warriors of the Outcasts.
+{
+    "times": 10000,
+    "attackerWins": 7879,
+    "defenderWins": 2121,
+    "averageTurns": 11.0966,
+    "turns": {
+        "total": 110966,
+        "min": 4,
+        "max": 23
+    },
+    "attackerDamage": {
+        "total": 8683069,
+        "min": 50,
+        "max": 164
+    },
+    "defenderDamage": {
+        "total": 4292120,
+        "min": 59,
+        "max": 183
+    },
+    "attackerChances": {
+        "hit": 79,
+        "damage1": 63,
+        "damage2": 63
+    },
+    "defenderChances": {
+        "hit": 87,
+        "damage1": 28,
+        "damage2": 28
+    },
+    "error": ""
+}
 
-Damage : 76 to 91
-Armor : No Bonus
-Accuracy : Adds 47
-Speed : Adds 50
-D. Skill : Adds 15
-G. Skill : Adds 42
+DL gun build 2:
 
-in the "slot1" upgrade slot you can either put one of two upgrades, faster reload 4 which gives +5% acc and +5% damage or enhanced scope 4, which gives 10% acc, and in slot 2 upgrade slot you can put faster ammo 4 which gives +20% damage, or tracer rounds 4 which gives +15% acc and +5% damage.
+{
+    "times": 10000,
+    "attackerWins": 6899,
+    "defenderWins": 3101,
+    "averageTurns": 11.5905,
+    "turns": {
+        "total": 115905,
+        "min": 5,
+        "max": 22
+    },
+    "attackerDamage": {
+        "total": 8357016,
+        "min": 50,
+        "max": 164
+    },
+    "defenderDamage": {
+        "total": 4773318,
+        "min": 59,
+        "max": 171
+    },
+    "attackerChances": {
+        "hit": 79,
+        "damage1": 60,
+        "damage2": 60
+    },
+    "defenderChances": {
+        "hit": 79,
+        "damage1": 32,
+        "damage2": 32
+    },
+    "error": ""
+}
 
-for the void bow you can only add 1 upgrade slot, either laser sight or poisoned tip. poisoned tip increases damage by 10% and laser sight increases accuracy by 14%. 
+DL gun build 3:
 
+{
+    "times": 10000,
+    "attackerWins": 5027,
+    "defenderWins": 4973,
+    "averageTurns": 10.2423,
+    "turns": {
+        "total": 102423,
+        "min": 4,
+        "max": 23
+    },
+    "attackerDamage": {
+        "total": 7755353,
+        "min": 50,
+        "max": 164
+    },
+    "defenderDamage": {
+        "total": 5465056,
+        "min": 59,
+        "max": 183
+    },
+    "attackerChances": {
+        "hit": 82,
+        "damage1": 59,
+        "damage2": 59
+    },
+    "defenderChances": {
+        "hit": 72,
+        "damage1": 45,
+        "damage2": 45
+    },
+    "error": ""
+}
 
+DL gun build 4:
 
-I'd like to add a few more items to the script, but i know each item definition is referenced in more than once place in the script so i'd like you 
-to add the items and their stats/name wherever its relevant (including the function that shortens/abbreviates the name of it and everywhere else it should be applied)
+{
+    "times": 10000,
+    "attackerWins": 6078,
+    "defenderWins": 3922,
+    "averageTurns": 16.0125,
+    "turns": {
+        "total": 160125,
+        "min": 6,
+        "max": 33
+    },
+    "attackerDamage": {
+        "total": 8015514,
+        "min": 50,
+        "max": 164
+    },
+    "defenderDamage": {
+        "total": 5007517,
+        "min": 59,
+        "max": 171
+    },
+    "attackerChances": {
+        "hit": 82,
+        "damage1": 41,
+        "damage2": 41
+    },
+    "defenderChances": {
+        "hit": 54,
+        "damage1": 36,
+        "damage2": 36
+    },
+    "error": ""
+}
 
-weapons:
+DL gun build 5:
 
-Alien Staff: 50 speed, 34 accuracy, damage 89-112, proj skill 48, d skill 8, weapon type: projectile
-Reaper Axe: 65 speed, 48 accuracy, 84-108 damage, 80 m skill, 10 d skill, weapon type: melee
+{
+    "times": 10000,
+    "attackerWins": 8873,
+    "defenderWins": 1127,
+    "averageTurns": 9.3339,
+    "turns": {
+        "total": 93339,
+        "min": 5,
+        "max": 20
+    },
+    "attackerDamage": {
+        "total": 7324780,
+        "min": 50,
+        "max": 164
+    },
+    "defenderDamage": {
+        "total": 3655705,
+        "min": 59,
+        "max": 183
+    },
+    "attackerChances": {
+        "hit": 79,
+        "damage1": 63,
+        "damage2": 63
+    },
+    "defenderChances": {
+        "hit": 90,
+        "damage1": 28,
+        "damage2": 28
+    },
+    "error": ""
+}
+
+DL gun build 6:
+
+{
+    "times": 10000,
+    "attackerWins": 7935,
+    "defenderWins": 2065,
+    "averageTurns": 9.7661,
+    "turns": {
+        "total": 97661,
+        "min": 4,
+        "max": 20
+    },
+    "attackerDamage": {
+        "total": 7079128,
+        "min": 50,
+        "max": 164
+    },
+    "defenderDamage": {
+        "total": 4286265,
+        "min": 59,
+        "max": 171
+    },
+    "attackerChances": {
+        "hit": 79,
+        "damage1": 60,
+        "damage2": 60
+    },
+    "defenderChances": {
+        "hit": 84,
+        "damage1": 32,
+        "damage2": 32
+    },
+    "error": ""
+}
+
+DL gun build 7:
+
+{
+    "times": 10000,
+    "attackerWins": 6216,
+    "defenderWins": 3784,
+    "averageTurns": 8.8451,
+    "turns": {
+        "total": 88451,
+        "min": 4,
+        "max": 17
+    },
+    "attackerDamage": {
+        "total": 6684083,
+        "min": 50,
+        "max": 164
+    },
+    "defenderDamage": {
+        "total": 5061799,
+        "min": 59,
+        "max": 183
+    },
+    "attackerChances": {
+        "hit": 82,
+        "damage1": 59,
+        "damage2": 59
+    },
+    "defenderChances": {
+        "hit": 79,
+        "damage1": 45,
+        "damage2": 45
+    },
+    "error": ""
+}
+
+DL gun build 8:
+
+{
+    "times": 10000,
+    "attackerWins": 5928,
+    "defenderWins": 4072,
+    "averageTurns": 13.033,
+    "turns": {
+        "total": 130330,
+        "min": 5,
+        "max": 28
+    },
+    "attackerDamage": {
+        "total": 6455524,
+        "min": 50,
+        "max": 164
+    },
+    "defenderDamage": {
+        "total": 5006023,
+        "min": 59,
+        "max": 171
+    },
+    "attackerChances": {
+        "hit": 82,
+        "damage1": 41,
+        "damage2": 41
+    },
+    "defenderChances": {
+        "hit": 66,
+        "damage1": 36,
+        "damage2": 36
+    },
+    "error": ""
+}
+
+Core/Void Build 1:
+
+{
+    "times": 10000,
+    "attackerWins": 6245,
+    "defenderWins": 3755,
+    "averageTurns": 12.2149,
+    "turns": {
+        "total": 122149,
+        "min": 4,
+        "max": 26
+    },
+    "attackerDamage": {
+        "total": 8095435,
+        "min": 50,
+        "max": 164
+    },
+    "defenderDamage": {
+        "total": 4939216,
+        "min": 49,
+        "max": 194
+    },
+    "attackerChances": {
+        "hit": 79,
+        "damage1": 55,
+        "damage2": 55
+    },
+    "defenderChances": {
+        "hit": 68,
+        "damage1": 35,
+        "damage2": 35
+    },
+    "error": ""
+}
+
+Dual Bow Build 1:
+
+{
+    "times": 10000,
+    "attackerWins": 7210,
+    "defenderWins": 2790,
+    "averageTurns": 12.1616,
+    "turns": {
+        "total": 121616,
+        "min": 4,
+        "max": 23
+    },
+    "attackerDamage": {
+        "total": 8444072,
+        "min": 50,
+        "max": 164
+    },
+    "defenderDamage": {
+        "total": 4600322,
+        "min": 10,
+        "max": 242
+    },
+    "attackerChances": {
+        "hit": 79,
+        "damage1": 57,
+        "damage2": 57
+    },
+    "defenderChances": {
+        "hit": 73,
+        "damage1": 40,
+        "damage2": 40
+    },
+    "error": ""
+}
+
+Rift Bow Build 1:
+
+{
+    "times": 10000,
+    "attackerWins": 6928,
+    "defenderWins": 3072,
+    "averageTurns": 11.6384,
+    "turns": {
+        "total": 116384,
+        "min": 5,
+        "max": 24
+    },
+    "attackerDamage": {
+        "total": 8413313,
+        "min": 50,
+        "max": 164
+    },
+    "defenderDamage": {
+        "total": 4808747,
+        "min": 10,
+        "max": 185
+    },
+    "attackerChances": {
+        "hit": 79,
+        "damage1": 60,
+        "damage2": 60
+    },
+    "defenderChances": {
+        "hit": 82,
+        "damage1": 40,
+        "damage2": 40
+    },
+    "error": ""
+}
+
+T2 Scythe Build:
+
+{
+    "times": 10000,
+    "attackerWins": 6139,
+    "defenderWins": 3861,
+    "averageTurns": 12.6685,
+    "turns": {
+        "total": 126685,
+        "min": 5,
+        "max": 29
+    },
+    "attackerDamage": {
+        "total": 8061432,
+        "min": 50,
+        "max": 164
+    },
+    "defenderDamage": {
+        "total": 4874162,
+        "min": 78,
+        "max": 198
+    },
+    "attackerChances": {
+        "hit": 81,
+        "damage1": 52,
+        "damage2": 52
+    },
+    "defenderChances": {
+        "hit": 56,
+        "damage1": 39,
+        "damage2": 39
+    },
+    "error": ""
+}
+
+SG1 Split bombs:
+
+{
+    "times": 10000,
+    "attackerWins": 4800,
+    "defenderWins": 5200,
+    "averageTurns": 16.9372,
+    "turns": {
+        "total": 169372,
+        "min": 6,
+        "max": 36
+    },
+    "attackerDamage": {
+        "total": 7617710,
+        "min": 49,
+        "max": 161
+    },
+    "defenderDamage": {
+        "total": 5409839,
+        "min": 54,
+        "max": 170
+    },
+    "attackerChances": {
+        "hit": 85,
+        "damage1": 36,
+        "damage2": 36
+    },
+    "defenderChances": {
+        "hit": 51,
+        "damage1": 45,
+        "damage2": 45
+    },
+    "error": ""
+}
+
+HF Core/Void:
+
+{
+    "times": 10000,
+    "attackerWins": 5801,
+    "defenderWins": 4199,
+    "averageTurns": 12.6552,
+    "turns": {
+        "total": 126552,
+        "min": 4,
+        "max": 25
+    },
+    "attackerDamage": {
+        "total": 7937618,
+        "min": 40,
+        "max": 133
+    },
+    "defenderDamage": {
+        "total": 5132773,
+        "min": 49,
+        "max": 194
+    },
+    "attackerChances": {
+        "hit": 93,
+        "damage1": 55,
+        "damage2": 55
+    },
+    "defenderChances": {
+        "hit": 68,
+        "damage1": 35,
+        "damage2": 35
+    },
+    "error": ""
+}
+
+Armour stack Cores:
+
+{
+    "times": 10000,
+    "attackerWins": 5251,
+    "defenderWins": 4749,
+    "averageTurns": 16.0628,
+    "turns": {
+        "total": 160628,
+        "min": 7,
+        "max": 31
+    },
+    "attackerDamage": {
+        "total": 7898369,
+        "min": 40,
+        "max": 133
+    },
+    "defenderDamage": {
+        "total": 5439502,
+        "min": 49,
+        "max": 118
+    },
+    "attackerChances": {
+        "hit": 93,
+        "damage1": 44,
+        "damage2": 44
+    },
+    "defenderChances": {
+        "hit": 72,
+        "damage1": 44,
+        "damage2": 44
+    },
+    "error": ""
+}

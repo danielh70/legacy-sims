@@ -1,13 +1,53 @@
 #!/usr/bin/env node
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+
+/**
+ * main-calib-v3.5.27.js
+ *
+ * "Mini" verify harness:
+ * - Runs ONE attacker build vs a defender set.
+ * - Uses the SAME combat logic knobs as your brute-force script, so results should line up.
+ *
+ * Handy modes:
+ * - Compare to saved in-game baselines: LEGACY_COMPARE=1 (reads legacy-baselines.json next to this script)
+ * - Print a baseline JSON skeleton for the current KEY: LEGACY_PRINT_BASELINE_TEMPLATE=1
+ *
+ * Note:
+ * - Each VARIANT line prints KEY=<8-hex>. Use that KEY to store / match in-game results for this exact build+logic.
+ */
+
 // =====================
-// DEFAULTS (so you can just run: node main-calib-v3.5.16.js)
+// DEFAULTS (so you can just run: node main-calib-v3.5.27.js)
 // =====================
 const __DEFAULT_ENV__ = {
-  LEGACY_TRIALS: '20000',
+  LEGACY_TRIALS: '200000',
   LEGACY_SEED: '1337',
   LEGACY_DETERMINISTIC: '1',
+
+  // Output formatting
+  LEGACY_OUTPUT: 'compact',
+  LEGACY_PRINT_EXACT: '0',
+  LEGACY_PRINT_GAME: '0',
+
+  // Terminal emphasis
+  LEGACY_COLOR: 'auto', // auto|0|1 (ANSI colors). Use 0 for clean copy/paste.
+  LEGACY_ASCII: '0', // 1 = use ASCII separators ('|' and '-') for copy/paste-friendly output
+  LEGACY_NAME_W: '0', // 0=auto, otherwise force defender name column width
+  LEGACY_SEP: '1', // 1 = print a subtle separator line between defenders (compact output)
+  LEGACY_SUMMARY: '1', // 1 = print end-of-variant SUMMARY line (mean/min/max)
+
+  // Header + baseline compare helpers
+  LEGACY_HEADER: 'min', // min|compact|full
+  LEGACY_DEF_LIST_MAX: '6', // how many defenders to show in compact header
+  LEGACY_COMPARE: '0', // 1 = print baseline compare lines (from file) per defender
+  LEGACY_BASELINES_FILE: 'legacy-baselines.json',
+  LEGACY_BASELINE_KEY: '', // override baseline key (hex) to compare against a different run
+  LEGACY_BASELINE_FALLBACK: '0', // allow fallback to built-in baselines by defender name (not recommended)
+  LEGACY_PRINT_BASELINE_TEMPLATE: '0', // prints JSON skeleton for this run's baseline key
+  LEGACY_DET_TAG: '2', // deterministic RNG tag (2 matches brute-force 'confirm' stage)
 
   LEGACY_DIAG: '0',
   LEGACY_DIAG_ARMOR: '0',
@@ -16,11 +56,11 @@ const __DEFAULT_ENV__ = {
   LEGACY_VERIFY_DEFENDERS:
     'SG1 Split Bombs T2,DL Gun Build,DL Gun Build 2,DL Gun Build 3,DL Gun Build 4,DL Gun Build 5,DL Gun Build 6,DL Gun Build 7,DL Gun Build 8,T2 Scythe Build,HF Core/Void,Core/Void Build 1,Dual Bow Build 1,Rift Bow Build 1,Armour stack Cores',
 
-  LEGACY_DMG_ROLL: 'roundfloat',
+  LEGACY_DMG_ROLL: 'int',
 
-  LEGACY_ARMOR_K: '7,8',
+  LEGACY_ARMOR_K: '8',
   LEGACY_ARMOR_APPLY: 'per_weapon',
-  LEGACY_ARMOR_ROUND: 'ceil',
+  LEGACY_ARMOR_ROUND: 'round',
 
   LEGACY_TACTICS_MODE: 'none',
   LEGACY_DISP_ROUND: 'floor',
@@ -30,8 +70,8 @@ const __DEFAULT_ENV__ = {
 
   LEGACY_HIDDEN_PRESET: 'slot3_prjdef',
 
-  LEGACY_MISC_NO_CRYSTAL_SKILL: '',
-  LEGACY_MISC_NO_CRYSTAL_SKILL_TYPES: 'gun',
+  LEGACY_MISC_NO_CRYSTAL_SKILL: 'Scout Drones',
+  LEGACY_MISC_NO_CRYSTAL_SKILL_TYPES: 'gun,melee=0.5',
 
   // Optional: apply additional crystal-skill suppression/multipliers only to misc2.
   // Same format as LEGACY_MISC_NO_CRYSTAL_SKILL_TYPES.
@@ -39,14 +79,14 @@ const __DEFAULT_ENV__ = {
 
   // Optional: override Hellforged Armor base armor (for calibration experiments).
   // Example: LEGACY_HF_ARMOR_BASE_OVERRIDE=125
-  LEGACY_HF_ARMOR_BASE_OVERRIDE: '',
+  LEGACY_HF_ARMOR_BASE_OVERRIDE: '125',
 
   // Optional: override Void Sword base damage (for calibration experiments).
   // Examples:
   //   LEGACY_VOID_SWORD_BASE_MIN_OVERRIDE=43
   //   LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE=123
   LEGACY_VOID_SWORD_BASE_MIN_OVERRIDE: '',
-  LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE: '',
+  LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE: '123',
 
   LEGACY_SHARED_HIT: '0',
   LEGACY_SHARED_SKILL: 'none',
@@ -75,8 +115,11 @@ for (const [k, v] of Object.entries(__DEFAULT_ENV__)) {
  *
  * v3.4.13:
 * v3.5.14:
- * - Adds a built-in default env profile (same as Dan verify cmd) so you can just run: node main-calib-v3.5.15.js
- * v3.5.16:
+ * - Adds a built-in default env profile (same as Dan verify cmd) so you can just run: node main-calib-v3.5.19.js
+ * v3.5.19:
+  * - Default env profile updated to the current best-fit settings (trials=200k, dmgRoll=int, armorK=8, armorRound=round, misc Scout Drones skill tweak, HF/Void Sword overrides).
+  * - Cleaner output by default (LEGACY_OUTPUT=compact). Use LEGACY_OUTPUT=verbose to restore full per-defender blocks.
+* v3.5.16:
  * - Fix: HF override now applies AFTER ItemDefs are defined (so enabling it won't crash).
  * - Add: Void Sword base min/max overrides for calibration (LEGACY_VOID_SWORD_BASE_*_OVERRIDE).
  * - DIAG_ARMOR now includes optional implied Void Sword max hint when GAME D_rng max mismatches and defender w1 is Void Sword.
@@ -99,7 +142,7 @@ for (const [k, v] of Object.entries(__DEFAULT_ENV__)) {
  *  - LEGACY_DIAG=1 prints extra per-action raw vs applied + truncation stats.
  *
  * Key env vars:
- *  - LEGACY_TRIALS=20000
+ *  - LEGACY_TRIALS=200000
  *  - LEGACY_MAX_TURNS=200
  *  - LEGACY_RNG=fast|math
  *  - LEGACY_SEED=1337
@@ -158,7 +201,7 @@ const DEFAULTS = {
   LEVEL: 80,
   HP_MAX: 865,
   MAX_TURNS: 200,
-  TRIALS: 20000,
+  TRIALS: 200000,
 };
 
 // ---------------------
@@ -182,6 +225,135 @@ function pickEnv(name, fallback) {
 }
 function yn(v) {
   return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+}
+
+// Swap actual combat weapons (w1/w2) AND keep legacy aliases (weapon1/weapon2) in sync.
+// This matters because the combat loop attacks using w1/w2, while some logic (e.g., hidden presets)
+// historically referenced weapon1/weapon2.
+function swapWeaponsInPlace(c) {
+  if (!c) return;
+  if (!c.w1 && !c.w2 && !c.weapon1 && !c.weapon2) return;
+
+  // Prefer swapping the actual combat weapons.
+  const t = c.w1;
+  c.w1 = c.w2;
+  c.w2 = t;
+
+  // Keep aliases consistent.
+  c.weapon1 = c.w1;
+  c.weapon2 = c.w2;
+}
+
+// ---------------------
+// SIGNATURES + BASELINE FILE HELPERS
+// ---------------------
+function hex8(u32) {
+  return (u32 >>> 0).toString(16).padStart(8, '0');
+}
+
+// FNV-1a 32-bit hash (stable across Node versions)
+function hashStr32(str) {
+  str = String(str);
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+// Stable JSON stringify (sorts object keys) to make signatures robust.
+function stableStringify(x) {
+  if (x === null) return 'null';
+  const t = typeof x;
+  if (t === 'number' || t === 'boolean') return String(x);
+  if (t === 'string') return JSON.stringify(x);
+  if (t !== 'object') return JSON.stringify(String(x));
+  if (Array.isArray(x)) return '[' + x.map((v) => stableStringify(v)).join(',') + ']';
+  const keys = Object.keys(x).sort();
+  return '{' + keys.map((k) => JSON.stringify(k) + ':' + stableStringify(x[k])).join(',') + '}';
+}
+
+function summarizeList(list, maxItems) {
+  maxItems = Math.max(0, maxItems | 0);
+  if (!Array.isArray(list) || list.length === 0) return '';
+  if (maxItems === 0) return `(+${list.length} items)`;
+  if (list.length <= maxItems) return list.join(', ');
+  const head = list.slice(0, maxItems).join(', ');
+  return `${head}, ... (+${list.length - maxItems} more)`;
+}
+
+function resolvePathRelToScript(p) {
+  if (!p) return '';
+  return path.isAbsolute(p) ? p : path.join(__dirname, p);
+}
+
+function loadBaselineFile(filePath) {
+  try {
+    const abs = resolvePathRelToScript(filePath);
+    if (!fs.existsSync(abs)) return null;
+    const raw = fs.readFileSync(abs, 'utf8');
+    const json = JSON.parse(raw);
+
+    // Supported shapes:
+    //  1) { baselines: { "<KEY>": { "Def Name": { ... } } } }
+    //  2) { runs: { "<KEY>": { defenders: { ... } } } }
+    //  3) { "<KEY>": { "Def Name": { ... } } }
+    if (json && typeof json === 'object') return json;
+    return null;
+  } catch (e) {
+    console.error(`NOTE: failed to parse baselines file "${filePath}": ${e.message}`);
+    return null;
+  }
+}
+
+function baselineLookup(store, keyHex, defenderName) {
+  if (!store || !keyHex) return null;
+
+  // Shape 1
+  const b1 = store.baselines && store.baselines[keyHex];
+  if (b1 && b1[defenderName]) return b1[defenderName];
+
+  // Shape 2
+  const r = store.runs && store.runs[keyHex];
+  if (r && r.defenders && r.defenders[defenderName]) return r.defenders[defenderName];
+
+  // Shape 3
+  const b3 = store[keyHex];
+  if (b3 && b3[defenderName]) return b3[defenderName];
+
+  return null;
+}
+
+function makeBaselineTemplate({ keyHex, attackerPreset, cfgSigObj, defenderNames }) {
+  const defenders = {};
+  for (const n of defenderNames) {
+    defenders[n] = {
+      winPct: null,
+      avgTurns: null,
+      A_hit: null,
+      A_dmg1: null,
+      A_dmg2: null,
+      D_hit: null,
+      D_dmg1: null,
+      D_dmg2: null,
+      A_rng: [null, null],
+      D_rng: [null, null],
+    };
+  }
+
+  return {
+    baselines: {
+      [keyHex]: {
+        meta: {
+          attackerPreset,
+          cfg: cfgSigObj,
+          createdUtc: new Date().toISOString(),
+        },
+        defenders,
+      },
+    },
+  };
 }
 
 // Miscs (by exact item name) that should NOT receive crystal-based *skill%* bonuses for specific skill types.
@@ -1059,7 +1231,7 @@ function roundWeaponDmg(x, mode) {
   return Math.ceil(x); // default ceil
 }
 
-function computeVariant(itemName, crystalName, upgrades = [], cfg, slotTag = 0, crystalCount = 4) {
+function computeVariant(itemName, crystalName, upgrades = [], cfg, slotTag = 0) {
   const idef = ItemDefs[itemName];
   const cdef = CrystalDefs[crystalName];
   if (!idef) throw new Error(`Unknown item: ${itemName}`);
@@ -1067,7 +1239,7 @@ function computeVariant(itemName, crystalName, upgrades = [], cfg, slotTag = 0, 
 
   const pct = cdef.pct || {};
   const pctSum = {};
-  for (const k of Object.keys(pct)) pctSum[k] = (pct[k] || 0) * crystalCount;
+  for (const k of Object.keys(pct)) pctSum[k] = (pct[k] || 0) * 4;
 
   if (upgrades && upgrades.length) {
     for (const u of upgrades) {
@@ -1141,9 +1313,7 @@ function computeVariant(itemName, crystalName, upgrades = [], cfg, slotTag = 0, 
     (fs.projSkill || 0) + roundStat((fs.projSkill || 0) * (pctSum.projSkill || 0), statRound);
   const addDef =
     (fs.defSkill || 0) + roundStat((fs.defSkill || 0) * (pctSum.defSkill || 0), statRound);
-  const armorBaseForCrystal = idef.type === 'Armor' ? (fs.armor || 0) + BASE.armor : fs.armor || 0;
-  const addArmStat =
-    (fs.armor || 0) + roundStat(armorBaseForCrystal * (pctSum.armor || 0), statRound);
+  const addArmStat = (fs.armor || 0) + roundStat((fs.armor || 0) * (pctSum.armor || 0), statRound);
 
   let weapon = null;
   if (idef.baseWeaponDamage) {
@@ -1241,6 +1411,11 @@ function compileCombatantFromParts({ name, stats, armorV, w1V, w2V, m1V, m2V, cf
     weapon1: applyMinMax(w1V.weapon),
     weapon2: applyMinMax(w2V.weapon),
   };
+
+  // Keep legacy aliases pointing at the actual combat weapons.
+  // (Combat uses w1/w2; some older logic references weapon1/weapon2.)
+  c.weapon1 = c.w1;
+  c.weapon2 = c.w2;
 
   // Optional metadata for diagnostics (kept out of normal output unless enabled).
   if (cfg && cfg.diagArmor) {
@@ -2113,12 +2288,12 @@ GAME_BASELINES['Bow/rift build'] = GAME_BASELINES['Rift Bow Build 1'];
 // ---------------------
 const ATTACKER_PRESETS = {
   MAUL_CSTAFF: {
-    stats: { level: 80, hp: 600, speed: 60, dodge: 67, accuracy: 14 },
+    stats: { level: 80, hp: 595, speed: 60, dodge: 68, accuracy: 14 },
     armor: { name: 'SG1 Armor', crystal: 'Abyss Crystal' },
-    weapon1: { name: 'Crystal Maul', crystal: 'Amulet Crystal', upgrades: [] },
+    weapon1: { name: 'Crystal Maul', crystal: 'Perfect Fire Crystal', upgrades: [] },
     weapon2: { name: 'Core Staff', crystal: 'Amulet Crystal', upgrades: [] },
-    misc1: { name: 'Bio Spinal Enhancer', crystal: 'Perfect Pink Crystal' },
-    misc2: { name: 'Bio Spinal Enhancer', crystal: 'Perfect Pink Crystal' },
+    misc1: { name: 'Bio Spinal Enhancer', crystal: 'Perfect Orange Crystal' },
+    misc2: { name: 'Projector Bots', crystal: 'Perfect Pink Crystal' },
   },
 
   // Calibration presets (max HP: 865 => base acc/dodge 14/14)
@@ -2197,6 +2372,104 @@ function fmtPct(x) {
 }
 function fmtPct2(x) {
   return `${x.toFixed(2)}`;
+}
+function padLeft(s, w) {
+  s = String(s);
+  return s.length >= w ? s : ' '.repeat(w - s.length) + s;
+}
+function fmtPctW(x, w = 3) {
+  return padLeft((+x).toFixed(0), w);
+}
+function fmtPairPct(a, b, w = 3) {
+  return `${fmtPctW(a, w)}/${fmtPctW(b, w)}`;
+}
+
+// ---------------------
+// ANSI styling (terminal readability)
+// ---------------------
+const ANSI = {
+  reset: '\x1b[0m',
+  bold: '\x1b[1m',
+  dim: '\x1b[2m',
+  cyan: '\x1b[36m',
+  magenta: '\x1b[35m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  red: '\x1b[31m',
+  gray: '\x1b[90m',
+};
+
+// Set in main() from LEGACY_COLOR
+let USE_COLOR = false;
+
+// Set in main() from LEGACY_ASCII
+let USE_ASCII = false;
+function glyphVbar() {
+  return USE_ASCII ? '|' : '│';
+}
+function glyphHbar() {
+  return USE_ASCII ? '-' : '─';
+}
+
+function wantColor(mode) {
+  mode = String(mode || 'auto')
+    .trim()
+    .toLowerCase();
+  if (['0', 'false', 'off', 'none', 'no'].includes(mode)) return false;
+  if (['1', 'true', 'on', 'yes'].includes(mode)) return true;
+
+  // auto:
+  if (!process.stdout.isTTY) return false;
+  if (process.env.NO_COLOR !== undefined) return false;
+  if (String(process.env.TERM || '').toLowerCase() === 'dumb') return false;
+  return true;
+}
+
+function wrapAnsi(s, prefix) {
+  return USE_COLOR ? prefix + s + ANSI.reset : s;
+}
+function sBold(s) {
+  return wrapAnsi(s, ANSI.bold);
+}
+function sDim(s) {
+  return wrapAnsi(s, ANSI.dim);
+}
+function sCyanBold(s) {
+  return wrapAnsi(s, ANSI.bold + ANSI.cyan);
+}
+function sGray(s) {
+  return wrapAnsi(s, ANSI.gray);
+}
+function sMagenta(s) {
+  return wrapAnsi(s, ANSI.magenta);
+}
+function sMagentaBold(s) {
+  return wrapAnsi(s, ANSI.bold + ANSI.magenta);
+}
+function colorWinPct(winPct, s) {
+  if (!USE_COLOR) return s;
+  const c = winPct >= 70 ? ANSI.green : winPct >= 55 ? ANSI.yellow : ANSI.red;
+  return ANSI.bold + c + s + ANSI.reset;
+}
+function colorFirst(firstDisp) {
+  if (!USE_COLOR) return firstDisp;
+  const c = firstDisp === 'A' ? ANSI.green : firstDisp === 'D' ? ANSI.red : ANSI.yellow;
+  return ANSI.bold + c + firstDisp + ANSI.reset;
+}
+function ellipsizePad(name, w) {
+  if (w <= 0) return name;
+  if (name.length > w) {
+    if (w <= 1) return name.slice(0, w);
+    return name.slice(0, w - 1) + '…';
+  }
+  return name.padEnd(w);
+}
+
+function makeSepLine() {
+  // Keep separators subtle + unlikely to wrap.
+  const cols = process.stdout && process.stdout.columns ? process.stdout.columns : 0;
+  const w = Math.max(40, Math.min(92, cols ? cols - 2 : 92));
+  return sGray('  ' + glyphHbar().repeat(w));
 }
 
 function attemptWeapon(att, def, weapon, cfg, counters, traceObj, pre = {}) {
@@ -2827,6 +3100,44 @@ function main() {
     parseInt(pickEnv('LEGACY_TRACE_FIGHTS', pickEnv('LEGACY_TRACE', '0')), 10) || 0,
   );
 
+  // Output formatting
+  //   LEGACY_OUTPUT=compact (default) -> 1 line per defender
+  //   LEGACY_OUTPUT=verbose         -> full multi-line blocks (previous behavior)
+  const outputMode = String(pickEnv('LEGACY_OUTPUT', 'compact')).trim().toLowerCase();
+  const outputVerbose = outputMode === 'verbose' || outputMode === 'full' || outputMode === '1';
+  const printExact = yn(pickEnv('LEGACY_PRINT_EXACT', outputVerbose ? '1' : '0'));
+  const printGame = yn(pickEnv('LEGACY_PRINT_GAME', '0'));
+
+  // Terminal emphasis (colors). Default: auto (TTY only). Use LEGACY_COLOR=0 for clean copy/paste.
+  USE_COLOR = wantColor(pickEnv('LEGACY_COLOR', 'auto'));
+  USE_ASCII = yn(pickEnv('LEGACY_ASCII', '0'));
+
+  const sepOn = yn(pickEnv('LEGACY_SEP', '1'));
+  const summaryOn = yn(pickEnv('LEGACY_SUMMARY', '1'));
+  const sepLine = sepOn ? makeSepLine() : '';
+
+  const headerMode = String(pickEnv('LEGACY_HEADER', 'min')).trim().toLowerCase();
+  const defListMax = Math.max(0, parseInt(pickEnv('LEGACY_DEF_LIST_MAX', '6'), 10) || 6);
+
+  // Baseline compare:
+  // - LEGACY_COMPARE=1 prints a compact "INGAME" line when a baseline exists in legacy-baselines.json
+  // - LEGACY_PRINT_GAME=1 prints the older built-in GAME baselines (if any)
+  const compareBaselines = yn(pickEnv('LEGACY_COMPARE', '0'));
+  const baselinesFile = String(pickEnv('LEGACY_BASELINES_FILE', '')).trim();
+  const baselineKeyOverride = String(pickEnv('LEGACY_BASELINE_KEY', '')).trim().toLowerCase();
+  const baselineFallback = yn(pickEnv('LEGACY_BASELINE_FALLBACK', '0'));
+  const printBaselineTemplate = yn(pickEnv('LEGACY_PRINT_BASELINE_TEMPLATE', '0'));
+
+  // Deterministic RNG tag: use 2 to line up with brute-force "confirm" stage by default.
+  const detTagBase = parseInt(pickEnv('LEGACY_DET_TAG', '2'), 10) | 0 || 2;
+
+  const baselineStore = baselinesFile ? loadBaselineFile(baselinesFile) : null;
+  if ((compareBaselines || printBaselineTemplate) && baselinesFile && !baselineStore) {
+    console.error(
+      `NOTE: baselines file not found or unreadable: ${resolvePathRelToScript(baselinesFile)}`,
+    );
+  }
+
   if (!deterministic) {
     RNG =
       rngMode === 'fast'
@@ -2874,17 +3185,43 @@ function main() {
     });
   }
 
+  // Output column width for defender name (auto unless LEGACY_NAME_W is set)
+  const nameWEnv = Math.max(0, parseInt(pickEnv('LEGACY_NAME_W', '0'), 10) || 0);
+  const maxNameLen = defenderNames.reduce((m, n) => (n.length > m ? n.length : m), 0);
+  const nameWAuto = Math.min(34, Math.max(18, Math.min(30, maxNameLen)));
+  const nameW = nameWEnv > 0 ? Math.min(80, Math.max(10, nameWEnv)) : nameWAuto;
+
   const variants = makeVariantList();
 
-  console.log('=== LEGACY VERIFY (COPY/PASTE OUTPUT) ===');
-  console.log(
-    `Trials/def=${trials} | MAX_TURNS=${maxTurns} | RNG=${rngMode} | seed=${seed} | deterministic=${deterministic ? 'ON' : 'OFF'} | debugStats=${debugStats ? 'ON' : 'OFF'} | debugDps=${debugDps ? 'ON' : 'OFF'}`,
-  );
-  console.log(`Defenders=${defenderNames.length} | ${defenderNames.join(', ')}`);
+  console.log('=== LEGACY VERIFY ===');
+  const outTag = `${outputMode}${printExact ? '+exact' : ''}${printGame ? '+game' : ''}${compareBaselines ? '+cmp' : ''}`;
+  let runLine = `RUN: trials/def=${trials} seed=${seed} det=${deterministic ? 'ON' : 'OFF'} rng=${rngMode} maxT=${maxTurns} defs=${defenderNames.length} out=${outTag}`;
+  if (variants.length !== 1) runLine += ` vars=${variants.length}`;
+  console.log(runLine);
+
+  if (headerMode !== 'min') {
+    const defLine =
+      headerMode === 'full' ? defenderNames.join(', ') : summarizeList(defenderNames, defListMax);
+    console.log(`DEFS: ${defLine}`);
+  }
   console.log('');
 
   // Build payload list (canonical names)
   const payloads = defenderNames.map((n) => ({ name: n, payload: DEFENDER_PAYLOADS[n] }));
+
+  // Signatures help you confirm this "mini" script and your brute-force script are running the SAME logic.
+  const defsSig = hashStr32(
+    stableStringify(payloads.map((p) => ({ name: p.name, payload: p.payload }))),
+  );
+  const defsSigHex = hex8(defsSig);
+  const attSig = hashStr32(
+    stableStringify({
+      preset: ATTACKER_PRESET,
+      build: ATTACKER_BUILD,
+      swapWeps: SWAP_ATTACKER_WEPS,
+    }),
+  );
+  const attSigHex = hex8(attSig);
 
   for (let vi = 0; vi < variants.length; vi++) {
     const v = variants[vi];
@@ -2921,28 +3258,27 @@ function main() {
     };
 
     const cache = new Map();
-    const vKey = (itemName, crystalName, u1 = '', u2 = '', crystalCount = 4) =>
-      `${cfg.statRound}|${cfg.weaponDmgRound}|${itemName}|${crystalName}|${u1}|${u2}|${crystalCount}`;
+    const vKey = (itemName, crystalName, u1 = '', u2 = '') =>
+      `${cfg.statRound}|${cfg.weaponDmgRound}|${itemName}|${crystalName}|${u1}|${u2}`;
 
-    function getV(itemName, crystalName, u1 = '', u2 = '', slotTag = 0, crystalCount = 4) {
-      const k = vKey(itemName, crystalName, u1, u2, crystalCount);
+    function getV(itemName, crystalName, u1 = '', u2 = '', slotTag = 0) {
+      const k = vKey(itemName, crystalName, u1, u2);
       let vv = cache.get(k);
       if (!vv) {
         const ups = [];
         if (u1) ups.push(u1);
         if (u2) ups.push(u2);
-        vv = computeVariant(itemName, crystalName, ups, cfg, slotTag, crystalCount);
+        vv = computeVariant(itemName, crystalName, ups, cfg, slotTag);
         cache.set(k, vv);
       }
       return vv;
     }
 
     const a = ATTACKER_BUILD;
-    console.log(`Attacker preset=${ATTACKER_PRESET}`);
     const attacker = compileCombatantFromParts({
       name: 'Attacker',
       stats: a.stats,
-      armorV: getV(a.armor.name, a.armor.crystal, '', '', 0, 1),
+      armorV: getV(a.armor.name, a.armor.crystal),
       w1V: getV(
         a.weapon1.name,
         a.weapon1.crystal,
@@ -2961,41 +3297,159 @@ function main() {
       role: 'A',
     });
 
-    if (SWAP_ATTACKER_WEPS) {
-      const t = attacker.weapon1;
-      attacker.weapon1 = attacker.weapon2;
-      attacker.weapon2 = t;
-    }
+    if (SWAP_ATTACKER_WEPS) swapWeaponsInPlace(attacker);
 
     if (vi === 0) {
+      // Clean, glanceable attacker block (includes item + crystal per slot)
+      // Note: reflect actual weapon order if SWAP_ATTACKER_WEPS is enabled.
+      let w1Part = a.weapon1;
+      let w2Part = a.weapon2;
+      if (SWAP_ATTACKER_WEPS) {
+        const tmp = w1Part;
+        w1Part = w2Part;
+        w2Part = tmp;
+      }
+
+      function fmtCrystal(cr) {
+        return cr ? sDim(`[${cr}]`) : sDim('[none]');
+      }
+      function fmtUpgrades(upgs) {
+        const u = (upgs || []).filter(Boolean);
+        return u.length ? sDim(' +' + u.join('+')) : '';
+      }
+      function fmtSlot(part) {
+        if (!part) return 'none';
+        return `${part.name} ${fmtCrystal(part.crystal)}${fmtUpgrades(part.upgrades)}`;
+      }
+      function fmtWeapon(part, wObj) {
+        if (!part) return 'none';
+        const rng = wObj ? `(${sMagentaBold(`${wObj.min}-${wObj.max}`)})` : '';
+        return `${part.name} ${fmtCrystal(part.crystal)}${fmtUpgrades(part.upgrades)} ${rng}`.trimEnd();
+      }
+
+      const armorStr = fmtSlot(a.armor);
+      const misc1Str = fmtSlot(a.misc1);
+      const misc2Str = fmtSlot(a.misc2);
+      const w1Str = fmtWeapon(w1Part, attacker.w1);
+      const w2Str = fmtWeapon(w2Part, attacker.w2);
+
+      console.log(`${sGray('ATTACKER:')} ${sCyanBold(ATTACKER_PRESET)}`);
+      console.log(`${sGray('  Armor:')} ${armorStr}`);
+      console.log(`${sGray('  Weps :')} ${w1Str}  +  ${w2Str}`);
+      console.log(`${sGray('  Miscs:')} ${misc1Str}  +  ${misc2Str}`);
       console.log(
-        `Attacker: HP=${attacker.hp} Spd=${attacker.speed} Acc=${attacker.acc} Dod=${attacker.dodge} ` +
-          `Gun=${attacker.gun} Prj=${attacker.prj} Mel=${attacker.mel} Def=${attacker.defSk} Arm=${attacker.armor} (armF=${attacker.armorFactor.toFixed(6)})`,
+        `${sGray('  Stats:')} HP=${attacker.hp} Spd=${attacker.speed} Acc=${attacker.acc} Dod=${attacker.dodge} ` +
+          `Arm=${attacker.armor} (armF=${attacker.armorFactor.toFixed(6)})`,
       );
       console.log(
-        `A_weps: w1=${attacker.w1 ? `${attacker.w1.name}(${attacker.w1.min}-${attacker.w1.max})` : 'none'} ` +
-          `w2=${attacker.w2 ? `${attacker.w2.name}(${attacker.w2.min}-${attacker.w2.max})` : 'none'}`,
+        `${sGray('  Skill:')} Gun=${attacker.gun} Prj=${attacker.prj} Mel=${attacker.mel} Def=${attacker.defSk}`,
       );
       console.log('');
     }
 
-    console.log(
-      `=== VARIANT ${vi + 1}/${variants.length}: ` +
-        `HIT_ROLL=${cfg.hitRollMode}${cfg.hitGe ? '+GE' : ''} | HIT_QROUND=${cfg.hitQround} | ` +
-        `SKILL_ROLL=${cfg.skillRollMode}${cfg.skillGe ? '+GE' : ''} | SKILL_QROUND=${cfg.skillQround} | ` +
-        `DMG_ROLL=${cfg.dmgRoll} | PROJ_DEF_MULT=${cfg.projDefMult} | ` +
-        `SHARED_HIT=${cfg.sharedHit ? 'ON' : 'OFF'} | SHARED_SKILL=${cfg.sharedSkillMode} | ` +
-        `SPEED_TIE=${cfg.speedTieMode} | HIDDEN=${cfg.hiddenPreset} | ` +
-        `TACTICS=${cfg.tacticsMode}:${cfg.tacticsVal} | ARMOR_K=${cfg.armorK} | ARMOR_APPLY=${cfg.armorApply} ARMOR_ROUND=${cfg.armorRound} | MISC_SKILL=${MISC_NO_CRYSTAL_SKILL_TWEAK_TAG} ===`,
-    );
+    const tactTag = cfg.tacticsMode === 'none' ? 'none' : `${cfg.tacticsMode}:${cfg.tacticsVal}`;
 
-    const score = { count: 0, sumAbs: 0, sumSq: 0, worstAbs: 0, worstName: '' };
+    // Variant "logic key": changes whenever attacker build, defender payloads, or combat-relevant cfg knobs change.
+    // This is the key you should use for saving / matching in-game baselines.
+    const cfgSigObj = {
+      // core rolls
+      hitRollMode: cfg.hitRollMode,
+      hitGe: cfg.hitGe,
+      hitQround: cfg.hitQround,
+      skillRollMode: cfg.skillRollMode,
+      skillGe: cfg.skillGe,
+      skillQround: cfg.skillQround,
+      dmgRoll: cfg.dmgRoll,
+
+      // armor + misc
+      armorK: cfg.armorK,
+      armorApply: cfg.armorApply,
+      armorRound: cfg.armorRound,
+      projDefMult: cfg.projDefMult,
+      hiddenPreset: cfg.hiddenPreset,
+      speedTieMode: cfg.speedTieMode,
+      tacticsMode: cfg.tacticsMode,
+      tacticsVal: cfg.tacticsVal,
+      sharedHit: cfg.sharedHit,
+      sharedSkillMode: cfg.sharedSkillMode,
+
+      // limits
+      maxTurns: cfg.maxTurns,
+      rngMode,
+
+      // misc knobs that affect stats/ranges
+      miscSkillTag: MISC_NO_CRYSTAL_SKILL_TWEAK_TAG,
+      hfArmorBaseOverride: HF_ARMOR_BASE_OVERRIDE,
+      voidSwordBaseMaxOverride: VOID_SWORD_BASE_MAX_OVERRIDE,
+    };
+
+    const cfgSig = hashStr32(stableStringify(cfgSigObj));
+    const cfgSigHex = hex8(cfgSig);
+
+    const logicKey = hashStr32(stableStringify({ attSig, cfgSig, defsSig }));
+    const logicKeyHex = hex8(logicKey);
+
+    // Run key includes trials + seed; useful if you want byte-for-byte reproducibility.
+    const runKey = hashStr32(stableStringify({ logicKey, trials, seed, deterministic, rngMode }));
+    const runKeyHex = hex8(runKey);
+
+    const baselineKeyHex = baselineKeyOverride || logicKeyHex;
+
+    const variantLineVerbose =
+      `=== VARIANT ${vi + 1}/${variants.length}: ` +
+      `HIT_ROLL=${cfg.hitRollMode}${cfg.hitGe ? '+GE' : ''} | HIT_QROUND=${cfg.hitQround} | ` +
+      `SKILL_ROLL=${cfg.skillRollMode}${cfg.skillGe ? '+GE' : ''} | SKILL_QROUND=${cfg.skillQround} | ` +
+      `DMG_ROLL=${cfg.dmgRoll} | PROJ_DEF_MULT=${cfg.projDefMult} | ` +
+      `SHARED_HIT=${cfg.sharedHit ? 'ON' : 'OFF'} | SHARED_SKILL=${cfg.sharedSkillMode} | ` +
+      `SPEED_TIE=${cfg.speedTieMode} | HIDDEN=${cfg.hiddenPreset} | ` +
+      `TACTICS=${tactTag} | ARMOR_K=${cfg.armorK} | ARMOR_APPLY=${cfg.armorApply} ARMOR_ROUND=${cfg.armorRound} | ` +
+      `KEY=${logicKeyHex} ===`;
+
+    const variantLineCompact =
+      `=== VARIANT ${vi + 1}/${variants.length}: ` +
+      `HIT=${cfg.hitRollMode}${cfg.hitGe ? '+GE' : ''}/${cfg.hitQround} ` +
+      `SKILL=${cfg.skillRollMode}${cfg.skillGe ? '+GE' : ''}/${cfg.skillQround} ` +
+      `DMG=${cfg.dmgRoll} ARMOR=K${cfg.armorK} ${cfg.armorApply}/${cfg.armorRound} ` +
+      `TIE=${cfg.speedTieMode} HIDDEN=${cfg.hiddenPreset} TACT=${tactTag} ` +
+      `MISC=${MISC_NO_CRYSTAL_SKILL_TWEAK_TAG} KEY=${logicKeyHex}`;
+
+    console.log(outputVerbose ? variantLineVerbose : variantLineCompact);
+
+    // Quick signature line (handy for baseline files + sanity-checking "mini" vs brute script)
+    if (outputVerbose || compareBaselines || printBaselineTemplate) {
+      console.log(
+        `SIG: logic=${logicKeyHex} run=${runKeyHex} att=${attSigHex} cfg=${cfgSigHex} defs=${defsSigHex}` +
+          (compareBaselines ? ` baselineKey=${baselineKeyHex}` : ''),
+      );
+    }
+
+    if (printBaselineTemplate) {
+      const tpl = makeBaselineTemplate({
+        keyHex: baselineKeyHex,
+        attackerPreset: ATTACKER_PRESET,
+        cfgSigObj,
+        defenderNames,
+      });
+      console.log('--- BASELINE TEMPLATE (paste/merge into legacy-baselines.json) ---');
+      console.log(JSON.stringify(tpl, null, 2));
+      console.log('--- END BASELINE TEMPLATE ---');
+    }
+
+    // Per-variant summary accumulators
+    const _wins = [];
+    let _sumWin = 0;
+    let _minWin = 101;
+    let _maxWin = -1;
+    let _minName = '';
+    let _maxName = '';
+    const _cmp = { n: 0, meanAbsWin: 0, worstAbsWin: -1, worstName: '', rmsWin: 0 };
 
     for (let di = 0; di < payloads.length; di++) {
       const { name, payload } = payloads[di];
 
       if (deterministic) {
-        const s = mix32((seed ^ mix32(0x51ed270b ^ di ^ (vi * 0x9e3779b9))) | 0);
+        const tag = (detTagBase ^ vi) | 0;
+        const s = mix32((seed ^ mix32((logicKey ^ Math.imul(di, 0x9e3779b9) ^ tag) | 0)) | 0);
         RNG =
           rngMode === 'fast'
             ? makeRng('fast', s, s ^ 0xa341316c, s ^ 0xc8013ea4, s ^ 0xad90777d)
@@ -3014,11 +3468,7 @@ function main() {
         role: 'D',
       });
 
-      if (SWAP_DEFENDER_WEPS) {
-        const t = defender.weapon1;
-        defender.weapon1 = defender.weapon2;
-        defender.weapon2 = t;
-      }
+      if (SWAP_DEFENDER_WEPS) swapWeaponsInPlace(defender);
 
       const aFirst = attacker.speed >= defender.speed ? 'yes' : 'no';
 
@@ -3074,221 +3524,334 @@ function main() {
       const dMin = stats.D.minActionDmg === 1e9 ? 0 : stats.D.minActionDmg;
       const dMax = stats.D.maxActionDmg;
 
-      const gb = GAME_BASELINES[`${ATTACKER_PRESET}|${name}`] || GAME_BASELINES[name];
-      const deltaWin = gb ? winPct - gb.winPct : null;
-      const deltaWinStr = gb ? ` | ΔWin=${deltaWin >= 0 ? '+' : ''}${deltaWin.toFixed(2)}` : '';
+      const gbFile = compareBaselines ? baselineLookup(baselineStore, baselineKeyHex, name) : null;
 
-      if (gb) {
-        const abs = Math.abs(deltaWin);
-        score.count++;
-        score.sumAbs += abs;
-        score.sumSq += deltaWin * deltaWin;
-        if (abs > score.worstAbs) {
-          score.worstAbs = abs;
-          score.worstName = name;
+      const gbBuiltin = printGame
+        ? GAME_BASELINES[`${ATTACKER_PRESET}|${name}`] ||
+          (baselineFallback ? GAME_BASELINES[name] : null)
+        : null;
+
+      const gb = gbFile || gbBuiltin;
+
+      {
+        const firstDisp = aFirstLabel === 'yes' ? 'A' : aFirstLabel === 'no' ? 'D' : 'Rand';
+
+        // Highlight: win badge + defender name (scan-friendly). Colors in TTY when enabled.
+        const idxPlain = String(di + 1).padStart(2, '0');
+        const idxStyled = USE_COLOR ? sGray(idxPlain) : idxPlain;
+
+        const nameCol = ellipsizePad(name, nameW);
+        const nameStyled = sCyanBold(nameCol);
+
+        const winColPlain = `${fmtPct2(winPct)}%`.padStart(7);
+        const winBadgePlain = `[${winColPlain}]`;
+        const winBadgeStyled = colorWinPct(winPct, winBadgePlain);
+
+        const firstStyled = colorFirst(firstDisp);
+
+        const lineHeader = `- ${idxStyled} ${winBadgeStyled} ${nameStyled} | ${sBold('AvgT')} ${avgT.toFixed(2).padStart(6)} [${stats.turnsMin}-${stats.turnsMax}] | ${sBold('First')} ${firstStyled}`;
+
+        const aDisp = fmtPairPct(A_overall1, A_overall2);
+        const dDisp = fmtPairPct(D_overall1, D_overall2);
+
+        const aHit = fmtPairPct(A_hit1, A_hit2);
+        const dHit = fmtPairPct(D_hit1, D_hit2);
+
+        const aDh = fmtPairPct(A_skillGivenHit1, A_skillGivenHit2);
+        const dDh = fmtPairPct(D_skillGivenHit1, D_skillGivenHit2);
+
+        const aRng = `${aMin}-${aMax}`;
+        const dRng = `${dMin}-${dMax}`;
+
+        const aDmgF = (stats.A.totalActionDmg / cfg.trials).toFixed(1);
+        const dDmgF = (stats.D.totalActionDmg / cfg.trials).toFixed(1);
+
+        const lab = (t) => (USE_COLOR ? sGray(t) : t);
+        const hi = (t) => (USE_COLOR ? sBold(t) : t);
+        const hiRng = (t) => (USE_COLOR ? sMagentaBold(t) : t);
+        const mid = USE_COLOR ? sGray(' | ') : ' | ';
+
+        // Details line: prioritize what you usually eyeball (disp%, dmg range, avg dmg/fight),
+        // keep the rest (raw hit%, skill|hit) still present but less prominent.
+        const lineDetails =
+          `  ${glyphVbar()} ${lab('A')} ${lab('disp')} ${hi(aDisp)} ${lab('rng')} ${hiRng(aRng)} ${lab('dmg/f')} ${hi(aDmgF)} ${lab('hit')} ${aHit} ${lab('sk|hit')} ${aDh}` +
+          `${mid}${lab('D')} ${lab('disp')} ${hi(dDisp)} ${lab('rng')} ${hiRng(dRng)} ${lab('dmg/f')} ${hi(dDmgF)} ${lab('hit')} ${dHit} ${lab('sk|hit')} ${dDh}`;
+
+        const lineVerbose = `${lineHeader} (A_spd=${attacker.speed} D_spd=${defender.speed})`;
+        const lineCompact = `${lineHeader}
+${lineDetails}`;
+
+        const verboseBlocks =
+          outputVerbose ||
+          debugStats ||
+          debugDps ||
+          cfg.diag ||
+          cfg.diagArmor ||
+          PRINT_WEAPON_RNG ||
+          shouldTrace;
+
+        console.log(verboseBlocks ? lineVerbose : lineCompact);
+        if (!verboseBlocks && sepOn && di < payloads.length - 1) console.log(sepLine);
+
+        _wins.push(winPct);
+        _sumWin += winPct;
+        if (winPct < _minWin) {
+          _minWin = winPct;
+          _minName = name;
         }
-      }
+        if (winPct > _maxWin) {
+          _maxWin = winPct;
+          _maxName = name;
+        }
 
-      console.log(
-        `- ${name} (A_spd=${attacker.speed} D_spd=${defender.speed} A_first=${aFirstLabel}) | Win=${fmtPct2(winPct)}% AvgT=${avgT.toFixed(2)} [${stats.turnsMin}-${stats.turnsMax}]${deltaWinStr}`,
-      );
-      console.log(
-        `  SIM A: hit=${fmtPct(A_hit1)}/${fmtPct(A_hit2)} dmg|hit=${fmtPct(A_skillGivenHit1)}/${fmtPct(A_skillGivenHit2)} overall=${fmtPct(A_overall1)}/${fmtPct(A_overall2)} | rng=${aMin}-${aMax}`,
-      );
-      console.log(
-        `  SIM D: hit=${fmtPct(D_hit1)}/${fmtPct(D_hit2)} dmg|hit=${fmtPct(D_skillGivenHit1)}/${fmtPct(D_skillGivenHit2)} overall=${fmtPct(D_overall1)}/${fmtPct(D_overall2)} | rng=${dMin}-${dMax}`,
-      );
-      if (PRINT_WEAPON_RNG) {
-        const fmtR = (c) =>
-          Number.isFinite(c.rngMin) && c.dmg > 0 ? `${c.rngMin}-${c.rngMax}` : 'n/a';
-        const Aw1 = fmtR(stats.A.w1);
-        const Aw2 = fmtR(stats.A.w2);
-        const Dw1 = fmtR(stats.D.w1);
-        const Dw2 = fmtR(stats.D.w2);
-        console.log(`  RNG by weapon: A_w1=${Aw1} A_w2=${Aw2} | D_w1=${Dw1} D_w2=${Dw2}`);
-      }
+        // Baseline compare (typically in-game). Only active when LEGACY_COMPARE=1.
+        if (compareBaselines && gb && gb.winPct != null) {
+          const baseWin = gb.winPct;
+          const baseAvgT = gb.avgTurns != null ? gb.avgTurns : null;
+          const dWin = winPct - baseWin;
+          const absWin = Math.abs(dWin);
 
-      if (cfg.diag && stats.diagA && stats.diagD) {
-        const pct2 = (n, d) => (d ? ((100 * n) / d).toFixed(2) : '0.00');
-        const avg2 = (sum, d) => (d ? (sum / d).toFixed(2) : '0.00');
-        const da = stats.diagA;
-        const dd = stats.diagD;
-        console.log(
-          `  DIAG A: avgRawAct=${avg2(da.rawSum, da.actions)} avgAppAct=${avg2(da.appliedSum, da.actions)} ` +
-            `w1Over=${pct2(da.w1Overkill, da.actions)}% w2Over=${pct2(da.w2Overkill, da.actions)}% w2OnDead=${pct2(da.w2OnDead, da.actions)}%`,
-        );
-        console.log(
-          `  DIAG D: avgRawAct=${avg2(dd.rawSum, dd.actions)} avgAppAct=${avg2(dd.appliedSum, dd.actions)} ` +
-            `w1Over=${pct2(dd.w1Overkill, dd.actions)}% w2Over=${pct2(dd.w2Overkill, dd.actions)}% w2OnDead=${pct2(dd.w2OnDead, dd.actions)}%`,
-        );
-      }
+          _cmp.n++;
+          _cmp.meanAbsWin += absWin;
+          _cmp.rmsWin += dWin * dWin;
+          if (absWin > _cmp.worstAbsWin) {
+            _cmp.worstAbsWin = absWin;
+            _cmp.worstName = name;
+          }
 
-      if (debugDps) {
-        const turnsTotal = stats.turnsTotal || 1;
-        const A_dpt = stats.A.totalActionDmg / turnsTotal;
-        const D_dpt = stats.D.totalActionDmg / turnsTotal;
-        const A_dpa = stats.A.acts ? stats.A.totalActionDmg / stats.A.acts : 0;
-        const D_dpa = stats.D.acts ? stats.D.totalActionDmg / stats.D.acts : 0;
-        console.log(
-          `  SIM DPS: A(dpt=${A_dpt.toFixed(1)} dpa=${A_dpa.toFixed(1)} acts=${stats.A.acts}) | D(dpt=${D_dpt.toFixed(1)} dpa=${D_dpa.toFixed(1)} acts=${stats.D.acts})`,
-        );
-      }
+          if (!verboseBlocks) {
+            const sDW = (dWin >= 0 ? '+' : '') + dWin.toFixed(2);
+            let extra = '';
+            if (baseAvgT != null) {
+              const dT = avgT - baseAvgT;
+              const sDT = (dT >= 0 ? '+' : '') + dT.toFixed(2);
+              extra = ` avgT=${baseAvgT.toFixed(2)} (Δ${sDT})`;
+            }
+            console.log(
+              `    INGAME win=${baseWin.toFixed(2)}% (Δ${sDW})${extra}  [key=${baselineKeyHex}]`,
+            );
+          }
+        }
 
-      if (gb) {
-        const A_overall_game_1 = (gb.A_hit * gb.A_dmg1) / 100;
-        const A_overall_game_2 = (gb.A_hit * gb.A_dmg2) / 100;
-        const D_overall_game_1 = (gb.D_hit * gb.D_dmg1) / 100;
-        const D_overall_game_2 = (gb.D_hit * gb.D_dmg2) / 100;
-
-        console.log(
-          `  GAME : Win=${gb.winPct.toFixed(2)}% AvgT=${gb.avgTurns.toFixed(2)} | ` +
-            `A_hit=${gb.A_hit} dmg|hit=${gb.A_dmg1}/${gb.A_dmg2} overall=${Math.round(A_overall_game_1)}/${Math.round(A_overall_game_2)} | ` +
-            `D_hit=${gb.D_hit} dmg|hit=${gb.D_dmg1}/${gb.D_dmg2} overall=${Math.round(D_overall_game_1)}/${Math.round(D_overall_game_2)} | ` +
-            `A_rng=${gb.A_rng[0]}-${gb.A_rng[1]} D_rng=${gb.D_rng[0]}-${gb.D_rng[1]}`,
-        );
-
-        if (cfg.diagArmor && gb) {
-          // Implied defender armor from GAME attacker rng max
-          const A_w1Max = attacker.w1 ? attacker.w1.max : 0;
-          const A_w2Max = attacker.w2 ? attacker.w2.max : 0;
-
-          const predAmaxAtDefArmor = predictMaxActionFromWeaponMax(
-            A_w1Max,
-            A_w2Max,
-            attacker.level,
-            defender.armor,
-            cfg.armorK,
-            cfg.armorApply,
-            cfg.armorRound,
-          );
-          const impliedDef = solveImpliedArmorForTargetMax({
-            w1Max: A_w1Max,
-            w2Max: A_w2Max,
-            level: attacker.level,
-            armorK: cfg.armorK,
-            armorApply: cfg.armorApply,
-            armorRound: cfg.armorRound,
-            targetMax: gb.A_rng[1],
-            searchMax: 1200,
-          });
-
-          // Implied attacker armor from GAME defender rng max
-          const D_w1Max = defender.w1 ? defender.w1.max : 0;
-          const D_w2Max = defender.w2 ? defender.w2.max : 0;
-
-          const predDmaxAtAttArmor = predictMaxActionFromWeaponMax(
-            D_w1Max,
-            D_w2Max,
-            defender.level,
-            attacker.armor,
-            cfg.armorK,
-            cfg.armorApply,
-            cfg.armorRound,
-          );
-          const impliedAtt = solveImpliedArmorForTargetMax({
-            w1Max: D_w1Max,
-            w2Max: D_w2Max,
-            level: defender.level,
-            armorK: cfg.armorK,
-            armorApply: cfg.armorApply,
-            armorRound: cfg.armorRound,
-            targetMax: gb.D_rng[1],
-            searchMax: 1200,
-          });
-
+        if (verboseBlocks) {
           console.log(
-            `  DIAG_ARMOR: Amax@defArmor=${predAmaxAtDefArmor} gameAmax=${gb.A_rng[1]} ` +
-              `=> impliedDefArmor≈${impliedDef.armor} (Δ=${impliedDef.armor - defender.armor}, err=${impliedDef.err})`,
+            `  SIM A: hit=${fmtPct(A_hit1)}/${fmtPct(A_hit2)} dmg|hit=${fmtPct(A_skillGivenHit1)}/${fmtPct(A_skillGivenHit2)} overall=${fmtPct(A_overall1)}/${fmtPct(A_overall2)} | rng=${aMin}-${aMax}`,
           );
           console.log(
-            `  DIAG_ARMOR: Dmax@attArmor=${predDmaxAtAttArmor} gameDmax=${gb.D_rng[1]} ` +
-              `=> impliedAttArmor≈${impliedAtt.armor} (Δ=${impliedAtt.armor - attacker.armor}, err=${impliedAtt.err})`,
+            `  SIM D: hit=${fmtPct(D_hit1)}/${fmtPct(D_hit2)} dmg|hit=${fmtPct(D_skillGivenHit1)}/${fmtPct(D_skillGivenHit2)} overall=${fmtPct(D_overall1)}/${fmtPct(D_overall2)} | rng=${dMin}-${dMax}`,
           );
 
-          // Extra hint for the recurring "Void Sword max" mismatch:
-          // If GAME D_rng max is higher than our predicted max, infer what Void Sword's *base max*
-          // would need to be to hit the target (assuming our crystal dmg% and rounding are right).
-          try {
-            const meta = defender && defender.__meta ? defender.__meta : null;
-            const gameDmax = gb.D_rng[1];
-            const simDmax = predDmaxAtAttArmor;
-            const delta = gameDmax - simDmax;
-            if (
-              meta &&
-              delta !== 0 &&
-              (meta.w1?.itemName === 'Void Sword' || meta.w2?.itemName === 'Void Sword')
-            ) {
-              const f = attacker.armorFactor;
-              const w1Max = defender.w1?.max ?? defender.weapon1?.max;
-              const w2Max = defender.w2?.max ?? defender.weapon2?.max;
-              const r1 = applyArmorAndRound(w1Max, f, cfg.armorRound);
-              const r2 = applyArmorAndRound(w2Max, f, cfg.armorRound);
+          if (PRINT_WEAPON_RNG) {
+            const fmtR = (c) =>
+              Number.isFinite(c.rngMin) && c.dmg > 0 ? `${c.rngMin}-${c.rngMax}` : 'n/a';
+            const Aw1 = fmtR(stats.A.w1);
+            const Aw2 = fmtR(stats.A.w2);
+            const Dw1 = fmtR(stats.D.w1);
+            const Dw2 = fmtR(stats.D.w2);
+            console.log(`  RNG by weapon: A_w1=${Aw1} A_w2=${Aw2} | D_w1=${Dw1} D_w2=${Dw2}`);
+          }
 
-              const voidIsW1 = meta.w1?.itemName === 'Void Sword';
-              const otherR = voidIsW1 ? r2 : r1;
-              const needR = gameDmax - otherR;
-              const lo = (needR - 0.5) / f;
-              const hi = (needR + 0.499999) / f;
-              const needPost = Math.max(1, Math.round((lo + hi) / 2));
+          if (cfg.diag && stats.diagA && stats.diagD) {
+            const pct2 = (n, d) => (d ? ((100 * n) / d).toFixed(2) : '0.00');
+            const avg2 = (sum, d) => (d ? (sum / d).toFixed(2) : '0.00');
+            const da = stats.diagA;
+            const dd = stats.diagD;
+            console.log(
+              `  DIAG A: avgRawAct=${avg2(da.rawSum, da.actions)} avgAppAct=${avg2(da.appliedSum, da.actions)} ` +
+                `w1Over=${pct2(da.w1Overkill, da.actions)}% w2Over=${pct2(da.w2Overkill, da.actions)}% w2OnDead=${pct2(da.w2OnDead, da.actions)}%`,
+            );
+            console.log(
+              `  DIAG D: avgRawAct=${avg2(dd.rawSum, dd.actions)} avgAppAct=${avg2(dd.appliedSum, dd.actions)} ` +
+                `w1Over=${pct2(dd.w1Overkill, dd.actions)}% w2Over=${pct2(dd.w2Overkill, dd.actions)}% w2OnDead=${pct2(dd.w2OnDead, dd.actions)}%`,
+            );
+          }
 
-              const voidCrystal = voidIsW1 ? meta.w1?.crystalName : meta.w2?.crystalName;
-              const baseNow =
-                ItemDefs['Void Sword'] && ItemDefs['Void Sword'].baseWeaponDamage
-                  ? ItemDefs['Void Sword'].baseWeaponDamage.max
-                  : 0;
-              const dmgPctEach =
-                voidCrystal && CrystalDefs[voidCrystal] && CrystalDefs[voidCrystal].dmgPct
-                  ? CrystalDefs[voidCrystal].dmgPct
-                  : 0;
-              const dmgPctSum = 4 * dmgPctEach;
+          if (debugDps) {
+            const turnsTotal = stats.turnsTotal || 1;
+            const A_dpt = stats.A.totalActionDmg / turnsTotal;
+            const D_dpt = stats.D.totalActionDmg / turnsTotal;
+            const A_dpa = stats.A.acts ? stats.A.totalActionDmg / stats.A.acts : 0;
+            const D_dpa = stats.D.acts ? stats.D.totalActionDmg / stats.D.acts : 0;
+            console.log(
+              `  SIM DPS: A(dpt=${A_dpt.toFixed(1)} dpa=${A_dpa.toFixed(1)} acts=${stats.A.acts}) | D(dpt=${D_dpt.toFixed(1)} dpa=${D_dpa.toFixed(1)} acts=${stats.D.acts})`,
+            );
+          }
 
-              let bestBase = baseNow;
-              let bestPost = applyWeaponDmgRound(baseNow * (1 + dmgPctSum), cfg.weaponDmgRound);
-              let bestErr = Math.abs(bestPost - needPost);
-              for (let b = Math.max(1, baseNow - 25); b <= baseNow + 25; b++) {
-                const post = applyWeaponDmgRound(b * (1 + dmgPctSum), cfg.weaponDmgRound);
-                const e = Math.abs(post - needPost);
-                if (e < bestErr) {
-                  bestErr = e;
-                  bestBase = b;
-                  bestPost = post;
-                }
-              }
+          if (gb) {
+            const A_overall_game_1 = (gb.A_hit * gb.A_dmg1) / 100;
+            const A_overall_game_2 = (gb.A_hit * gb.A_dmg2) / 100;
+            const D_overall_game_1 = (gb.D_hit * gb.D_dmg1) / 100;
+            const D_overall_game_2 = (gb.D_hit * gb.D_dmg2) / 100;
+
+            console.log(
+              `  GAME : Win=${gb.winPct.toFixed(2)}% AvgT=${gb.avgTurns.toFixed(2)} | ` +
+                `A_hit=${gb.A_hit} dmg|hit=${gb.A_dmg1}/${gb.A_dmg2} overall=${Math.round(A_overall_game_1)}/${Math.round(A_overall_game_2)} | ` +
+                `D_hit=${gb.D_hit} dmg|hit=${gb.D_dmg1}/${gb.D_dmg2} overall=${Math.round(D_overall_game_1)}/${Math.round(D_overall_game_2)} | ` +
+                `A_rng=${gb.A_rng[0]}-${gb.A_rng[1]} D_rng=${gb.D_rng[0]}-${gb.D_rng[1]}`,
+            );
+
+            if (cfg.diagArmor) {
+              // Implied defender armor from GAME attacker rng max
+              const A_w1Max = attacker.w1 ? attacker.w1.max : 0;
+              const A_w2Max = attacker.w2 ? attacker.w2.max : 0;
+
+              const predAmaxAtDefArmor = predictMaxActionFromWeaponMax(
+                A_w1Max,
+                A_w2Max,
+                attacker.level,
+                defender.armor,
+                cfg.armorK,
+                cfg.armorApply,
+                cfg.armorRound,
+              );
+              const impliedDef = solveImpliedArmorForTargetMax({
+                w1Max: A_w1Max,
+                w2Max: A_w2Max,
+                level: attacker.level,
+                armorK: cfg.armorK,
+                armorApply: cfg.armorApply,
+                armorRound: cfg.armorRound,
+                targetMax: gb.A_rng[1],
+                searchMax: 1200,
+              });
+
+              // Implied attacker armor from GAME defender rng max
+              const D_w1Max = defender.w1 ? defender.w1.max : 0;
+              const D_w2Max = defender.w2 ? defender.w2.max : 0;
+
+              const predDmaxAtAttArmor = predictMaxActionFromWeaponMax(
+                D_w1Max,
+                D_w2Max,
+                defender.level,
+                attacker.armor,
+                cfg.armorK,
+                cfg.armorApply,
+                cfg.armorRound,
+              );
+              const impliedAtt = solveImpliedArmorForTargetMax({
+                w1Max: D_w1Max,
+                w2Max: D_w2Max,
+                level: defender.level,
+                armorK: cfg.armorK,
+                armorApply: cfg.armorApply,
+                armorRound: cfg.armorRound,
+                targetMax: gb.D_rng[1],
+                searchMax: 1200,
+              });
 
               console.log(
-                `  DIAG_WEAPON: GAME Dmax delta=${delta} suggests Void Sword postMax≈${needPost} (current ${voidIsW1 ? w1Max : w2Max}); ` +
-                  `try LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE≈${bestBase} (postMax=${bestPost}, crystal=${voidCrystal || 'n/a'}, dmgPctSum=${Math.round(dmgPctSum * 100)}%)`,
+                `  DIAG_ARMOR: Amax@defArmor=${predAmaxAtDefArmor} gameAmax=${gb.A_rng[1]} ` +
+                  `=> impliedDefArmor≈${impliedDef.armor} (Δ=${impliedDef.armor - defender.armor}, err=${impliedDef.err})`,
               );
+              console.log(
+                `  DIAG_ARMOR: Dmax@attArmor=${predDmaxAtAttArmor} gameDmax=${gb.D_rng[1]} ` +
+                  `=> impliedAttArmor≈${impliedAtt.armor} (Δ=${impliedAtt.armor - attacker.armor}, err=${impliedAtt.err})`,
+              );
+
+              // Extra hint for the recurring "Void Sword max" mismatch:
+              // If GAME D_rng max is higher than our predicted max, infer what Void Sword's *base max*
+              // would need to be to hit the target (assuming our crystal dmg% and rounding are right).
+              try {
+                const meta = defender && defender.__meta ? defender.__meta : null;
+                const gameDmax = gb.D_rng[1];
+                const simDmax = predDmaxAtAttArmor;
+                const delta = gameDmax - simDmax;
+                if (
+                  meta &&
+                  delta !== 0 &&
+                  (meta.w1?.itemName === 'Void Sword' || meta.w2?.itemName === 'Void Sword')
+                ) {
+                  const f = attacker.armorFactor;
+                  const w1Max = defender.w1?.max ?? defender.weapon1?.max;
+                  const w2Max = defender.w2?.max ?? defender.weapon2?.max;
+                  const r1 = applyArmorAndRound(w1Max, f, cfg.armorRound);
+                  const r2 = applyArmorAndRound(w2Max, f, cfg.armorRound);
+
+                  const voidIsW1 = meta.w1?.itemName === 'Void Sword';
+                  const otherR = voidIsW1 ? r2 : r1;
+                  const needR = gameDmax - otherR;
+                  const lo = (needR - 0.5) / f;
+                  const hi = (needR + 0.499999) / f;
+                  const needPost = Math.max(1, Math.round((lo + hi) / 2));
+
+                  const voidCrystal = voidIsW1 ? meta.w1?.crystalName : meta.w2?.crystalName;
+                  const baseNow =
+                    ItemDefs['Void Sword'] && ItemDefs['Void Sword'].baseWeaponDamage
+                      ? ItemDefs['Void Sword'].baseWeaponDamage.max
+                      : 0;
+                  const dmgPctEach =
+                    voidCrystal && CrystalDefs[voidCrystal] && CrystalDefs[voidCrystal].dmgPct
+                      ? CrystalDefs[voidCrystal].dmgPct
+                      : 0;
+                  const dmgPctSum = 4 * dmgPctEach;
+
+                  let bestBase = baseNow;
+                  let bestPost = applyWeaponDmgRound(baseNow * (1 + dmgPctSum), cfg.weaponDmgRound);
+                  let bestErr = Math.abs(bestPost - needPost);
+                  for (let b = Math.max(1, baseNow - 25); b <= baseNow + 25; b++) {
+                    const post = applyWeaponDmgRound(b * (1 + dmgPctSum), cfg.weaponDmgRound);
+                    const e = Math.abs(post - needPost);
+                    if (e < bestErr) {
+                      bestErr = e;
+                      bestBase = b;
+                      bestPost = post;
+                    }
+                  }
+
+                  console.log(
+                    `  DIAG_WEAPON: GAME Dmax delta=${delta} suggests Void Sword postMax≈${needPost} (current ${voidIsW1 ? w1Max : w2Max}); ` +
+                      `try LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE≈${bestBase} (postMax=${bestPost}, crystal=${voidCrystal || 'n/a'}, dmgPctSum=${Math.round(dmgPctSum * 100)}%)`,
+                  );
+                }
+              } catch {
+                // ignore
+              }
             }
-          } catch {
-            // ignore
+          }
+        } else {
+          // Compact mode: optionally print game baselines if explicitly asked.
+          if (gb && printGame) {
+            const A_overall_game_1 = (gb.A_hit * gb.A_dmg1) / 100;
+            const A_overall_game_2 = (gb.A_hit * gb.A_dmg2) / 100;
+            const D_overall_game_1 = (gb.D_hit * gb.D_dmg1) / 100;
+            const D_overall_game_2 = (gb.D_hit * gb.D_dmg2) / 100;
+            console.log(
+              `  GAME : Win=${gb.winPct.toFixed(2)}% AvgT=${gb.avgTurns.toFixed(2)} | ` +
+                `A_hit=${gb.A_hit} dmg|hit=${gb.A_dmg1}/${gb.A_dmg2} overall=${Math.round(A_overall_game_1)}/${Math.round(A_overall_game_2)} | ` +
+                `D_hit=${gb.D_hit} dmg|hit=${gb.D_dmg1}/${gb.D_dmg2} overall=${Math.round(D_overall_game_1)}/${Math.round(D_overall_game_2)} | ` +
+                `A_rng=${gb.A_rng[0]}-${gb.A_rng[1]} D_rng=${gb.D_rng[0]}-${gb.D_rng[1]}`,
+            );
+          }
+        }
+
+        // Exact UI-like chances from the roll formulas (no RNG noise)
+        const wantExact = cfg.exactVerbose || verboseBlocks || printExact;
+        if (wantExact) {
+          const ex = exactDispChances(attacker, defender, cfg);
+
+          let swapNote = '';
+          if (cfg.exactSwap && attacker.w2) {
+            swapNote =
+              ` (swap dmg|hit=${ex.A_sk1_swap}/${ex.A_sk2_swap} overall=${ex.A_all1_swap}/${ex.A_all2_swap}` +
+              ` | D swap dmg|hit=${ex.D_sk1_swap}/${ex.D_sk2_swap} overall=${ex.D_all1_swap}/${ex.D_all2_swap})`;
+          }
+
+          console.log(
+            `${verboseBlocks ? 'Exact UI:' : '  Exact:'} A hit=${ex.A_hit} dmg|hit=${ex.A_sk1}/${ex.A_sk2} overall=${ex.A_all1}/${ex.A_all2} ` +
+              `| D hit=${ex.D_hit} dmg|hit=${ex.D_sk1}/${ex.D_sk2} overall=${ex.D_all1}/${ex.D_all2}` +
+              swapNote,
+          );
+
+          if (cfg.exactVerbose) {
+            const pct = (x) => (x * 100).toFixed(3);
+            console.log(
+              `Exact raw: A hit=${pct(ex.A_hit_p)}% dmg|hit=${pct(ex.A_sk1_p)}%/${pct(ex.A_sk2_p)}% ` +
+                `| D hit=${pct(ex.D_hit_p)}% dmg|hit=${pct(ex.D_sk1_p)}%/${pct(ex.D_sk2_p)}%`,
+            );
           }
         }
       }
 
-      // Exact UI-like chances from the roll formulas (no RNG noise)
-      const ex = exactDispChances(attacker, defender, cfg);
-
-      let swapNote = '';
-      if (cfg.exactSwap && attacker.w2) {
-        swapNote =
-          ` (swap dmg|hit=${ex.A_sk1_swap}/${ex.A_sk2_swap} overall=${ex.A_all1_swap}/${ex.A_all2_swap}` +
-          ` | D swap dmg|hit=${ex.D_sk1_swap}/${ex.D_sk2_swap} overall=${ex.D_all1_swap}/${ex.D_all2_swap})`;
-      }
-
-      console.log(
-        `Exact UI: A hit=${ex.A_hit} dmg|hit=${ex.A_sk1}/${ex.A_sk2} overall=${ex.A_all1}/${ex.A_all2} ` +
-          `| D hit=${ex.D_hit} dmg|hit=${ex.D_sk1}/${ex.D_sk2} overall=${ex.D_all1}/${ex.D_all2}` +
-          swapNote,
-      );
-
-      if (cfg.exactVerbose) {
-        const pct = (x) => (x * 100).toFixed(3);
-        console.log(
-          `Exact raw: A hit=${pct(ex.A_hit_p)}% dmg|hit=${pct(ex.A_sk1_p)}%/${pct(ex.A_sk2_p)}% ` +
-            `| D hit=${pct(ex.D_hit_p)}% dmg|hit=${pct(ex.D_sk1_p)}%/${pct(ex.D_sk2_p)}%`,
-        );
-      }
       if (traceLines.length) {
         console.log(
           `\n  === TRACE (${traceLines.filter((l) => l.startsWith('-- Fight')).length} fights) for "${name}" ===`,
@@ -3298,12 +3861,26 @@ function main() {
       }
     }
 
-    if (score.count) {
-      const meanAbs = score.sumAbs / score.count;
-      const rms = Math.sqrt(score.sumSq / score.count);
+    // Variant summary (helps you quickly judge a build across the whole defender set)
+    if (summaryOn && _wins.length) {
+      const meanWin = _sumWin / _wins.length;
       console.log(
-        `SCORE: meanAbsΔWin=${meanAbs.toFixed(2)} | rmsΔWin=${rms.toFixed(2)} | worst=${score.worstName} (${score.worstAbs.toFixed(2)})`,
+        `SUMMARY: meanWin=${meanWin.toFixed(2)}% min=${_minWin.toFixed(2)}% (${_minName}) max=${_maxWin.toFixed(2)}% (${_maxName})`,
       );
+    }
+
+    // Baseline compare summary (only if LEGACY_COMPARE=1 and at least one baseline matched)
+    if (compareBaselines) {
+      if (_cmp.n > 0) {
+        const meanAbs = _cmp.meanAbsWin / _cmp.n;
+        const rms = Math.sqrt(_cmp.rmsWin / _cmp.n);
+        console.log(
+          `COMPARE: n=${_cmp.n} meanAbsΔWin=${meanAbs.toFixed(2)}% rmsΔWin=${rms.toFixed(2)}% ` +
+            `worstAbsΔWin=${_cmp.worstAbsWin.toFixed(2)}% (${_cmp.worstName}) [key=${baselineKeyHex}]`,
+        );
+      } else {
+        console.log(`COMPARE: no baselines matched for key=${baselineKeyHex}`);
+      }
     }
 
     console.log('');
