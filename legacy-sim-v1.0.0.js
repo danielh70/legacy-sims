@@ -21,16 +21,16 @@ const path = require('path');
 // If you rename the defender file, update `defenders.file` here.
 const USER_CONFIG = {
   attacker: {
-    mode: 'env', // env | preset | custom
+    mode: 'custom', // env | preset | custom
     preset: 'MAUL_CSTAFF',
 
     // Custom attacker build template (only used when mode='custom').
     // Tip: copy one of the ATTACKER_PRESETS below and paste it here to start.
     custom: {
-      stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-      armor: { name: 'Dark Legion Armor', crystal: 'Abyss Crystal', upgrades: [] },
+      stats: { level: 80, hp: 400, speed: 60, dodge: 107, accuracy: 14 },
+      armor: { name: 'SG1 Armor', crystal: 'Abyss Crystal', upgrades: [] },
 
-      weapon1: { name: 'Crystal Maul', crystal: 'Amulet Crystal', upgrades: [] },
+      weapon1: { name: 'Crystal Maul', crystal: 'Perfect Fire Crystal', upgrades: [] },
       weapon2: { name: 'Core Staff', crystal: 'Amulet Crystal', upgrades: [] },
 
       misc1: { name: 'Bio Spinal Enhancer', crystal: 'Perfect Pink Crystal', upgrades: [] },
@@ -339,6 +339,9 @@ const MISC_NO_CRYSTAL_SKILL_TWEAK_TAG = (() => {
 const PRINT_WEAPON_RNG = yn(String(pickEnv('LEGACY_PRINT_WEAPON_RNG', '0')));
 const SWAP_ATTACKER_WEPS = yn(String(pickEnv('LEGACY_SWAP_ATTACKER_WEPS', '0')));
 const SWAP_DEFENDER_WEPS = yn(String(pickEnv('LEGACY_SWAP_DEFENDER_WEPS', '0')));
+const DEBUG_COMPILE_DEFENDER_NAMES = new Set(
+  parseCsv(pickEnv('LEGACY_DEBUG_COMPILE_DEFENDERS', '')).map((s) => String(s).trim()),
+);
 
 const MISC_NO_CRYSTAL_SKILL_ZERO_DEF = yn(
   String(pickEnv('LEGACY_MISC_NO_CRYSTAL_SKILL_ZERO_DEF', '0')),
@@ -1117,8 +1120,15 @@ let ItemDefs = {
   'Void Bow': {
     type: 'Weapon',
     skillType: 'projSkill',
-    flatStats: { speed: 70, accuracy: 48, projSkill: 60, defSkill: 20 },
+    flatStats: { speed: 70, accuracy: 48, projSkill: 65, defSkill: 20 },
     baseWeaponDamage: { min: 10, max: 125 },
+    upgradeSlots: [['Laser Sight', 'Poisoned Tip']],
+  },
+  'Fortified Void Bow': {
+    type: 'Weapon',
+    skillType: 'projSkill',
+    flatStats: { speed: 70, accuracy: 48, projSkill: 60, defSkill: 20 },
+    baseWeaponDamage: { min: 25, max: 125 },
     upgradeSlots: [['Laser Sight', 'Poisoned Tip']],
   },
 
@@ -1438,25 +1448,29 @@ function computeVariant(itemName, crystalName, upgrades = [], cfg, slotTag = 0) 
   const addArmStat = applyStat(fs.armor || 0, 'armor', 'armor');
 
   let weapon = null;
+  let debugWeaponBuild = null;
   if (idef.baseWeaponDamage) {
     const wRound = cfg.weaponDmgRound;
     const nCrystals = cfg.crystalSlots || 4;
     const stackModeDmg = cfg.crystalStackDmg || 'sum4';
+    const dmgPctPerCrystal = crystalPct.damage || 0;
 
     let min = applyCrystalPctToWeaponDmg(
       idef.baseWeaponDamage.min,
-      crystalPct.damage || 0,
+      dmgPctPerCrystal,
       nCrystals,
       wRound,
       stackModeDmg,
     );
     let max = applyCrystalPctToWeaponDmg(
       idef.baseWeaponDamage.max,
-      crystalPct.damage || 0,
+      dmgPctPerCrystal,
       nCrystals,
       wRound,
       stackModeDmg,
     );
+    const crystalOnlyMin = min;
+    const crystalOnlyMax = max;
 
     const upDmg = upgradePct.damage || 0;
     if (upDmg) {
@@ -1466,6 +1480,20 @@ function computeVariant(itemName, crystalName, upgrades = [], cfg, slotTag = 0) 
 
     const skill = idef.skillType === 'gunSkill' ? 0 : idef.skillType === 'meleeSkill' ? 1 : 2;
     weapon = { name: itemName, min, max, skill };
+    debugWeaponBuild = {
+      baseMin: idef.baseWeaponDamage.min,
+      baseMax: idef.baseWeaponDamage.max,
+      crystalName,
+      dmgPctPerCrystal,
+      crystalSlots: nCrystals,
+      crystalStackDmg: normalizeCrystalStackMode(stackModeDmg),
+      weaponDmgRound: wRound,
+      crystalOnlyMin,
+      crystalOnlyMax,
+      upgradeDamagePct: upDmg,
+      finalMin: min,
+      finalMax: max,
+    };
   }
 
   const u1 = upgrades && upgrades[0] ? upgrades[0] : null;
@@ -1485,6 +1513,7 @@ function computeVariant(itemName, crystalName, upgrades = [], cfg, slotTag = 0) 
     addDef,
     addArmStat,
     weapon,
+    __debugWeaponBuild: debugWeaponBuild,
   };
 }
 
@@ -3457,6 +3486,75 @@ function main() {
       const u2 = (typeof part.upgrade2 === 'string' && part.upgrade2) || ups[1] || '';
       return [u1, u2];
     }
+
+    function printCompileTrace(name, payload, defender, armorV, w1V, w2V, m1V, m2V) {
+      if (!DEBUG_COMPILE_DEFENDER_NAMES.size || !DEBUG_COMPILE_DEFENDER_NAMES.has(name)) return;
+
+      const fmtUps = (part) => {
+        const [u1, u2] = partWeaponUpgrades(part);
+        return [u1, u2].filter(Boolean);
+      };
+      const fmtPart = (label, part) => {
+        const crystal = partCrystal(part);
+        const ups = fmtUps(part);
+        return `${label}: ${part.name} crystal=${crystal || 'none'} upgrades=${ups.length ? ups.join(',') : 'none'}`;
+      };
+      const fmtWeaponBuild = (label, vv) => {
+        const dbg = vv && vv.__debugWeaponBuild;
+        if (!dbg) return `${label}: no-weapon`;
+        return (
+          `${label}: base=${dbg.baseMin}-${dbg.baseMax} crystal=${dbg.crystalName} ` +
+          `dmgPct/crystal=${dbg.dmgPctPerCrystal} slots=${dbg.crystalSlots} stack=${dbg.crystalStackDmg} round=${dbg.weaponDmgRound} ` +
+          `afterCrystal=${dbg.crystalOnlyMin}-${dbg.crystalOnlyMax} upDmgPct=${dbg.upgradeDamagePct} final=${dbg.finalMin}-${dbg.finalMax}`
+        );
+      };
+      const fmtPostArmor = (label, weapon) => {
+        if (!weapon) return `${label}: no-weapon`;
+        const postMin = applyArmorAndRound(weapon.min, attacker.armorFactor, cfg.armorRound);
+        const postMax = applyArmorAndRound(weapon.max, attacker.armorFactor, cfg.armorRound);
+        return `${label}: compiled=${weapon.min}-${weapon.max} postArmorVsAtt=${postMin}-${postMax}`;
+      };
+      const dPred = predictPosActionRangeFromWeaponMinMax(
+        defender.w1 ? defender.w1.min : 0,
+        defender.w1 ? defender.w1.max : 0,
+        defender.w2 ? defender.w2.min : 0,
+        defender.w2 ? defender.w2.max : 0,
+        defender.level,
+        attacker.armor,
+        cfg.armorK,
+        cfg.armorApply,
+        cfg.armorRound,
+      );
+
+      console.log(`  TRACE_COMPILE defender=${name}`);
+      console.log(
+        `    stats: level=${payload.stats.level} hp=${payload.stats.hp} spd=${payload.stats.speed} acc=${payload.stats.accuracy} dod=${payload.stats.dodge}`,
+      );
+      console.log(`    ${fmtPart('armor', payload.armor)}`);
+      console.log(`    ${fmtPart('weapon1', payload.weapon1)}`);
+      console.log(`    ${fmtPart('weapon2', payload.weapon2)}`);
+      console.log(`    ${fmtPart('misc1', payload.misc1)}`);
+      console.log(`    ${fmtPart('misc2', payload.misc2)}`);
+      console.log(
+        `    compiled stats: spd=${defender.speed} acc=${defender.acc} dod=${defender.dodge} arm=${defender.armor} armF=${defender.armorFactor.toFixed(6)} ` +
+          `gun=${defender.gun} mel=${defender.mel} prj=${defender.prj} def=${defender.defSk}`,
+      );
+      console.log(
+        `    armor variant: addArm=${armorV.addArmStat} addDef=${armorV.addDef} addDod=${armorV.addDod} addSpd=${armorV.addSpeed}`,
+      );
+      console.log(
+        `    misc1 variant: addAcc=${m1V.addAcc} addDod=${m1V.addDod} addGun=${m1V.addGun} addDef=${m1V.addDef}`,
+      );
+      console.log(
+        `    misc2 variant: addAcc=${m2V.addAcc} addDod=${m2V.addDod} addGun=${m2V.addGun} addDef=${m2V.addDef}`,
+      );
+      console.log(`    ${fmtWeaponBuild('weapon1 build', w1V)}`);
+      console.log(`    ${fmtWeaponBuild('weapon2 build', w2V)}`);
+      console.log(`    ${fmtPostArmor('weapon1 postArmor', defender.w1)}`);
+      console.log(`    ${fmtPostArmor('weapon2 postArmor', defender.w2)}`);
+      console.log(`    predicted defender action range vs attacker: ${dPred.min}-${dPred.max}`);
+    }
+
     for (let di = 0; di < payloads.length; di++) {
       const { name, payload } = payloads[di];
 
@@ -3469,25 +3567,28 @@ function main() {
             : Math.random;
       }
 
+      const armorV = getV(payload.armor.name, partCrystal(payload.armor));
+      const [w1u1, w1u2] = partWeaponUpgrades(payload.weapon1);
+      const [w2u1, w2u2] = partWeaponUpgrades(payload.weapon2);
+      const w1V = getV(payload.weapon1.name, partCrystal(payload.weapon1), w1u1, w1u2);
+      const w2V = getV(payload.weapon2.name, partCrystal(payload.weapon2), w2u1, w2u2);
+      const m1V = getV(payload.misc1.name, partCrystal(payload.misc1), '', '', 1);
+      const m2V = getV(payload.misc2.name, partCrystal(payload.misc2), '', '', 2);
+
       const defender = compileCombatantFromParts({
         name,
         stats: payload.stats,
-        armorV: getV(payload.armor.name, partCrystal(payload.armor)),
-        w1V: (() => {
-          const [u1, u2] = partWeaponUpgrades(payload.weapon1);
-          return getV(payload.weapon1.name, partCrystal(payload.weapon1), u1, u2);
-        })(),
-        w2V: (() => {
-          const [u1, u2] = partWeaponUpgrades(payload.weapon2);
-          return getV(payload.weapon2.name, partCrystal(payload.weapon2), u1, u2);
-        })(),
-        m1V: getV(payload.misc1.name, partCrystal(payload.misc1), '', '', 1),
-        m2V: getV(payload.misc2.name, partCrystal(payload.misc2), '', '', 2),
+        armorV,
+        w1V,
+        w2V,
+        m1V,
+        m2V,
         cfg,
         role: 'D',
       });
 
       if (SWAP_DEFENDER_WEPS) swapWeaponsInPlace(defender);
+      printCompileTrace(name, payload, defender, armorV, w1V, w2V, m1V, m2V);
 
       const aFirst = attacker.speed >= defender.speed ? 'yes' : 'no';
 

@@ -1,419 +1,34 @@
-dl gun build:
-
-{
-    "times": 10000,
-    "attackerWins": 9083,
-    "defenderWins": 917,
-    "averageTurns": 11.4623,
-    "turns": {
-        "total": 114623,
-        "min": 6,
-        "max": 24
-    },
-    "attackerDamage": {
-        "total": 9014362,
-        "min": 50,
-        "max": 164
-    },
-    "defenderDamage": {
-        "total": 5287458,
-        "min": 60,
-        "max": 185
-    },
-    "attackerChances": {
-        "hit": 79,
-        "damage1": 63,
-        "damage2": 63
-    },
-    "defenderChances": {
-        "hit": 94,
-        "damage1": 30,
-        "damage2": 30
-    },
-    "error": ""
-}
-
-dl gun build 2:
-
-{
-    "times": 10000,
-    "attackerWins": 8301,
-    "defenderWins": 1699,
-    "averageTurns": 12.0877,
-    "turns": {
-        "total": 120877,
-        "min": 6,
-        "max": 25
-    },
-    "attackerDamage": {
-        "total": 8813427,
-        "min": 50,
-        "max": 164
-    },
-    "defenderDamage": {
-        "total": 6190304,
-        "min": 60,
-        "max": 174
-    },
-    "attackerChances": {
-        "hit": 79,
-        "damage1": 60,
-        "damage2": 60
-    },
-    "defenderChances": {
-        "hit": 89,
-        "damage1": 35,
-        "damage2": 35
-    },
-    "error": ""
-}
-
-dl gun build 3:
-
-{
-    "times": 10000,
-    "attackerWins": 6075,
-    "defenderWins": 3925,
-    "averageTurns": 10.8782,
-    "turns": {
-        "total": 108782,
-        "min": 5,
-        "max": 20
-    },
-    "attackerDamage": {
-        "total": 8216406,
-        "min": 50,
-        "max": 164
-    },
-    "defenderDamage": {
-        "total": 7361548,
-        "min": 60,
-        "max": 185
-    },
-    "attackerChances": {
-        "hit": 82,
-        "damage1": 59,
-        "damage2": 59
-    },
-    "defenderChances": {
-        "hit": 84,
-        "damage1": 48,
-        "damage2": 48
-    },
-    "error": ""
-}
-
-dl gun build 4:
-
-{
-    "times": 10000,
-    "attackerWins": 6079,
-    "defenderWins": 3921,
-    "averageTurns": 16.1308,
-    "turns": {
-        "total": 161308,
-        "min": 7,
-        "max": 30
-    },
-    "attackerDamage": {
-        "total": 8085780,
-        "min": 50,
-        "max": 164
-    },
-    "defenderDamage": {
-        "total": 7321185,
-        "min": 60,
-        "max": 174
-    },
-    "attackerChances": {
-        "hit": 82,
-        "damage1": 41,
-        "damage2": 41
-    },
-    "defenderChances": {
-        "hit": 71,
-        "damage1": 39,
-        "damage2": 39
-    },
-    "error": ""
-}
-
-dl gun build 5:
-
-{
-    "times": 10000,
-    "attackerWins": 9676,
-    "defenderWins": 324,
-    "averageTurns": 9.554,
-    "turns": {
-        "total": 95540,
-        "min": 5,
-        "max": 21
-    },
-    "attackerDamage": {
-        "total": 7503193,
-        "min": 50,
-        "max": 164
-    },
-    "defenderDamage": {
-        "total": 4361994,
-        "min": 60,
-        "max": 185
-    },
-    "attackerChances": {
-        "hit": 79,
-        "damage1": 63,
-        "damage2": 63
-    },
-    "defenderChances": {
-        "hit": 96,
-        "damage1": 30,
-        "damage2": 30
-    },
-    "error": ""
-}
-
-dl gun build 6:
-
-{
-    "times": 10000,
-    "attackerWins": 9173,
-    "defenderWins": 827,
-    "averageTurns": 10.089,
-    "turns": {
-        "total": 100890,
-        "min": 5,
-        "max": 22
-    },
-    "attackerDamage": {
-        "total": 7401400,
-        "min": 50,
-        "max": 164
-    },
-    "defenderDamage": {
-        "total": 5333149,
-        "min": 60,
-        "max": 174
-    },
-    "attackerChances": {
-        "hit": 79,
-        "damage1": 60,
-        "damage2": 60
-    },
-    "defenderChances": {
-        "hit": 93,
-        "damage1": 35,
-        "damage2": 35
-    },
-    "error": ""
-}
-
-dl gun build 7:
-
-{
-    "times": 10000,
-    "attackerWins": 7636,
-    "defenderWins": 2364,
-    "averageTurns": 9.3714,
-    "turns": {
-        "total": 93714,
-        "min": 5,
-        "max": 19
-    },
-    "attackerDamage": {
-        "total": 7063709,
-        "min": 50,
-        "max": 164
-    },
-    "defenderDamage": {
-        "total": 6524368,
-        "min": 60,
-        "max": 185
-    },
-    "attackerChances": {
-        "hit": 82,
-        "damage1": 59,
-        "damage2": 59
-    },
-    "defenderChances": {
-        "hit": 89,
-        "damage1": 48,
-        "damage2": 48
-    },
-    "error": ""
-}
-
 dl gun build 8:
 
 {
     "times": 10000,
-    "attackerWins": 6769,
-    "defenderWins": 3231,
-    "averageTurns": 13.5909,
+    "attackerWins": 4838,
+    "defenderWins": 5162,
+    "averageTurns": 12.1456,
     "turns": {
-        "total": 135909,
-        "min": 5,
-        "max": 29
+        "total": 121456,
+        "min": 3,
+        "max": 28
     },
     "attackerDamage": {
-        "total": 6795203,
+        "total": 6041999,
         "min": 50,
-        "max": 164
+        "max": 180
     },
     "defenderDamage": {
-        "total": 6965938,
-        "min": 60,
-        "max": 174
+        "total": 3570308,
+        "min": 59,
+        "max": 171
     },
     "attackerChances": {
-        "hit": 82,
+        "hit": 76,
         "damage1": 41,
         "damage2": 41
     },
     "defenderChances": {
-        "hit": 80,
-        "damage1": 39,
-        "damage2": 39
-    },
-    "error": ""
-}
-
-core/void build 1:
-
-{
-    "times": 10000,
-    "attackerWins": 7207,
-    "defenderWins": 2793,
-    "averageTurns": 12.6953,
-    "turns": {
-        "total": 126953,
-        "min": 6,
-        "max": 25
-    },
-    "attackerDamage": {
-        "total": 8478022,
-        "min": 50,
-        "max": 164
-    },
-    "defenderDamage": {
-        "total": 6800796,
-        "min": 50,
-        "max": 198
-    },
-    "attackerChances": {
-        "hit": 79,
-        "damage1": 55,
-        "damage2": 55
-    },
-    "defenderChances": {
-        "hit": 82,
-        "damage1": 38,
-        "damage2": 38
-    },
-    "error": ""
-}
-
-dual bow build 1:
-
-{
-    "times": 10000,
-    "attackerWins": 8501,
-    "defenderWins": 1499,
-    "averageTurns": 12.6423,
-    "turns": {
-        "total": 126423,
-        "min": 6,
-        "max": 28
-    },
-    "attackerDamage": {
-        "total": 8858592,
-        "min": 50,
-        "max": 164
-    },
-    "defenderDamage": {
-        "total": 6060689,
-        "min": 10,
-        "max": 246
-    },
-    "attackerChances": {
-        "hit": 79,
-        "damage1": 57,
-        "damage2": 57
-    },
-    "defenderChances": {
-        "hit": 85,
-        "damage1": 43,
-        "damage2": 43
-    },
-    "error": ""
-}
-
-rift bow build 1:
-
-{
-    "times": 10000,
-    "attackerWins": 8641,
-    "defenderWins": 1359,
-    "averageTurns": 12.147,
-    "turns": {
-        "total": 121470,
-        "min": 6,
-        "max": 23
-    },
-    "attackerDamage": {
-        "total": 8908827,
-        "min": 50,
-        "max": 164
-    },
-    "defenderDamage": {
-        "total": 6119018,
-        "min": 10,
-        "max": 188
-    },
-    "attackerChances": {
-        "hit": 79,
-        "damage1": 60,
-        "damage2": 60
-    },
-    "defenderChances": {
-        "hit": 91,
-        "damage1": 43,
-        "damage2": 43
-    },
-    "error": ""
-}
-
-t2 scythe build:
-
-{
-    "times": 10000,
-    "attackerWins": 6519,
-    "defenderWins": 3481,
-    "averageTurns": 13.013,
-    "turns": {
-        "total": 130130,
-        "min": 6,
-        "max": 26
-    },
-    "attackerDamage": {
-        "total": 8280345,
-        "min": 50,
-        "max": 164
-    },
-    "defenderDamage": {
-        "total": 7118397,
-        "min": 79,
-        "max": 200
-    },
-    "attackerChances": {
-        "hit": 81,
-        "damage1": 52,
-        "damage2": 52
-    },
-    "defenderChances": {
-        "hit": 72,
-        "damage1": 42,
-        "damage2": 42
+        "hit": 50,
+        "damage1": 36,
+        "damage2": 36
     },
     "error": ""
 }
@@ -422,104 +37,244 @@ sg1 split bombs:
 
 {
     "times": 10000,
-    "attackerWins": 4443,
-    "defenderWins": 5557,
-    "averageTurns": 16.9315,
+    "attackerWins": 4874,
+    "defenderWins": 5126,
+    "averageTurns": 16.1251,
     "turns": {
-        "total": 169315,
-        "min": 7,
-        "max": 31
+        "total": 161251,
+        "min": 4,
+        "max": 37
     },
     "attackerDamage": {
-        "total": 7595143,
+        "total": 7433258,
         "min": 49,
-        "max": 161
+        "max": 178
     },
     "defenderDamage": {
-        "total": 8020671,
-        "min": 55,
-        "max": 172
+        "total": 3521077,
+        "min": 54,
+        "max": 170
     },
     "attackerChances": {
-        "hit": 85,
+        "hit": 79,
         "damage1": 36,
         "damage2": 36
     },
     "defenderChances": {
-        "hit": 69,
-        "damage1": 48,
-        "damage2": 48
+        "hit": 35,
+        "damage1": 45,
+        "damage2": 45
     },
     "error": ""
 }
 
-HF core/void:
+hf core/void:
 
 {
     "times": 10000,
-    "attackerWins": 6922,
-    "defenderWins": 3078,
-    "averageTurns": 13.229,
+    "attackerWins": 4942,
+    "defenderWins": 5058,
+    "averageTurns": 11.3246,
     "turns": {
-        "total": 132290,
-        "min": 6,
-        "max": 24
+        "total": 113246,
+        "min": 3,
+        "max": 23
     },
     "attackerDamage": {
-        "total": 8377704,
+        "total": 7384890,
         "min": 40,
-        "max": 133
+        "max": 147
     },
     "defenderDamage": {
-        "total": 7018877,
-        "min": 50,
-        "max": 198
+        "total": 3552781,
+        "min": 49,
+        "max": 194
     },
     "attackerChances": {
-        "hit": 93,
+        "hit": 89,
         "damage1": 55,
         "damage2": 55
     },
     "defenderChances": {
-        "hit": 82,
-        "damage1": 38,
-        "damage2": 38
+        "hit": 53,
+        "damage1": 35,
+        "damage2": 35
     },
     "error": ""
 }
 
+dual bow build 1:
+
+{
+    "times": 10000,
+    "attackerWins": 5311,
+    "defenderWins": 4689,
+    "averageTurns": 11.3522,
+    "turns": {
+        "total": 113522,
+        "min": 3,
+        "max": 26
+    },
+    "attackerDamage": {
+        "total": 7723559,
+        "min": 50,
+        "max": 180
+    },
+    "defenderDamage": {
+        "total": 3475583,
+        "min": 10,
+        "max": 241
+    },
+    "attackerChances": {
+        "hit": 72,
+        "damage1": 57,
+        "damage2": 57
+    },
+    "defenderChances": {
+        "hit": 59,
+        "damage1": 40,
+        "damage2": 40
+    },
+    "error": ""
+}
+
+rift bow build 1:
+
+{
+    "times": 10000,
+    "attackerWins": 4298,
+    "defenderWins": 5702,
+    "averageTurns": 10.4564,
+    "turns": {
+        "total": 104564,
+        "min": 3,
+        "max": 25
+    },
+    "attackerDamage": {
+        "total": 7359830,
+        "min": 50,
+        "max": 180
+    },
+    "defenderDamage": {
+        "total": 3739519,
+        "min": 10,
+        "max": 185
+    },
+    "attackerChances": {
+        "hit": 72,
+        "damage1": 60,
+        "damage2": 60
+    },
+    "defenderChances": {
+        "hit": 71,
+        "damage1": 40,
+        "damage2": 40
+    },
+    "error": ""
+}
 
 armor stack cores:
 
 {
     "times": 10000,
-    "attackerWins": 6691,
-    "defenderWins": 3309,
-    "averageTurns": 16.8996,
+    "attackerWins": 3923,
+    "defenderWins": 6077,
+    "averageTurns": 14.0343,
     "turns": {
-        "total": 168996,
-        "min": 9,
-        "max": 29
+        "total": 140343,
+        "min": 5,
+        "max": 30
     },
     "attackerDamage": {
-        "total": 8372923,
+        "total": 7196873,
         "min": 40,
-        "max": 133
+        "max": 147
     },
     "defenderDamage": {
-        "total": 7296407,
-        "min": 50,
-        "max": 120
+        "total": 3836812,
+        "min": 49,
+        "max": 118
     },
     "attackerChances": {
-        "hit": 93,
+        "hit": 89,
         "damage1": 44,
         "damage2": 44
     },
     "defenderChances": {
-        "hit": 84,
-        "damage1": 47,
-        "damage2": 47
+        "hit": 58,
+        "damage1": 44,
+        "damage2": 44
     },
     "error": ""
 }
+
+core/void build 1:
+
+{
+    "times": 10000,
+    "attackerWins": 4875,
+    "defenderWins": 5125,
+    "averageTurns": 11.3268,
+    "turns": {
+        "total": 113268,
+        "min": 3,
+        "max": 25
+    },
+    "attackerDamage": {
+        "total": 7436658,
+        "min": 50,
+        "max": 180
+    },
+    "defenderDamage": {
+        "total": 3567987,
+        "min": 49,
+        "max": 194
+    },
+    "attackerChances": {
+        "hit": 72,
+        "damage1": 55,
+        "damage2": 55
+    },
+    "defenderChances": {
+        "hit": 53,
+        "damage1": 35,
+        "damage2": 35
+    },
+    "error": ""
+}
+
+t2 scythe build:
+
+{
+    "times": 10000,
+    "attackerWins": 5884,
+    "defenderWins": 4116,
+    "averageTurns": 12.4412,
+    "turns": {
+        "total": 124412,
+        "min": 3,
+        "max": 27
+    },
+    "attackerDamage": {
+        "total": 7939375,
+        "min": 50,
+        "max": 180
+    },
+    "defenderDamage": {
+        "total": 3284411,
+        "min": 78,
+        "max": 198
+    },
+    "attackerChances": {
+        "hit": 74,
+        "damage1": 52,
+        "damage2": 52
+    },
+    "defenderChances": {
+        "hit": 39,
+        "damage1": 39,
+        "damage2": 39
+    },
+    "error": ""
+}
+

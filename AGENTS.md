@@ -90,6 +90,39 @@ Prefer debugging before refactoring.
 
 ---
 
+## Calibration workflow rules
+
+When calibrating against in-game simulator output:
+- treat provided in-game JSON / baseline files as the external source of truth
+- prefer baselines that cover multiple defender archetypes over a single matchup
+- do not declare success from one matchup if other checked matchups regress
+- use deterministic mode, fixed seeds, and stable trial counts before comparing runs
+- keep compare output compact, but always preserve worst-delta visibility
+- after each behavior-changing patch, rerun the same verification command before making another theory-driven change
+- if two consecutive behavior-changing patches do not materially improve the target mismatch, stop patching and switch back to instrumentation / diagnosis
+- do not “solve” a mismatch by only changing trial counts, noise thresholds, or search heuristics unless the task is explicitly about those systems
+
+When reporting calibration progress, prefer:
+- worst delta
+- median or average delta across the checked set
+- which defenders improved
+- which defenders regressed
+
+---
+
+## Codex-specific execution rules
+
+If running inside Codex / Codex CLI / Codex IDE:
+- read `AGENTS.md` first and follow it strictly
+- prefer existing verify / compare commands if present
+- if no reusable verification command exists, create the smallest safe helper command or script only if it does not change combat logic
+- inspect command output before making another edit; do not chain speculative edits without rerunning verification
+- for long calibration loops, keep a short running log of: command used, files changed, before/after worst delta, and open questions
+- stop and explain uncertainty instead of making broad formula changes when the root cause is not isolated
+- prefer `gpt-5.4` for most Codex tasks unless there is a specific reason to use another model
+
+---
+
 ## Variant / data handling rules
 
 Treat `legacy-defs-*` as the source of truth for shared item/crystal/upgrade data.

@@ -80,6 +80,13 @@ const ItemDefs = {
   'Void Bow': {
     type: 'Weapon',
     skillType: 'projSkill',
+    flatStats: { speed: 70, accuracy: 48, projSkill: 65, defSkill: 20 },
+    baseWeaponDamage: { min: 10, max: 125 },
+    upgradeSlots: [['Laser Sight', 'Poisoned Tip']],
+  },
+  'Fortified Void Bow': {
+    type: 'Weapon',
+    skillType: 'projSkill',
     flatStats: { speed: 70, accuracy: 48, projSkill: 60, defSkill: 20 },
     baseWeaponDamage: { min: 25, max: 125 },
     upgradeSlots: [['Laser Sight', 'Poisoned Tip']],

@@ -4,7 +4,7 @@
 /**
  * =====================
  * LEGACY BRUTE FORCE (CONSTRAINED + STAGED + DETERMINISTIC RNG OPTION)
- * v1.0.0 (workspace snapshot of current stable brute)
+ * v1.1.0 (HP sweep + acc/dodge sweep + safe local accuracy bail)
  * =====================
  *
  * Fixes / Improvements:
@@ -22,7 +22,6 @@
  *   LEGACY_CATALOG_CONFIRM_TRIALS= (defaults to TRIALS_CONFIRM)
  *
  * Speed/quality knobs:
- *   LEGACY_INIT_FLOOR_PCT=42.5           # seed shared floor (worst%) to ramp faster
  *   LEGACY_WARM_START=1|0                # evaluate a known strong seed build to set the shared floor (default ON)
  *   LEGACY_WARM_START_TRIALS=5000        # trials/def for warm-start (defaults to TRIALS_CONFIRM)
  *
@@ -69,14 +68,54 @@ const SETTINGS = {
   GATEKEEPERS_DEFAULT: 4,
 
   SCREEN_BAIL_MARGIN_DEFAULT: 6.0,
+  INIT_FLOOR_PCT: 40, // 0 disables manual shared-floor seeding
 
   KEEP_TOP_N_PER_HP: 10,
   PROGRESS_EVERY_MS: 2000,
 
-  // LOCKED ATTACKER STATS
+  // Historical single-HP default.
   LOCKED_HP: 595,
 
   WORKERS_DEFAULT_CAP: 4,
+};
+
+// =====================
+// PLAN / SWEEP CONFIG (edit these for HP + allocation sweeps)
+// =====================
+const PLAN_SWEEP_CONFIG = {
+  // 'single' = only use singleHp below
+  // 'sweep'  = use hpSweep.min..max in hpSweep.step increments
+  hpMode: 'sweep',
+  singleHp: SETTINGS.LOCKED_HP,
+
+  hpSweep: {
+    min: 300,
+    max: 700,
+    step: 50,
+    includeSingleHp: false,
+  },
+
+  // 'dodge_only'      = old behavior (all free points into dodge)
+  // 'acc_dodge_sweep' = sweep accuracy allocations and put the rest into dodge
+  allocationMode: 'acc_dodge_sweep',
+  allocation: {
+    accStep: 10,
+    customAccValues: [], // e.g. [15, 25] to force extra checkpoints when valid for a given HP
+    includeFullDodge: true,
+    includeFullAcc: true,
+  },
+
+  // Conservative local bail for a single gear build while stepping accuracy upward.
+  // This only stops additional HIGHER-accuracy allocations for the same HP once the
+  // results are clearly worse for consecutive steps.
+  safeAccuracyBail: {
+    enabled: true,
+    metric: 'screen_or_confirm', // 'screen_or_confirm' | 'confirm_only'
+    minEvaluatedPlans: 3,
+    minAccAheadOfBest: 20,
+    worseByPct: 2.5,
+    consecutiveSteps: 2,
+  },
 };
 
 // =====================
@@ -1778,23 +1817,248 @@ function buildMaskBuckets(weaponPairIndicesByMask, miscPairsAllowedByMask) {
 }
 
 // =====================
-// LOCKED HP/stat plan
+// HP/stat plans / sweep config
 // =====================
-function buildHpPlans() {
-  const hp = SETTINGS.LOCKED_HP;
-  const freePoints = Math.round((SETTINGS.HP_MAX - hp) / 5);
+function clampInt(x, lo, hi) {
+  const n = Math.floor(Number(x));
+  if (!Number.isFinite(n)) return lo;
+  return clamp(n, lo, hi);
+}
 
-  if (freePoints < 0 || (SETTINGS.HP_MAX - hp) % 5 !== 0) {
-    throw new Error(
-      `Locked HP must be a multiple of 5 below HP_MAX. HP_MAX=${SETTINGS.HP_MAX} LOCKED_HP=${hp}`,
-    );
+function uniqueSortedNums(xs) {
+  return Array.from(
+    new Set(
+      (Array.isArray(xs) ? xs : [])
+        .map((x) => Number(x))
+        .filter((x) => Number.isFinite(x))
+        .map((x) => Math.floor(x)),
+    ),
+  ).sort((a, b) => a - b);
+}
+
+function buildAccAllocValues(freePoints, cfg) {
+  const out = [];
+  const mode = String((cfg && cfg.allocationMode) || 'dodge_only')
+    .trim()
+    .toLowerCase();
+
+  if (mode === 'dodge_only') return [0];
+
+  const alloc = (cfg && cfg.allocation) || {};
+  const accStep = Math.max(1, clampInt(alloc.accStep, 1, Math.max(1, freePoints || 1)));
+
+  if (alloc.includeFullDodge !== false) out.push(0);
+  for (let acc = 0; acc <= freePoints; acc += accStep) out.push(acc);
+  if (alloc.includeFullAcc !== false) out.push(freePoints);
+
+  const custom = Array.isArray(alloc.customAccValues) ? alloc.customAccValues : [];
+  for (const acc of custom) out.push(clampInt(acc, 0, freePoints));
+
+  return uniqueSortedNums(out).filter((acc) => acc >= 0 && acc <= freePoints);
+}
+
+function groupPlansByHp(plans) {
+  const map = new Map();
+  for (const plan of plans) {
+    const hp = String(plan.hp);
+    let arr = map.get(hp);
+    if (!arr) {
+      arr = [];
+      map.set(hp, arr);
+    }
+    arr.push(plan);
   }
 
-  const plan = { hp, extraAcc: 0, extraDodge: freePoints, freePoints };
+  return Array.from(map.entries())
+    .map(([hp, arr]) => ({
+      hp: Number(hp),
+      plans: arr.slice().sort((a, b) => a.extraAcc - b.extraAcc || a.extraDodge - b.extraDodge),
+    }))
+    .sort((a, b) => a.hp - b.hp);
+}
+
+function pickWarmStartPlan(plans) {
+  if (!plans || !plans.length) return null;
+
+  let best = null;
+  for (const plan of plans) {
+    if (plan.hp === SETTINGS.LOCKED_HP && plan.extraAcc === 0) return plan;
+    if (!best) {
+      best = plan;
+      continue;
+    }
+
+    const a = Math.abs(plan.hp - SETTINGS.LOCKED_HP);
+    const b = Math.abs(best.hp - SETTINGS.LOCKED_HP);
+    if (a < b) {
+      best = plan;
+      continue;
+    }
+    if (a === b && plan.extraAcc < best.extraAcc) best = plan;
+  }
+  return best;
+}
+
+function buildHpPlans() {
+  const cfg = PLAN_SWEEP_CONFIG || {};
+  const hpMode = String(cfg.hpMode || 'single')
+    .trim()
+    .toLowerCase();
+  const allocationMode = String(cfg.allocationMode || 'dodge_only')
+    .trim()
+    .toLowerCase();
+
+  const hpValues = [];
+  if (hpMode === 'sweep') {
+    const hpSweep = cfg.hpSweep || {};
+    const hpMin = clampInt(hpSweep.min, 1, SETTINGS.HP_MAX);
+    const hpMax = clampInt(hpSweep.max, hpMin, SETTINGS.HP_MAX);
+    const hpStep = Math.max(1, clampInt(hpSweep.step, 1, SETTINGS.HP_MAX));
+
+    for (let hp = hpMin; hp <= hpMax; hp += hpStep) hpValues.push(hp);
+    if (hpSweep.includeSingleHp) hpValues.push(clampInt(cfg.singleHp, 1, SETTINGS.HP_MAX));
+  } else {
+    hpValues.push(clampInt(cfg.singleHp, 1, SETTINGS.HP_MAX));
+  }
+
+  const plans = [];
+  const perHpSummary = [];
+
+  for (const hp of uniqueSortedNums(hpValues)) {
+    const delta = SETTINGS.HP_MAX - hp;
+    if (delta < 0 || delta % 5 !== 0) {
+      throw new Error(
+        `HP ${hp} is invalid for HP_MAX=${SETTINGS.HP_MAX}; expected a value <= HP_MAX with (HP_MAX-hp) divisible by 5.`,
+      );
+    }
+
+    const freePoints = delta / 5;
+    const accValues = buildAccAllocValues(freePoints, {
+      allocationMode,
+      allocation: cfg.allocation,
+    });
+    if (!accValues.length) {
+      throw new Error(`No stat allocations were generated for HP ${hp}. Check PLAN_SWEEP_CONFIG.`);
+    }
+
+    for (const extraAcc of accValues) {
+      plans.push({
+        hp,
+        extraAcc,
+        extraDodge: freePoints - extraAcc,
+        freePoints,
+      });
+    }
+
+    perHpSummary.push({
+      hp,
+      freePoints,
+      allocCount: accValues.length,
+      accMin: accValues[0],
+      accMax: accValues[accValues.length - 1],
+      accStep:
+        allocationMode === 'dodge_only'
+          ? 0
+          : Math.max(1, clampInt(cfg.allocation && cfg.allocation.accStep, 1, freePoints || 1)),
+    });
+  }
+
+  plans.sort((a, b) => a.hp - b.hp || a.extraAcc - b.extraAcc || a.extraDodge - b.extraDodge);
+
   return {
-    plans: [plan],
-    perHpSummary: [{ hp, freePoints, allocCount: 1 }],
+    plans,
+    perHpSummary,
+    planGroups: groupPlansByHp(plans),
+    hpMode,
+    allocationMode,
+    warmStartPlan: pickWarmStartPlan(plans),
   };
+}
+
+function extractAccuracySweepMetric(score, defendersLen, cfg) {
+  if (!cfg || !cfg.enabled || !score) return null;
+
+  if (!score.bailed && typeof score.worstWin === 'number' && Number.isFinite(score.worstWin)) {
+    return { value: score.worstWin, source: 'confirm' };
+  }
+
+  if (
+    String(cfg.metric || 'screen_or_confirm')
+      .trim()
+      .toLowerCase() === 'confirm_only'
+  ) {
+    return null;
+  }
+
+  if (
+    score.screenSampled === defendersLen &&
+    typeof score.screenWorstWin === 'number' &&
+    Number.isFinite(score.screenWorstWin)
+  ) {
+    return { value: score.screenWorstWin, source: 'screen' };
+  }
+
+  return null;
+}
+
+function createAccuracySweepState(cfg) {
+  const enabled = !!(cfg && cfg.enabled);
+  return {
+    cfg: cfg || {},
+    enabled,
+    metricBest: -Infinity,
+    bestAcc: 0,
+    bestMetricSource: '',
+    evaluatedPlans: 0,
+    worseStreak: 0,
+    stop: false,
+    stopReason: '',
+  };
+}
+
+function updateAccuracySweepState(state, plan, score, defendersLen) {
+  if (!state || !state.enabled || state.stop) return false;
+
+  const metric = extractAccuracySweepMetric(score, defendersLen, state.cfg);
+  if (!metric) return false;
+
+  state.evaluatedPlans++;
+
+  if (metric.value > state.metricBest + 1e-9) {
+    state.metricBest = metric.value;
+    state.bestAcc = plan.extraAcc;
+    state.bestMetricSource = metric.source;
+    state.worseStreak = 0;
+    return false;
+  }
+
+  const minEvaluatedPlans = Math.max(1, clampInt(state.cfg.minEvaluatedPlans, 1, 999999));
+  const minAccAheadOfBest = Math.max(0, clampInt(state.cfg.minAccAheadOfBest, 0, 999999));
+  const worseByPct = Math.max(0, Number(state.cfg.worseByPct) || 0);
+  const consecutiveSteps = Math.max(1, clampInt(state.cfg.consecutiveSteps, 1, 999999));
+
+  const deficit = state.metricBest - metric.value;
+  const accAhead = plan.extraAcc - state.bestAcc;
+
+  if (
+    state.evaluatedPlans >= minEvaluatedPlans &&
+    accAhead >= minAccAheadOfBest &&
+    deficit + 1e-9 >= worseByPct
+  ) {
+    state.worseStreak++;
+    if (state.worseStreak >= consecutiveSteps) {
+      state.stop = true;
+      state.stopReason =
+        `best=${state.metricBest.toFixed(2)}% at A${state.bestAcc}; ` +
+        `current=${metric.value.toFixed(2)}% at A${plan.extraAcc}; ` +
+        `deficit=${deficit.toFixed(2)}% for ${state.worseStreak} step(s)`;
+      return true;
+    }
+    return false;
+  }
+
+  state.worseStreak = 0;
+  return false;
 }
 
 // =====================
@@ -2568,7 +2832,7 @@ function workerMain() {
   );
   const maskBuckets = buildMaskBuckets(weaponPairIndicesByMask, miscPairsAllowedByMask);
 
-  const { plans } = buildHpPlans();
+  const { plans, planGroups } = buildHpPlans();
 
   // Ensure defender variants exist in cache
   prefillVariantsFromDefenders(defenderBuilds, getV);
@@ -2597,16 +2861,37 @@ function workerMain() {
         screenCalls: 0,
         screenSampledSum: 0,
         screenFull: 0,
+        accBailStops: 0,
+        accPlansSkipped: 0,
       }
     : null;
 
   const detBaseSeed = (Number(rngSeed) || 0) >>> 0;
   let debugPrinted = 0;
 
-  function decodeSupersetIndex(globalIdx) {
-    const plan = plans[0];
-    const gearIdx = globalIdx;
+  function currentBestSummary() {
+    let bestWorst = null;
+    let bestAvg = null;
+    for (const k in topsByHp) {
+      const b = topsByHp[k] && topsByHp[k][0];
+      if (!b) continue;
+      if (bestWorst === null || b.worstWin > bestWorst) {
+        bestWorst = b.worstWin;
+        bestAvg = b.avgWin;
+      }
+    }
+    return { bestWorst, bestAvg };
+  }
 
+  function maybeReportProgress() {
+    const t = nowMs();
+    if (t - lastProgress < progressEveryMs) return;
+    lastProgress = t;
+    const { bestWorst, bestAvg } = currentBestSummary();
+    parentPort.postMessage({ type: 'progress', processed, bestWorst, bestAvg });
+  }
+
+  function decodeSupersetIndex(gearIdx) {
     const ai = Math.floor(gearIdx / (WP * MP));
     const rem = gearIdx - ai * (WP * MP);
     const wpi = Math.floor(rem / MP);
@@ -2623,17 +2908,14 @@ function workerMain() {
     const m2v = miscVariants[miscPairs[mpBase + 1]];
 
     const weaponMask = w1v.weaponMaskBit | w2v.weaponMaskBit | 0;
-    return { plan, av, w1v, w2v, m1v, m2v, weaponMask };
+    return { av, w1v, w2v, m1v, m2v, weaponMask };
   }
 
   function decodeEffectiveIndex(eIdx) {
-    const plan = plans[0];
-
     const perArmor = effCounts.effPerArmor;
     const ai = Math.floor(eIdx / perArmor);
     let r = eIdx - ai * perArmor;
 
-    // find bucket (only 6 masks; keep linear but using precomputed sizes)
     let maskIdx = 0;
     while (maskIdx < MASKS.length) {
       const b = maskBuckets.bucket[maskIdx];
@@ -2661,14 +2943,13 @@ function workerMain() {
 
     const av = armorVariants[ai];
     const weaponMask = w1v.weaponMaskBit | w2v.weaponMaskBit | 0;
-    return { plan, av, w1v, w2v, m1v, m2v, weaponMask };
+    return { av, w1v, w2v, m1v, m2v, weaponMask };
   }
 
-  for (let idx = startIndex; idx < endIndex; idx += stride || 1) {
-    processed++;
+  const accuracyBailCfg = (PLAN_SWEEP_CONFIG && PLAN_SWEEP_CONFIG.safeAccuracyBail) || null;
 
+  for (let idx = startIndex; idx < endIndex; idx += stride || 1) {
     const dec = useSuperset ? decodeSupersetIndex(idx) : decodeEffectiveIndex(idx);
-    const plan = dec.plan;
     const av = dec.av;
     const w1v = dec.w1v;
     const w2v = dec.w2v;
@@ -2700,178 +2981,188 @@ function workerMain() {
         !miscVariantAllowedForWeaponMask(m1v, weaponMask) ||
         !miscVariantAllowedForWeaponMask(m2v, weaponMask)
       ) {
-        const t = nowMs();
-        if (t - lastProgress >= progressEveryMs) {
-          lastProgress = t;
-          parentPort.postMessage({ type: 'progress', processed, bestWorst: null, bestAvg: null });
-        }
+        processed += plans.length;
+        maybeReportProgress();
         continue;
       }
     }
 
-    const att = compileAttacker(plan, av, w1v, w2v, m1v, m2v);
-
     if (debugMixed && workerId === 0 && debugPrinted < debugMixedN) {
-      const s1 = w1v.weapon.skill;
-      const s2 = w2v.weapon.skill;
-      const isMixed = s1 !== s2;
-      if (isMixed || debugPrinted < Math.min(3, debugMixedN)) {
-        debugPrinted++;
-        const [m1, m2] = mixedWeaponMultsFromWeaponSkill(s1, s2);
-        const tag = isMixed ? 'MIXED' : 'SAME';
-        console.log(
-          `[DEBUG_MIXED] ${tag} | W1=${w1v.itemName}(skill=${s1}, mult=${m1}) W2=${w2v.itemName}(skill=${s2}, mult=${m2}) | FINAL skills: gun=${att.gun} mel=${att.mel} prj=${att.prj}`,
-        );
+      const debugPlan = planGroups[0] && planGroups[0].plans[0] ? planGroups[0].plans[0] : plans[0];
+      if (debugPlan) {
+        const s1 = w1v.weapon.skill;
+        const s2 = w2v.weapon.skill;
+        const isMixed = s1 !== s2;
+        if (isMixed || debugPrinted < Math.min(3, debugMixedN)) {
+          debugPrinted++;
+          const [m1, m2] = mixedWeaponMultsFromWeaponSkill(s1, s2);
+          const dbgAtt = compileAttacker(debugPlan, av, w1v, w2v, m1v, m2v);
+          const tag = isMixed ? 'MIXED' : 'SAME';
+          console.log(
+            `[DEBUG_MIXED] ${tag} | W1=${w1v.itemName}(skill=${s1}, mult=${m1}) W2=${w2v.itemName}(skill=${s2}, mult=${m2}) | FINAL skills: gun=${dbgAtt.gun} mel=${dbgAtt.mel} prj=${dbgAtt.prj}`,
+          );
+        }
       }
     }
 
-    const hpKey = String(plan.hp);
-    let lb = topsByHp[hpKey];
-    if (!lb) lb = topsByHp[hpKey] = [];
+    for (const group of planGroups) {
+      const hpKey = String(group.hp);
+      const accuracyState = createAccuracySweepState(accuracyBailCfg);
 
-    const localFloor = lb.length >= keepTopNPerHp ? lb[lb.length - 1].worstWin : null;
-    const globalFloor = floorLoadPct(sharedI32);
-    const floorWorst =
-      localFloor === null && globalFloor === null
-        ? null
-        : localFloor === null
-          ? globalFloor
-          : globalFloor === null
-            ? localFloor
-            : Math.max(localFloor, globalFloor);
+      for (let planIdx = 0; planIdx < group.plans.length; planIdx++) {
+        const plan = group.plans[planIdx];
+        processed++;
 
-    const score = evalCandidateStaged({
-      att,
-      defenders,
-      maxTurns,
-      trialsGate,
-      gatekeepers,
-      trialsScreen,
-      trialsConfirm,
-      floorWorst,
-      gateBailMargin,
-      screenBailMargin,
-      deterministic,
-      baseSeed: detBaseSeed,
-      candidateKey: idx,
-    });
+        const att = compileAttacker(plan, av, w1v, w2v, m1v, m2v);
 
-    if (prof) {
-      if (score.stage === 'G') prof.bailedG++;
-      else if (score.stage === 'A') prof.bailedA++;
-      else if (score.stage === 'B') {
-        if (score.bailed) prof.bailedB++;
-        else prof.confirmedB++;
-      }
-      if (typeof score.screenSampled === 'number' && score.screenSampled > 0) {
-        prof.screenCalls++;
-        prof.screenSampledSum += score.screenSampled;
-        if (score.screenSampled === defenders.length) prof.screenFull++;
-      }
-    }
+        let lb = topsByHp[hpKey];
+        if (!lb) lb = topsByHp[hpKey] = [];
 
-    const wpTag = weaponPairTagFromSkills(w1v.weapon.skill, w2v.weapon.skill);
-    const label = buildLabel(plan, av, w1v, w2v, m1v, m2v);
-    const spec = buildSpec(av, w1v, w2v, m1v, m2v, plan);
+        const localFloor = lb.length >= keepTopNPerHp ? lb[lb.length - 1].worstWin : null;
+        const globalFloor = floorLoadPct(sharedI32);
+        const floorWorst =
+          localFloor === null && globalFloor === null
+            ? null
+            : localFloor === null
+              ? globalFloor
+              : globalFloor === null
+                ? localFloor
+                : Math.max(localFloor, globalFloor);
 
-    // -------------------------
-    // CATALOG CAPTURE (screen-based)
-    // -------------------------
-    if (trialsScreen > 0 && score.screenSampled === defenders.length) {
-      const sw = score.screenWorstWin;
-      const sa = score.screenAvgWin;
+        const planKeySeed =
+          (((plan.hp & 0xffff) << 8) ^ ((plan.extraAcc & 0xff) << 1) ^ (plan.extraDodge & 0xff)) >>>
+          0;
+        const score = evalCandidateStaged({
+          att,
+          defenders,
+          maxTurns,
+          trialsGate,
+          gatekeepers,
+          trialsScreen,
+          trialsConfirm,
+          floorWorst,
+          gateBailMargin,
+          screenBailMargin,
+          deterministic,
+          baseSeed: detBaseSeed,
+          candidateKey: mix32((idx + 1) ^ planKeySeed),
+        });
 
-      const eligible = floorWorst === null ? true : sw + 1e-9 >= floorWorst - catalogMargin;
+        if (prof) {
+          if (score.stage === 'G') prof.bailedG++;
+          else if (score.stage === 'A') prof.bailedA++;
+          else if (score.stage === 'B') {
+            if (score.bailed) prof.bailedB++;
+            else prof.confirmedB++;
+          }
+          if (typeof score.screenSampled === 'number' && score.screenSampled > 0) {
+            prof.screenCalls++;
+            prof.screenSampledSum += score.screenSampled;
+            if (score.screenSampled === defenders.length) prof.screenFull++;
+          }
+        }
 
-      if (eligible && sw !== null && sw !== undefined) {
-        let topArr = catalogTopByHp[hpKey];
-        if (!topArr) topArr = catalogTopByHp[hpKey] = [];
-        pushCatalogTop(
-          topArr,
-          {
+        const wpTag = weaponPairTagFromSkills(w1v.weapon.skill, w2v.weapon.skill);
+        const label = buildLabel(plan, av, w1v, w2v, m1v, m2v);
+        const spec = buildSpec(av, w1v, w2v, m1v, m2v, plan);
+
+        if (trialsScreen > 0 && score.screenSampled === defenders.length) {
+          const sw = score.screenWorstWin;
+          const sa = score.screenAvgWin;
+
+          const eligible = floorWorst === null ? true : sw + 1e-9 >= floorWorst - catalogMargin;
+
+          if (eligible && sw !== null && sw !== undefined) {
+            let topArr = catalogTopByHp[hpKey];
+            if (!topArr) topArr = catalogTopByHp[hpKey] = [];
+            pushCatalogTop(
+              topArr,
+              {
+                wpTag,
+                label,
+                spec,
+                screenWorstWin: sw,
+                screenWorstName: score.screenWorstName,
+                screenAvgWin: sa,
+              },
+              catalogTopN,
+            );
+
+            let bestTypes = catalogBestTypeByHp[hpKey];
+            if (!bestTypes) bestTypes = catalogBestTypeByHp[hpKey] = Object.create(null);
+            const cand = {
+              wpTag,
+              label,
+              spec,
+              screenWorstWin: sw,
+              screenWorstName: score.screenWorstName,
+              screenAvgWin: sa,
+            };
+            if (isBetterScreen(cand, bestTypes[wpTag])) bestTypes[wpTag] = cand;
+          }
+        }
+
+        if (!score.bailed) {
+          let bestTypes = bestByTypeByHp[hpKey];
+          if (!bestTypes) bestTypes = bestByTypeByHp[hpKey] = Object.create(null);
+
+          const candidateEntry = {
             wpTag,
             label,
             spec,
-            screenWorstWin: sw,
-            screenWorstName: score.screenWorstName,
-            screenAvgWin: sa,
-          },
-          catalogTopN,
-        );
+            ...score,
+            stats: {
+              hp: plan.hp,
+              extraAcc: plan.extraAcc,
+              extraDodge: plan.extraDodge,
+              speed: att.speed,
+              armor: att.armor,
+              acc: att.acc,
+              dodge: att.dodge,
+              mel: att.mel,
+              defSk: att.defSk,
+              gun: att.gun,
+              prj: att.prj,
+            },
+          };
 
-        let bestTypes = catalogBestTypeByHp[hpKey];
-        if (!bestTypes) bestTypes = catalogBestTypeByHp[hpKey] = Object.create(null);
-        const cand = {
-          wpTag,
-          label,
-          spec,
-          screenWorstWin: sw,
-          screenWorstName: score.screenWorstName,
-          screenAvgWin: sa,
-        };
-        if (isBetterScreen(cand, bestTypes[wpTag])) bestTypes[wpTag] = cand;
-      }
-    }
+          if (isBetterScore(candidateEntry, bestTypes[wpTag])) bestTypes[wpTag] = candidateEntry;
 
-    // -------------------------
-    // COMPETITIVE KEEP (confirmed, not bailed)
-    // -------------------------
-    if (!score.bailed) {
-      let bestTypes = bestByTypeByHp[hpKey];
-      if (!bestTypes) bestTypes = bestByTypeByHp[hpKey] = Object.create(null);
-
-      const candidateEntry = {
-        wpTag,
-        label,
-        spec,
-        ...score,
-        stats: {
-          hp: plan.hp,
-          extraAcc: plan.extraAcc,
-          extraDodge: plan.extraDodge,
-          speed: att.speed,
-          armor: att.armor,
-          acc: att.acc,
-          dodge: att.dodge,
-          mel: att.mel,
-          defSk: att.defSk,
-          gun: att.gun,
-          prj: att.prj,
-        },
-      };
-
-      if (isBetterScore(candidateEntry, bestTypes[wpTag])) bestTypes[wpTag] = candidateEntry;
-
-      const floor = lb.length ? lb[lb.length - 1] : null;
-      if (lb.length < keepTopNPerHp || score.worstWin >= floor.worstWin - 1e-9) {
-        pushLeaderboard(
-          lb,
-          { wpTag, label, spec, ...score, stats: candidateEntry.stats },
-          keepTopNPerHp,
-        );
-        if (lb.length >= keepTopNPerHp) {
-          const newLocalFloor = lb[lb.length - 1].worstWin;
-          floorTryRaise(sharedI32, newLocalFloor);
+          const floor = lb.length ? lb[lb.length - 1] : null;
+          if (lb.length < keepTopNPerHp || score.worstWin >= floor.worstWin - 1e-9) {
+            pushLeaderboard(
+              lb,
+              { wpTag, label, spec, ...score, stats: candidateEntry.stats },
+              keepTopNPerHp,
+            );
+            if (lb.length >= keepTopNPerHp) {
+              const newLocalFloor = lb[lb.length - 1].worstWin;
+              floorTryRaise(sharedI32, newLocalFloor);
+            }
+          }
         }
-      }
-    }
 
-    const t = nowMs();
-    if (t - lastProgress >= progressEveryMs) {
-      lastProgress = t;
-
-      let bestWorst = null;
-      let bestAvg = null;
-      for (const k in topsByHp) {
-        const b = topsByHp[k] && topsByHp[k][0];
-        if (!b) continue;
-        if (bestWorst === null || b.worstWin > bestWorst) {
-          bestWorst = b.worstWin;
-          bestAvg = b.avgWin;
+        const triggeredAccuracyBail = updateAccuracySweepState(
+          accuracyState,
+          plan,
+          score,
+          defenders.length,
+        );
+        if (triggeredAccuracyBail) {
+          const remaining = group.plans.length - (planIdx + 1);
+          if (remaining > 0) {
+            processed += remaining;
+            if (prof) {
+              prof.accBailStops++;
+              prof.accPlansSkipped += remaining;
+            }
+          }
+          maybeReportProgress();
+          break;
         }
-      }
 
-      parentPort.postMessage({ type: 'progress', processed, bestWorst, bestAvg });
+        maybeReportProgress();
+      }
     }
   }
 
@@ -2890,11 +3181,9 @@ function workerMain() {
 // =====================
 // INIT FLOOR (optional)
 // =====================
-function parseInitFloorPctFromEnv() {
-  const raw = String(process.env.LEGACY_INIT_FLOOR_PCT ?? '').trim();
-  if (!raw) return null;
-  const v = Number(raw);
-  if (!Number.isFinite(v)) return null;
+function getInitFloorPctSetting() {
+  const v = Number(SETTINGS.INIT_FLOOR_PCT);
+  if (!Number.isFinite(v) || v <= 0) return null;
   return clamp(v, 0, 100);
 }
 
@@ -3176,13 +3465,13 @@ async function main() {
   const weaponPairs = buildWeaponPairs(weaponVariants);
   const miscPairs = buildMiscPairsOrderlessAllDup(miscVariants);
 
-  const { plans, perHpSummary } = buildHpPlans();
+  const { plans, perHpSummary, hpMode, allocationMode, warmStartPlan } = buildHpPlans();
 
   const WP = weaponPairs.length / 2;
   const MP = miscPairs.length / 2;
   const AV = armorVariants.length;
 
-  const totalCandidatesSuperset = AV * WP * MP;
+  const totalGearCandidatesSuperset = AV * WP * MP;
 
   const miscAllow = buildAllowedMiscTable(miscVariants);
   const miscPairsAllowedByMask = buildMiscPairsAllowedByMask(miscPairs, miscAllow);
@@ -3192,9 +3481,12 @@ async function main() {
     weaponPairIndicesByMask,
     miscPairsAllowedByMask,
   );
-  const totalCandidatesEffective = effCounts.effTotal;
+  const totalGearCandidatesEffective = effCounts.effTotal;
 
-  const totalCandidates = useSuperset ? totalCandidatesSuperset : totalCandidatesEffective;
+  const totalGearCandidates = useSuperset
+    ? totalGearCandidatesSuperset
+    : totalGearCandidatesEffective;
+  const totalCandidates = totalGearCandidates * plans.length;
 
   if (process.env.LEGACY_SANITY_DISABLE !== '1' && process.env.LEGACY_SANITY_DISABLE !== 'true') {
     printSearchSpaceSanity(
@@ -3213,11 +3505,11 @@ async function main() {
   sharedI32[1] = 0;
 
   // Warm-start shared floor, if provided
-  const initFloor = parseInitFloorPctFromEnv();
+  const initFloor = getInitFloorPctSetting();
   if (initFloor !== null) {
     sharedI32[0] = (initFloor * FLOOR_SCALE) | 0;
     console.log(
-      `Warm-start: seeded shared floor to ${initFloor.toFixed(2)}% via LEGACY_INIT_FLOOR_PCT`,
+      `Warm-start: seeded shared floor to ${initFloor.toFixed(2)}% via SETTINGS.INIT_FLOOR_PCT`,
     );
   }
 
@@ -3226,7 +3518,7 @@ async function main() {
     const warmTrials = parseWarmStartTrials(TRIALS_CONFIRM);
 
     const ws = runWarmStartAndGetWorstPct({
-      plan: plans[0],
+      plan: warmStartPlan || plans[0],
       trialsConfirm: warmTrials,
       maxTurns: SETTINGS.MAX_TURNS,
       rngMode: rngMode === 'fast' ? 'fast' : 'math',
@@ -3246,7 +3538,7 @@ async function main() {
   }
 
   console.log(
-    `LEGACY brute-force (v1.0.0) | defenders=${defenderBuilds.length} | trialsGate/def=${TRIALS_GATE} | trialsScreen/def=${TRIALS_SCREEN} | trialsConfirm/def=${TRIALS_CONFIRM} | hidden=${HIDDEN_PRESET}`,
+    `LEGACY brute-force (v1.1.0) | defenders=${defenderBuilds.length} | trialsGate/def=${TRIALS_GATE} | trialsScreen/def=${TRIALS_SCREEN} | trialsConfirm/def=${TRIALS_CONFIRM} | hidden=${HIDDEN_PRESET}`,
   );
   console.log(
     `Crystals: slots=${VARIANT_CFG.crystalSlots} stats=${normalizeCrystalStackMode(VARIANT_CFG.crystalStackStats)}/${VARIANT_CFG.statRound} dmg=${normalizeCrystalStackMode(VARIANT_CFG.crystalStackDmg)}/${VARIANT_CFG.weaponDmgRound} armorStat=${normalizeCrystalStackMode(VARIANT_CFG.armorStatStack)}/${VARIANT_CFG.armorStatRound}`,
@@ -3265,20 +3557,23 @@ async function main() {
 
   if (useSuperset) {
     console.log(
-      `Mode: SUPERSET (compat) | armorVariants=${AV} weaponPairs=${WP} miscPairs=${MP} => totalCandidates=${totalCandidatesSuperset}`,
+      `Mode: SUPERSET (compat) | armorVariants=${AV} weaponPairs=${WP} miscPairs=${MP} => gearCandidates=${totalGearCandidatesSuperset} | planCount=${plans.length} | totalPlanSlots=${totalCandidates}`,
     );
   } else {
     console.log(
-      `Mode: EFFECTIVE (optimized) | armorVariants=${AV} effectivePerArmor=${effCounts.effPerArmor} => totalCandidates=${totalCandidatesEffective}`,
+      `Mode: EFFECTIVE (optimized) | armorVariants=${AV} effectivePerArmor=${effCounts.effPerArmor} => gearCandidates=${totalGearCandidatesEffective} | planCount=${plans.length} | totalPlanSlots=${totalCandidates}`,
     );
     console.log(
-      `Superset info: weaponPairs=${WP} miscPairs=${MP} => supersetCandidates=${totalCandidatesSuperset}`,
+      `Superset info: weaponPairs=${WP} miscPairs=${MP} => gearCandidatesSuperset=${totalGearCandidatesSuperset}`,
     );
   }
 
-  const locked = plans[0];
+  const locked = warmStartPlan || plans[0];
   console.log(
-    `LOCKED attacker plan: HP=${locked.hp} extraAcc=${locked.extraAcc} extraDodge=${locked.extraDodge} (freePoints=${locked.freePoints})`,
+    `Plan sweep: hpMode=${hpMode} allocationMode=${allocationMode} | HP buckets=${perHpSummary.length} | totalPlans=${plans.length}`,
+  );
+  console.log(
+    `Warm-start plan: HP=${locked.hp} extraAcc=${locked.extraAcc} extraDodge=${locked.extraDodge} (freePoints=${locked.freePoints})`,
   );
   console.log(
     `Gatekeepers: N=${GATEKEEPERS} trialsGate=${TRIALS_GATE} | bail margin=${screenBailMarginEffective.toFixed(2)}% (raw=${BAIL_MARGIN.toFixed(2)}%, catalog=${catalogMargin.toFixed(2)}%, align=${alignBailToCatalog ? 'ON' : 'OFF'})`,
@@ -3293,8 +3588,12 @@ async function main() {
 
   console.log('HP plans (reassurance):');
   for (const r of perHpSummary) {
+    const allocNote =
+      allocationMode === 'dodge_only'
+        ? 'dodge-only'
+        : `acc=${r.accMin}..${r.accMax}${r.accStep > 0 ? ` step=${r.accStep}` : ''}`;
     console.log(
-      `  HP=${r.hp} freePoints=${r.freePoints} allocs=${r.allocCount}  (acc+dodge=${r.freePoints}, speed=0)`,
+      `  HP=${r.hp} freePoints=${r.freePoints} allocs=${r.allocCount}  (${allocNote}, dodge=freePoints-acc, speed=0)`,
     );
   }
   console.log('');
@@ -3340,10 +3639,10 @@ async function main() {
 
   const ranges = [];
   if (schedMode === 'range') {
-    const perWorker = Math.floor(totalCandidates / workers);
+    const perWorker = Math.floor(totalGearCandidates / workers);
     for (let w = 0; w < workers; w++) {
       const s = w * perWorker;
-      const e = w === workers - 1 ? totalCandidates : (w + 1) * perWorker;
+      const e = w === workers - 1 ? totalGearCandidates : (w + 1) * perWorker;
       ranges.push([s, e]);
     }
   }
@@ -3359,7 +3658,7 @@ async function main() {
       } else {
         // stride scheduling: interleave indices (w, w+workers, ...)
         startIndex = w;
-        endIndex = totalCandidates;
+        endIndex = totalGearCandidates;
         stride = workers;
       }
 
@@ -3504,7 +3803,7 @@ async function main() {
       console.log(
         `worker=${w} processed=${processedByWorker[w]} | G_bail=${p.bailedG} A_bail=${p.bailedA} B_bail=${p.bailedB} B_keep=${p.confirmedB} | screenAvgSampled=${avgSampled.toFixed(
           2,
-        )}/${defenderBuilds.length} fullScreens=${p.screenFull}`,
+        )}/${defenderBuilds.length} fullScreens=${p.screenFull} | accBailStops=${p.accBailStops} accPlansSkipped=${p.accPlansSkipped}`,
       );
     }
     console.log('=== END PROFILE ===\n');

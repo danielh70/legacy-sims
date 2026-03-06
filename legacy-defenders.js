@@ -85,8 +85,8 @@ const DEFENDER_PAYLOADS = {
   'Dual Bow Build 1': {
     stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
     armor: S('Dark Legion Armor', 'Abyss Crystal', []),
-    weapon1: S('Void Bow', 'Amulet Crystal', ['Poisoned Tip']),
-    weapon2: S('Void Bow', 'Amulet Crystal', ['Poisoned Tip']),
+    weapon1: S('Void Bow', 'Amulet Crystal', []),
+    weapon2: S('Void Bow', 'Amulet Crystal', []),
     misc1: S('Scout Drones', 'Amulet Crystal', []),
     misc2: S('Scout Drones', 'Amulet Crystal', []),
   },

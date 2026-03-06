@@ -1,0 +1,191 @@
+{
+  "runs": {
+    "maul-865hp-v1": {
+      "meta": {
+        "source": "results.txt"
+      },
+      "defenders": {
+        "SG1 Split Bombs T2": {
+          "winPct": 44.43,
+          "avgTurns": 16.9315,
+          "A_hit": 85,
+          "A_dmg1": 36,
+          "A_dmg2": 36,
+          "D_hit": 69,
+          "D_dmg1": 48,
+          "D_dmg2": 48,
+          "A_rng": [49, 161],
+          "D_rng": [55, 172]
+        },
+        "DL Gun Build": {
+          "winPct": 90.83,
+          "avgTurns": 11.4623,
+          "A_hit": 79,
+          "A_dmg1": 63,
+          "A_dmg2": 63,
+          "D_hit": 94,
+          "D_dmg1": 30,
+          "D_dmg2": 30,
+          "A_rng": [50, 164],
+          "D_rng": [60, 185]
+        },
+        "DL Gun Build 2": {
+          "winPct": 83.01,
+          "avgTurns": 12.0877,
+          "A_hit": 79,
+          "A_dmg1": 60,
+          "A_dmg2": 60,
+          "D_hit": 89,
+          "D_dmg1": 35,
+          "D_dmg2": 35,
+          "A_rng": [50, 164],
+          "D_rng": [60, 174]
+        },
+        "DL Gun Build 3": {
+          "winPct": 60.75,
+          "avgTurns": 10.8782,
+          "A_hit": 82,
+          "A_dmg1": 59,
+          "A_dmg2": 59,
+          "D_hit": 84,
+          "D_dmg1": 48,
+          "D_dmg2": 48,
+          "A_rng": [50, 164],
+          "D_rng": [60, 185]
+        },
+        "DL Gun Build 4": {
+          "winPct": 60.79,
+          "avgTurns": 16.1308,
+          "A_hit": 82,
+          "A_dmg1": 41,
+          "A_dmg2": 41,
+          "D_hit": 71,
+          "D_dmg1": 39,
+          "D_dmg2": 39,
+          "A_rng": [50, 164],
+          "D_rng": [60, 174]
+        },
+        "DL Gun Build 5": {
+          "winPct": 96.76,
+          "avgTurns": 9.554,
+          "A_hit": 79,
+          "A_dmg1": 63,
+          "A_dmg2": 63,
+          "D_hit": 96,
+          "D_dmg1": 30,
+          "D_dmg2": 30,
+          "A_rng": [50, 164],
+          "D_rng": [60, 185]
+        },
+        "DL Gun Build 6": {
+          "winPct": 91.73,
+          "avgTurns": 10.089,
+          "A_hit": 79,
+          "A_dmg1": 60,
+          "A_dmg2": 60,
+          "D_hit": 93,
+          "D_dmg1": 35,
+          "D_dmg2": 35,
+          "A_rng": [50, 164],
+          "D_rng": [60, 174]
+        },
+        "DL Gun Build 7": {
+          "winPct": 76.36,
+          "avgTurns": 9.3714,
+          "A_hit": 82,
+          "A_dmg1": 59,
+          "A_dmg2": 59,
+          "D_hit": 89,
+          "D_dmg1": 48,
+          "D_dmg2": 48,
+          "A_rng": [50, 164],
+          "D_rng": [60, 185]
+        },
+        "DL Gun Build 8": {
+          "winPct": 67.69,
+          "avgTurns": 13.5909,
+          "A_hit": 82,
+          "A_dmg1": 41,
+          "A_dmg2": 41,
+          "D_hit": 80,
+          "D_dmg1": 39,
+          "D_dmg2": 39,
+          "A_rng": [50, 164],
+          "D_rng": [60, 174]
+        },
+        "T2 Scythe Build": {
+          "winPct": 65.19,
+          "avgTurns": 13.013,
+          "A_hit": 81,
+          "A_dmg1": 52,
+          "A_dmg2": 52,
+          "D_hit": 72,
+          "D_dmg1": 42,
+          "D_dmg2": 42,
+          "A_rng": [50, 164],
+          "D_rng": [79, 200]
+        },
+        "HF Core/Void": {
+          "winPct": 69.22,
+          "avgTurns": 13.229,
+          "A_hit": 93,
+          "A_dmg1": 55,
+          "A_dmg2": 55,
+          "D_hit": 82,
+          "D_dmg1": 38,
+          "D_dmg2": 38,
+          "A_rng": [40, 133],
+          "D_rng": [50, 198]
+        },
+        "Core/Void Build 1": {
+          "winPct": 72.07,
+          "avgTurns": 12.6953,
+          "A_hit": 79,
+          "A_dmg1": 55,
+          "A_dmg2": 55,
+          "D_hit": 82,
+          "D_dmg1": 38,
+          "D_dmg2": 38,
+          "A_rng": [50, 164],
+          "D_rng": [50, 198]
+        },
+        "Dual Bow Build 1": {
+          "winPct": 85.01,
+          "avgTurns": 12.6423,
+          "A_hit": 79,
+          "A_dmg1": 57,
+          "A_dmg2": 57,
+          "D_hit": 85,
+          "D_dmg1": 43,
+          "D_dmg2": 43,
+          "A_rng": [50, 164],
+          "D_rng": [10, 246]
+        },
+        "Rift Bow Build 1": {
+          "winPct": 86.41,
+          "avgTurns": 12.147,
+          "A_hit": 79,
+          "A_dmg1": 60,
+          "A_dmg2": 60,
+          "D_hit": 91,
+          "D_dmg1": 43,
+          "D_dmg2": 43,
+          "A_rng": [50, 164],
+          "D_rng": [10, 188]
+        },
+        "Armour stack Cores": {
+          "winPct": 66.91,
+          "avgTurns": 16.8996,
+          "A_hit": 93,
+          "A_dmg1": 44,
+          "A_dmg2": 44,
+          "D_hit": 84,
+          "D_dmg1": 47,
+          "D_dmg2": 47,
+          "A_rng": [40, 133],
+          "D_rng": [50, 120]
+        }
+      }
+    }
+  }
+}
