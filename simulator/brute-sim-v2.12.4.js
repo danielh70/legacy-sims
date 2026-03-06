@@ -4,7 +4,7 @@
 /**
  * =====================
  * LEGACY BRUTE FORCE (CONSTRAINED + STAGED + DETERMINISTIC RNG OPTION)
- * v2.14.2 (CATALOG CONFIRM SPEEDUP + mixed bonus clarified)
+ * v2.12.1 (CATALOG CONFIRM SPEEDUP + mixed bonus clarified)
  * =====================
  *
  * Fixes / Improvements:
@@ -20,6 +20,33 @@
  *   LEGACY_CATALOG_TOP_N=10
  *   LEGACY_CATALOG_MARGIN=12
  *   LEGACY_CATALOG_CONFIRM_TRIALS= (defaults to TRIALS_CONFIRM)
+ *
+ * Speed/quality knobs:
+ *   LEGACY_INIT_FLOOR_PCT=42.5           # seed shared floor (worst%) to ramp faster
+ *   LEGACY_WARM_START=1|0                # evaluate a known strong seed build to set the shared floor (default ON)
+ *   LEGACY_WARM_START_TRIALS=5000        # trials/def for warm-start (defaults to TRIALS_CONFIRM)
+ *
+ * Staged evaluation knobs:
+ *   LEGACY_TRIALS=20000                  # confirm trials/def (Stage B)
+ *   LEGACY_TRIALS_SCREEN=2000            # screen trials/def (Stage A)
+ *   LEGACY_TRIALS_GATE=500               # gate trials/def (Stage 0)
+ *   LEGACY_GATEKEEPERS=4                 # number of gatekeeper defenders
+ *   LEGACY_SCREEN_MARGIN=6               # Stage A early-bail margin (pct)
+ *
+ * RNG/repro:
+ *   LEGACY_RNG=fast|math                 # default: fast (sfc32)
+ *   LEGACY_SEED=123456789                # base seed for fast RNG
+ *   LEGACY_DETERMINISTIC=1               # deterministic per-defender seeding (slower, reproducible)
+ *
+ * Combat knobs (defaults are the calibrated settings):
+ *   LEGACY_SPEED_TIE_MODE=random|attacker
+ *   LEGACY_HIT_ROLL_MODE=int             LEGACY_HIT_GE=1     LEGACY_HIT_QROUND=round
+ *   LEGACY_SKILL_ROLL_MODE=int           LEGACY_SKILL_GE=1   LEGACY_SKILL_QROUND=round
+ *   LEGACY_DMG_ROLL=int
+ *   LEGACY_ARMOR_K=8                     LEGACY_ARMOR_APPLY=per_weapon  LEGACY_ARMOR_ROUND=ceil
+ *
+ * Optional debugging:
+ *   LEGACY_WATCH_BUILD=1                 # log one watched build when encountered
  */
 
 // =====================
@@ -33,12 +60,12 @@ const { Worker, isMainThread, parentPort, workerData } = require('worker_threads
 // =====================
 const SETTINGS = {
   LEVEL: 80,
-  HP_MAX: 865,
+  HP_MAX: 595,
   MAX_TURNS: 200,
 
-  TRIALS_CONFIRM_DEFAULT: 10000,
-  TRIALS_SCREEN_DEFAULT: 1000,
-  TRIALS_GATE_DEFAULT: 500,
+  TRIALS_CONFIRM_DEFAULT: 20000,
+  TRIALS_SCREEN_DEFAULT: 1200,
+  TRIALS_GATE_DEFAULT: 300,
   GATEKEEPERS_DEFAULT: 4,
 
   SCREEN_BAIL_MARGIN_DEFAULT: 6.0,
@@ -55,165 +82,6 @@ const SETTINGS = {
 
   WORKERS_DEFAULT_CAP: 4,
 };
-
-// =====================
-// COMBAT CONFIG (defaults match your best-fit calibration)
-// =====================
-function envStr(name, def) {
-  const v = process.env[name];
-  return v === undefined || v === '' ? def : String(v);
-}
-function envInt(name, def) {
-  const v = process.env[name];
-  if (v === undefined || v === '') return def;
-  const n = parseInt(v, 10);
-  return Number.isFinite(n) ? n : def;
-}
-function envFloat(name, def) {
-  const v = process.env[name];
-  if (v === undefined || v === '') return def;
-  const n = parseFloat(v);
-  return Number.isFinite(n) ? n : def;
-}
-function envBool(name, def) {
-  const v = process.env[name];
-  if (v === undefined || v === '') return def;
-  const s = String(v).trim().toLowerCase();
-  return s === '1' || s === 'true' || s === 'yes' || s === 'y' || s === 'on';
-}
-
-function normalizeRollMode(s, def = 'int') {
-  s = (s ?? def).toString().trim().toLowerCase();
-  if (s === 'int' || s === 'integer') return 'int';
-  if (s === 'float') return 'float';
-  if (s === 'roundfloat' || s === 'round_float' || s === 'round-float') return 'roundfloat';
-  return def;
-}
-function normalizeQround(s, def = 'round') {
-  s = (s ?? def).toString().trim().toLowerCase();
-  if (s === 'floor') return 'floor';
-  if (s === 'ceil' || s === 'ceiling') return 'ceil';
-  if (s === 'round') return 'round';
-  return def;
-}
-function normalizeArmorApply(s, def = 'per_weapon') {
-  s = (s ?? def).toString().trim().toLowerCase();
-  if (s === 'per_weapon' || s === 'per-weapon' || s === 'weapon') return 'per_weapon';
-  if (s === 'sum' || s === 'combined') return 'sum';
-  return def;
-}
-function normalizeSpeedTie(s, def = 'random') {
-  s = (s ?? def).toString().trim().toLowerCase();
-  if (s === 'random' || s === 'rand') return 'random';
-  if (s === 'attacker' || s === 'a') return 'attacker';
-  if (s === 'defender' || s === 'd') return 'defender';
-  return def;
-}
-function normalizeSharedSkill(s, def = 'none') {
-  s = (s ?? def).toString().trim().toLowerCase();
-  if (s === 'none' || s === 'off' || s === '0') return 'none';
-  if (s === 'same' || s === 'same_type' || s === 'same-type') return 'same_type';
-  if (s === 'all') return 'all';
-  return def;
-}
-function normalizeHiddenPreset(s, def = 'slot3_prjdef') {
-  s = (s ?? def).toString().trim().toLowerCase();
-  if (s === 'none' || s === 'off' || s === '0') return 'none';
-  if (s === 'slot3_prjdef' || s === 'slot3-projdef') return 'slot3_prjdef';
-  return def;
-}
-function normalizeTacticsMode(s, def = 'none') {
-  s = (s ?? def).toString().trim().toLowerCase();
-  if (s === 'none' || s === 'off' || s === '0') return 'none';
-  if (s === 'always' || s === 'on' || s === '1') return 'always';
-  return def;
-}
-function normalizeDmgBonusMode(s, def = 'per_action') {
-  s = (s ?? def).toString().trim().toLowerCase();
-  if (s === 'per_action' || s === 'per-action' || s === 'action') return 'per_action';
-  if (s === 'per_weapon' || s === 'per-weapon' || s === 'weapon') return 'per_weapon';
-  return def;
-}
-
-// parse "gun,melee=0.5" -> { gun:1, melee:0.5 }
-function parseTypeMults(str) {
-  const out = Object.create(null);
-  const s = (str || '').toString().trim();
-  if (!s) return out;
-  for (const partRaw of s.split(',')) {
-    const part = partRaw.trim();
-    if (!part) continue;
-    const [kRaw, vRaw] = part.split('=').map((x) => x.trim());
-    const k = (kRaw || '').toLowerCase();
-    if (!k) continue;
-    const v = vRaw === undefined || vRaw === '' ? 0 : parseFloat(vRaw);
-    out[k] = Number.isFinite(v) ? v : 1;
-  }
-  return out;
-}
-
-const CFG = Object.freeze({
-  // roll logic
-  HIT_ROLL_MODE: normalizeRollMode(envStr('LEGACY_HIT_ROLL_MODE', 'int'), 'int'),
-  HIT_GE: envBool('LEGACY_HIT_GE', true), // int+GE
-  HIT_QROUND: normalizeQround(envStr('LEGACY_HIT_QROUND', 'round'), 'round'),
-
-  SKILL_ROLL_MODE: normalizeRollMode(envStr('LEGACY_SKILL_ROLL_MODE', 'int'), 'int'),
-  SKILL_GE: envBool('LEGACY_SKILL_GE', false), // strict >
-  SKILL_QROUND: normalizeQround(envStr('LEGACY_SKILL_QROUND', 'round'), 'round'),
-
-  DMG_ROLL: normalizeRollMode(envStr('LEGACY_DMG_ROLL', 'int'), 'int'),
-
-  // armor
-  ARMOR_K: envInt('LEGACY_ARMOR_K', 8),
-  ARMOR_APPLY: normalizeArmorApply(envStr('LEGACY_ARMOR_APPLY', 'per_weapon'), 'per_weapon'),
-  ARMOR_ROUND: normalizeQround(envStr('LEGACY_ARMOR_ROUND', 'round'), 'round'),
-
-  // misc knobs
-  PROJ_DEF_MULT: envFloat('LEGACY_PROJ_DEF_MULT', 1),
-  SPEED_TIE_MODE: normalizeSpeedTie(envStr('LEGACY_SPEED_TIE_MODE', 'random'), 'random'),
-  SHARED_HIT: envBool('LEGACY_SHARED_HIT', false),
-  SHARED_SKILL: normalizeSharedSkill(envStr('LEGACY_SHARED_SKILL', 'none'), 'none'),
-
-  // tactics (kept for compatibility; default OFF)
-  TACTICS_MODE: normalizeTacticsMode(envStr('LEGACY_TACTICS_MODE', 'none'), 'none'),
-  TACTICS_VAL: envInt('LEGACY_TACTICS_VAL', 5),
-  DMG_BONUS_MODE: normalizeDmgBonusMode(
-    envStr('LEGACY_DMG_BONUS_MODE', 'per_action'),
-    'per_action',
-  ),
-
-  // hidden slot bonus
-  HIDDEN_PRESET: normalizeHiddenPreset(
-    envStr('LEGACY_HIDDEN_PRESET', 'slot3_prjdef'),
-    'slot3_prjdef',
-  ),
-
-  // calibration patches / overrides (can be disabled)
-  CALIB_PATCHES: envBool('LEGACY_CALIB_PATCHES', true),
-  HF_ARMOR_BASE_OVERRIDE: envInt('LEGACY_HF_ARMOR_BASE_OVERRIDE', 125),
-  VOID_SWORD_BASE_MAX_OVERRIDE: envInt('LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE', 123),
-
-  // "misc skill % crystal scaling" (default matches your Scout Drones finding)
-  MISC_NO_CRYSTAL_SKILL: envStr('LEGACY_MISC_NO_CRYSTAL_SKILL', 'Scout Drones'),
-  MISC_NO_CRYSTAL_SKILL_TYPES: parseTypeMults(
-    envStr('LEGACY_MISC_NO_CRYSTAL_SKILL_TYPES', 'gun,melee=0.5'),
-  ),
-});
-
-// small one-liner for logging
-function cfgSummary() {
-  return [
-    `HIT=${CFG.HIT_ROLL_MODE}${CFG.HIT_GE ? '+GE' : ''}/${CFG.HIT_QROUND}`,
-    `SKILL=${CFG.SKILL_ROLL_MODE}${CFG.SKILL_GE ? '+GE' : ''}/${CFG.SKILL_QROUND}`,
-    `DMG=${CFG.DMG_ROLL}`,
-    `ARMOR=K${CFG.ARMOR_K} ${CFG.ARMOR_APPLY}/${CFG.ARMOR_ROUND}`,
-    `TIE=${CFG.SPEED_TIE_MODE}`,
-    `HIDDEN=${CFG.HIDDEN_PRESET}`,
-    `PROJ_DEF_MULT=${CFG.PROJ_DEF_MULT}`,
-    `PATCHES=${CFG.CALIB_PATCHES ? 'ON' : 'OFF'}`,
-  ].join(' | ');
-}
 
 // =====================
 // POOLS
@@ -257,7 +125,7 @@ const BASE = {
   meleeSkill: 450,
   projSkill: 450,
   defSkill: 450,
-  baseDamagePerHit: 0, // default: no global flat damage (tactics handled via CFG.TACTICS_MODE)
+  baseDamagePerHit: 0,
 };
 
 // =====================
@@ -429,19 +297,126 @@ function mix32(x) {
 }
 
 // =====================
-// COMBAT
-// =====================
-
-// =====================
-// COMBAT (calibrated kernel)
+// COMBAT (CALIBRATED ENGINE)
+// Mirrors the calibrated main-calib roll semantics:
+//   - roll bounds: [stat/4 .. stat] with optional quarter-rounding on the MIN bound
+//   - integer mode uses legacy-int sampling over (possibly fractional) bounds
+//   - supports >= (GE) comparator
+//   - armor factor uses K (default 8): mod=(level*K)/2; factor=mod/(mod+armor)
+//   - armor rounding default: ceil
+// Notes:
+//   - This section is intentionally self-contained and uses the global RNG function that
+//     is swapped by the staged deterministic harness.
 // =====================
 let RNG = Math.random;
 
-// legacy-style integer RNG, inclusive, allowing fractional min/max
+// ---------------------
+// Env-backed knobs (defaults match our calibrated settings)
+// ---------------------
+function _envStr(name, def) {
+  const v = process.env[name];
+  return v === undefined || v === null || v === '' ? def : String(v);
+}
+function _envNum(name, def) {
+  const v = Number(_envStr(name, def));
+  return Number.isFinite(v) ? v : Number(def);
+}
+function _envBool(name, def) {
+  const v = _envStr(name, def ? '1' : '0')
+    .trim()
+    .toLowerCase();
+  return !(v === '0' || v === 'false' || v === 'off' || v === 'no');
+}
+
+function normalizeRollMode(m) {
+  m = String(m || 'float')
+    .trim()
+    .toLowerCase();
+  if (m === 'int') return 'int';
+  if (m === 'float') return 'float';
+  if (m === 'int_u' || m === 'int_uniform' || m === 'uniform_int' || m === 'intcf')
+    return 'int_uniform';
+  if (m === 'int_excl' || m === 'int_exclusive' || m === 'int_exclmax' || m === 'int_x')
+    return 'int_excl';
+  return 'float';
+}
+function normalizeQround(m) {
+  m = String(m || 'none')
+    .trim()
+    .toLowerCase();
+  if (m === 'none' || m === 'off' || m === '0') return 'none';
+  if (m === 'floor') return 'floor';
+  if (m === 'ceil' || m === 'ceiling') return 'ceil';
+  if (m === 'round') return 'round';
+  return 'none';
+}
+function applyQuarterRound(x, qround) {
+  if (qround === 'floor') return Math.floor(x);
+  if (qround === 'ceil') return Math.ceil(x);
+  if (qround === 'round') return Math.round(x);
+  return x;
+}
+
+// default: attacker wins speed ties (matches legacy_simulator.canonical)
+const SPEED_TIE_MODE = _envStr('LEGACY_SPEED_TIE_MODE', 'attacker').trim().toLowerCase();
+
+// calibrated defaults (normalized once up-front for speed)
+const HIT_ROLL_MODE = normalizeRollMode(_envStr('LEGACY_HIT_ROLL_MODE', 'int'));
+const HIT_GE = _envBool('LEGACY_HIT_GE', true);
+const HIT_QROUND = normalizeQround(_envStr('LEGACY_HIT_QROUND', 'round'));
+
+const SKILL_ROLL_MODE = normalizeRollMode(_envStr('LEGACY_SKILL_ROLL_MODE', 'int'));
+const SKILL_GE = _envBool('LEGACY_SKILL_GE', true);
+const SKILL_QROUND = normalizeQround(_envStr('LEGACY_SKILL_QROUND', 'round'));
+
+const DMG_ROLL = String(_envStr('LEGACY_DMG_ROLL', 'int')).trim().toLowerCase();
+
+const ARMOR_K = _envNum('LEGACY_ARMOR_K', 8);
+const ARMOR_APPLY = _envStr('LEGACY_ARMOR_APPLY', 'per_weapon').trim().toLowerCase();
+const ARMOR_ROUND = _envStr('LEGACY_ARMOR_ROUND', 'ceil').trim().toLowerCase();
+
+const PROJ_DEF_MULT = _envNum('LEGACY_PROJ_DEF_MULT', 1);
+
+// main-calib compatibility: whether the 2nd weapon is skipped if the 1st weapon kills the target
+const ACTION_STOP_ON_KILL = _envBool('LEGACY_ACTION_STOP_ON_KILL', false);
+
+// main-calib compatibility: shared hit roll once per action (forces both weapons to use same hit result)
+const SHARED_HIT = _envBool('LEGACY_SHARED_HIT', false);
+
+// main-calib compatibility: shared skill roll caching
+//   none | same_type | gun_same_type
+const SHARED_SKILL_MODE = _envStr('LEGACY_SHARED_SKILL', 'none').trim().toLowerCase();
+
+// tactics/base damage bonus support (matches legacy_simulator.canonical semantics)
+//   LEGACY_TACTICS_MODE: none | base | both
+//   LEGACY_TACTICS_VAL: numeric (default 5)
+//   LEGACY_DMG_BONUS_MODE: per_action | per_weapon | split_equipped
+//   LEGACY_DMG_BONUS_STAGE: pre_armor | post_armor
+const TACTICS_MODE = _envStr('LEGACY_TACTICS_MODE', 'none').trim().toLowerCase();
+const TACTICS_VAL = _envNum('LEGACY_TACTICS_VAL', 5);
+const DMG_BONUS_MODE = _envStr('LEGACY_DMG_BONUS_MODE', 'per_action').trim().toLowerCase();
+const DMG_BONUS_STAGE = _envStr('LEGACY_DMG_BONUS_STAGE', 'pre_armor').trim().toLowerCase();
+
+const TACTICS_BASE_ENABLED = TACTICS_MODE === 'base' || TACTICS_MODE === 'both';
+const TACTICS_BASE_VAL = TACTICS_BASE_ENABLED ? TACTICS_VAL : 0;
+
+// ---------------------
+// RNG helpers
+// ---------------------
+function randFloat(min, max) {
+  if (max < min) return min;
+  return RNG() * (max - min) + min;
+}
+function randIntInclusive(min, max) {
+  if (max < min) return min;
+  const lo = Math.ceil(min);
+  const hi = Math.floor(max);
+  if (hi < lo) return lo;
+  return lo + Math.floor(RNG() * (hi - lo + 1));
+}
+
+// Legacy-int sampler (inclusive) that matches main-calib behavior even with fractional bounds.
 function randLegacyInt(min, max) {
-  // Match main-calib behavior exactly: integer RNG inclusive, with safe bounds.
-  min = Math.ceil(min);
-  max = Math.floor(max);
   if (max < min) {
     const t = min;
     min = max;
@@ -449,257 +424,291 @@ function randLegacyInt(min, max) {
   }
   return Math.floor(RNG() * (max - min + 1) + min);
 }
-function randLegacyFloat(min, max) {
-  if (max < min) return min;
-  return min + RNG() * (max - min);
-}
-function applyQuarterRound(x, mode) {
-  if (mode === 'floor') return Math.floor(x);
-  if (mode === 'ceil') return Math.ceil(x);
-  return Math.round(x);
+
+function intRange(min, max, mode) {
+  if (max < min) {
+    const t = min;
+    min = max;
+    max = t;
+  }
+  const lo = Math.ceil(min);
+  const hi = Math.floor(max);
+  if (hi < lo) return { lo, hi: lo };
+  if (mode === 'int_excl') return { lo, hi: Math.max(lo, hi - 1) };
+  return { lo, hi };
 }
 
-function rollVs(off, def, mode, ge, qround) {
+// rollMode and qround are expected to be normalized strings (we normalize once at init).
+function rollVs(off, def, rollMode, ge, qround) {
   off = off > 0 ? off : 0;
   def = def > 0 ? def : 0;
 
-  if (mode === 'float') {
-    const a = randLegacyFloat(off / 4, off);
-    const b = randLegacyFloat(def / 4, def);
-    return ge ? a >= b : a > b;
+  let aMin = off / 4;
+  const aMax = off;
+  let dMin = def / 4;
+  const dMax = def;
+
+  if (qround !== 'none') {
+    aMin = applyQuarterRound(aMin, qround);
+    dMin = applyQuarterRound(dMin, qround);
   }
 
-  // int mode (Legacy style with quarter rounding)
-  const offLo = applyQuarterRound(off / 4, qround);
-  const offHi = Math.floor(off);
-  const defLo = applyQuarterRound(def / 4, qround);
-  const defHi = Math.floor(def);
+  let a, b;
+  if (rollMode === 'float') {
+    a = randFloat(aMin, aMax);
+    b = randFloat(dMin, dMax);
+  } else if (rollMode === 'int') {
+    a = randLegacyInt(aMin, aMax);
+    b = randLegacyInt(dMin, dMax);
+  } else if (rollMode === 'int_uniform') {
+    a = randIntInclusive(aMin, aMax);
+    b = randIntInclusive(dMin, dMax);
+  } else if (rollMode === 'int_excl') {
+    const rA = intRange(aMin, aMax, 'int_excl');
+    const rB = intRange(dMin, dMax, 'int_excl');
+    a = randIntInclusive(rA.lo, rA.hi);
+    b = randIntInclusive(rB.lo, rB.hi);
+  } else {
+    a = randFloat(aMin, aMax);
+    b = randFloat(dMin, dMax);
+  }
 
-  const a = randLegacyInt(offLo, offHi);
-  const b = randLegacyInt(defLo, defHi);
-  return ge ? a >= b : a > b;
+  const diff = a - b;
+  return ge ? diff >= 0 : diff > 0;
 }
 
-function rollDamage(min, max) {
-  if (CFG.DMG_ROLL === 'roundfloat') return Math.round(randLegacyFloat(min, max));
-  if (CFG.DMG_ROLL === 'float') return randLegacyFloat(min, max);
-  return randLegacyInt(min, max);
+// ---------------------
+// Combat helpers
+// ---------------------
+// Weapon skill encoding: 0=gun, 1=melee, 2=proj
+function skillValue(att, skillCode) {
+  return skillCode === 0 ? att.gun : skillCode === 1 ? att.mel : att.prj;
 }
 
-function applyArmorAndRound(raw, armorFactor) {
+function rollDamage(min, max, dmgRollMode) {
+  if (dmgRollMode === 'int') return randLegacyInt(min, max);
+  return Math.round(randFloat(min, max));
+}
+
+function armorFactorForArmorValue(level, armor, armorK) {
+  const k = armorK == null ? 8 : armorK;
+  const mod = (level * k) / 2;
+  return mod / (mod + armor);
+}
+
+function applyArmorAndRound(raw, armorFactor, armorRound) {
   const x = raw * armorFactor;
-  if (CFG.ARMOR_ROUND === 'floor') return Math.floor(x);
-  if (CFG.ARMOR_ROUND === 'ceil') return Math.ceil(x);
+  if (armorRound === 'none') return x;
+  if (armorRound === 'floor') return Math.floor(x);
+  if (armorRound === 'ceil') return Math.ceil(x);
   return Math.round(x);
 }
 
-// NOTE: This is the core armor scalar: damage' = damage * (M/(M+armor)), where M = level*K/2.
-function armorFactorForArmorValue(level, armorValue) {
-  const M = (level * CFG.ARMOR_K) / 2;
-  return M / (M + armorValue);
-}
+const _PRE_ACTION = {
+  forceHit: null, // boolean|null
+  sharedSkillOn: false,
+  sharedSkillSkillCode: null,
+  sharedSkillCached: false,
+  sharedSkillCachedVal: false,
+};
 
-// Hidden slot bonus (ported from your calibrated harness)
-function applyHiddenRoleBonuses(role, st, w1SkillType, w2SkillType) {
-  if (CFG.HIDDEN_PRESET === 'none') return;
-  if (CFG.HIDDEN_PRESET !== 'slot3_prjdef') return;
+// scratch space reused to avoid per-action allocations
+const _TW1 = new Float64Array(2); // [val, rawPosFlag]
+const _TW2 = new Float64Array(2);
 
-  // +3% acc for defenders, +3 defSkill for attackers
-  if (role === 'D') {
-    st.acc = Math.round(st.acc * 1.03);
-  } else if (role === 'A') {
-    st.defSk += 3;
+function attemptWeaponFast(att, def, w, pre, out) {
+  out[0] = 0;
+  out[1] = 0;
+  if (!w) return;
+
+  // HIT roll (or forced shared hit)
+  let hit;
+  if (pre && pre.forceHit !== null && pre.forceHit !== undefined) {
+    hit = pre.forceHit;
+  } else {
+    hit = rollVs(att.acc, def.dodge, HIT_ROLL_MODE, HIT_GE, HIT_QROUND);
   }
+  if (!hit) return;
 
-  // Extra defender defSkill ONLY vs projectile weapons in each slot.
-  // Skill types: 'gun' | 'melee' | 'proj'
-  const dHasW1Proj = role === 'D' && w1SkillType === 'proj';
-  const dHasW2Proj = role === 'D' && w2SkillType === 'proj';
-  if (dHasW1Proj) st.defSk += 3;
-  if (dHasW2Proj) st.defSk += 3;
-}
-
-// Apply hidden slot bonuses to numeric (acc, defSkill) using weapon skill indexes.
-// Mirrors main-calib calibration logic for HIDDEN_PRESET=slot3_prjdef.
-function applyHiddenRoleBonusesAccDef(role, acc, defSkill, w1SkillIdx, w2SkillIdx) {
-  if (CFG.HIDDEN_PRESET === 'none') return { acc, defSkill };
-  if (CFG.HIDDEN_PRESET !== 'slot3_prjdef') return { acc, defSkill };
-
-  // Match main-calib behavior:
-  // - attacker (A): +3 defSkill per weapon slot
-  // - defender (D): +3 accuracy AND +3 defSkill per projectile-typed weapon slot
-  const wCount = (w1SkillIdx !== null ? 1 : 0) + (w2SkillIdx !== null ? 1 : 0);
-  const prjCount = (w1SkillIdx === 2 ? 1 : 0) + (w2SkillIdx === 2 ? 1 : 0);
-
-  let a = acc;
-  let d = defSkill;
-
-  if (role === 'A') {
-    d += 3 * wCount;
-  } else if (role === 'D') {
-    a += 3 * prjCount;
-    d += 3 * prjCount;
-  }
-
-  return { acc: a, defSkill: d };
-}
-
-// returns { raw, dmg } where dmg is post-armor depending on CFG.ARMOR_APPLY
-function attemptWeaponFast(att, def, w, shared) {
-  if (!w) return { raw: 0, dmg: 0 };
-
-  const hitOk =
-    shared.sharedHitOk !== null
-      ? shared.sharedHitOk
-      : rollVs(att.acc, def.dodge, CFG.HIT_ROLL_MODE, CFG.HIT_GE, CFG.HIT_QROUND);
-
-  if (!hitOk) return { raw: 0, dmg: 0 };
-
-  // skill check
-  const offSkill = w.skill === 0 ? att.gun : w.skill === 1 ? att.mel : att.prj;
-  const defSkillAdj = w.skill === 2 ? def.defSk * CFG.PROJ_DEF_MULT : def.defSk;
+  // SKILL roll (optionally shared/cached)
+  const atkSkill = skillValue(att, w.skill);
+  let defSkill = def.defSk;
+  if (w.skill === 2) defSkill *= PROJ_DEF_MULT;
 
   let skillOk;
-  if (shared.sharedSkillMode === 'all') {
-    skillOk =
-      shared.sharedSkillOk !== null
-        ? shared.sharedSkillOk
-        : (shared.sharedSkillOk = rollVs(
-            offSkill,
-            defSkillAdj,
-            CFG.SKILL_ROLL_MODE,
-            CFG.SKILL_GE,
-            CFG.SKILL_QROUND,
-          ));
-  } else if (shared.sharedSkillMode === 'same_type') {
-    // shared only if both weapons are same type (caller sets sharedSkillCode)
-    if (shared.sharedSkillCode !== null && shared.sharedSkillCode === w.skill) {
-      skillOk =
-        shared.sharedSkillOk !== null
-          ? shared.sharedSkillOk
-          : (shared.sharedSkillOk = rollVs(
-              offSkill,
-              defSkillAdj,
-              CFG.SKILL_ROLL_MODE,
-              CFG.SKILL_GE,
-              CFG.SKILL_QROUND,
-            ));
-    } else {
-      skillOk = rollVs(offSkill, defSkillAdj, CFG.SKILL_ROLL_MODE, CFG.SKILL_GE, CFG.SKILL_QROUND);
+  if (pre && pre.sharedSkillOn && w.skill === pre.sharedSkillSkillCode) {
+    if (!pre.sharedSkillCached) {
+      pre.sharedSkillCachedVal = rollVs(
+        atkSkill,
+        defSkill,
+        SKILL_ROLL_MODE,
+        SKILL_GE,
+        SKILL_QROUND,
+      );
+      pre.sharedSkillCached = true;
     }
+    skillOk = pre.sharedSkillCachedVal;
   } else {
-    // none
-    skillOk = rollVs(offSkill, defSkillAdj, CFG.SKILL_ROLL_MODE, CFG.SKILL_GE, CFG.SKILL_QROUND);
+    skillOk = rollVs(atkSkill, defSkill, SKILL_ROLL_MODE, SKILL_GE, SKILL_QROUND);
+  }
+  if (!skillOk) return;
+
+  // DAMAGE roll
+  let raw = rollDamage(w.min, w.max, DMG_ROLL);
+  if (raw <= 0) return;
+
+  // tactics/base bonus (per-weapon variants)
+  if (TACTICS_BASE_VAL > 0 && DMG_BONUS_MODE !== 'per_action') {
+    if (DMG_BONUS_MODE === 'per_weapon') {
+      raw += TACTICS_BASE_VAL;
+    } else if (DMG_BONUS_MODE === 'split_equipped') {
+      if (String(w.name).includes('Split Crystal Bombs')) raw += TACTICS_BASE_VAL;
+    }
   }
 
-  if (!skillOk) return { raw: 0, dmg: 0 };
+  // ARMOR application
+  const val =
+    ARMOR_APPLY === 'per_weapon' ? applyArmorAndRound(raw, def.armorFactor, ARMOR_ROUND) : raw;
 
-  // damage
-  const baseVal =
-    CFG.TACTICS_MODE === 'always' && CFG.DMG_BONUS_MODE === 'per_weapon' ? CFG.TACTICS_VAL : 0;
-  const raw = rollDamage(w.min, w.max) + baseVal;
-
-  if (CFG.ARMOR_APPLY === 'per_weapon') {
-    return { raw, dmg: applyArmorAndRound(raw, def.armorFactor) };
-  }
-  return { raw, dmg: raw };
+  out[0] = val > 0 ? val : 0;
+  out[1] = 1; // raw>0 (hit+skill succeeded)
 }
 
-function doActionFast(att, def) {
-  // shared hit
-  const sharedHitOk = CFG.SHARED_HIT
-    ? rollVs(att.acc, def.dodge, CFG.HIT_ROLL_MODE, CFG.HIT_GE, CFG.HIT_QROUND)
+function doActionFast(att, def, targetHp0) {
+  if (targetHp0 <= 0) return 0;
+
+  // Shared hit (if enabled): one hit roll per action, applied to both weapons.
+  _PRE_ACTION.forceHit = SHARED_HIT
+    ? rollVs(att.acc, def.dodge, HIT_ROLL_MODE, HIT_GE, HIT_QROUND)
     : null;
 
-  const shared = {
-    sharedHitOk,
-    sharedSkillMode: CFG.SHARED_SKILL,
-    sharedSkillOk: null,
-    sharedSkillCode: null,
-  };
+  // Shared skill (if enabled + eligible): cache a single skill roll per action.
+  _PRE_ACTION.sharedSkillOn = false;
+  _PRE_ACTION.sharedSkillSkillCode = null;
+  _PRE_ACTION.sharedSkillCached = false;
+  _PRE_ACTION.sharedSkillCachedVal = false;
 
-  if (CFG.SHARED_SKILL === 'same_type' && att.w1 && att.w2 && att.w1.skill === att.w2.skill) {
-    shared.sharedSkillCode = att.w1.skill;
-  }
-
-  const r1 = attemptWeaponFast(att, def, att.w1, shared);
-  const r2 = attemptWeaponFast(att, def, att.w2, shared);
-
-  let dmg;
-  if (CFG.ARMOR_APPLY === 'per_weapon') {
-    dmg = r1.dmg + r2.dmg;
-  } else {
-    const sumRaw = r1.raw + r2.raw;
-    dmg = sumRaw > 0 ? applyArmorAndRound(sumRaw, def.armorFactor) : 0;
-  }
-
-  // tactics / base bonus per-action (added post-armor, matches harness behavior)
-  if (CFG.TACTICS_MODE === 'always' && CFG.DMG_BONUS_MODE === 'per_action') {
-    dmg += CFG.TACTICS_VAL;
-  }
-
-  return dmg;
-}
-
-function fightOnceWikiFast(p1, p2, maxTurns) {
-  // speed ordering (p1First means: p1 acts first)
-  let p1First = false;
-  if (p1.speed > p2.speed) p1First = true;
-  else if (p1.speed < p2.speed) p1First = false;
-  else {
-    // tie
-    if (CFG.SPEED_TIE_MODE === 'random') p1First = RNG() < 0.5;
-    else if (CFG.SPEED_TIE_MODE === 'attacker') p1First = true;
-    else if (CFG.SPEED_TIE_MODE === 'defender') p1First = false;
-    else p1First = true;
-  }
-
-  let hp1 = p1.hp;
-  let hp2 = p2.hp;
-
-  let turns = 0;
-  while (hp1 > 0 && hp2 > 0 && turns < maxTurns) {
-    turns++;
-
-    if (p1First) {
-      // p1 -> p2
-      hp2 -= doActionFast(p1, p2);
-      if (hp2 <= 0) break;
-      // p2 -> p1
-      hp1 -= doActionFast(p2, p1);
-    } else {
-      // p2 -> p1
-      hp1 -= doActionFast(p2, p1);
-      if (hp1 <= 0) break;
-      // p1 -> p2
-      hp2 -= doActionFast(p1, p2);
+  if (SHARED_SKILL_MODE !== 'none' && att.w1 && att.w2 && att.w1.skill === att.w2.skill) {
+    const sc = att.w1.skill;
+    const allow =
+      SHARED_SKILL_MODE === 'same_type' || (SHARED_SKILL_MODE === 'gun_same_type' && sc === 0);
+    if (allow) {
+      _PRE_ACTION.sharedSkillOn = true;
+      _PRE_ACTION.sharedSkillSkillCode = sc;
     }
   }
 
-  // Determine winner from p1 perspective (1 = p1 wins)
-  let win;
-  if (hp1 > 0 && hp2 <= 0) win = 1;
-  else if (hp2 > 0 && hp1 <= 0) win = 0;
-  else if (hp1 > hp2) win = 1;
-  else if (hp2 > hp1) win = 0;
-  else win = p1First ? 1 : 0; // exact tie => first actor wins (matches wiki tiebreak behavior)
+  // weapon 1
+  attemptWeaponFast(att, def, att.w1, _PRE_ACTION, _TW1);
 
-  // pack: win in high 16, turns in low 16
-  return (win << 16) | (turns & 0xffff);
-}
-
-// Run N fights and return [wins, turnsSum] packed for speed (matches older brute harness).
-function runMatchPacked(p1, p2, trials, maxTurns) {
-  let wins = 0;
-  let turnsSum = 0;
-  for (let i = 0; i < trials; i++) {
-    const packed = fightOnceWikiFast(p1, p2, maxTurns);
-    wins += packed >>> 16;
-    turnsSum += packed & 0xffff;
+  // optional "stop on kill" optimization must match legacy_simulator.canonical:
+  // only valid for ARMOR_APPLY=per_weapon AND baseVal==0 (tactics disabled),
+  // otherwise rolling weapon2 changes RNG consumption and/or damage semantics.
+  let skipW2 = false;
+  if (
+    ACTION_STOP_ON_KILL &&
+    targetHp0 > 0 &&
+    ARMOR_APPLY === 'per_weapon' &&
+    TACTICS_BASE_VAL === 0 &&
+    _TW1[0] >= targetHp0
+  ) {
+    skipW2 = true;
   }
-  return [wins, turnsSum];
+
+  if (!skipW2) attemptWeaponFast(att, def, att.w2, _PRE_ACTION, _TW2);
+  else {
+    _TW2[0] = 0;
+    _TW2[1] = 0;
+  }
+
+  // combine damage
+  if (ARMOR_APPLY === 'per_weapon') {
+    let actionDmg = _TW1[0] + _TW2[0];
+
+    // per-action tactics bonus (post-weapon, pre-cap)
+    if (TACTICS_BASE_VAL > 0 && DMG_BONUS_MODE === 'per_action') {
+      const any = _TW1[1] > 0 || _TW2[1] > 0;
+      if (any) actionDmg += TACTICS_BASE_VAL;
+    }
+
+    return actionDmg >= targetHp0 ? targetHp0 : actionDmg;
+  }
+
+  // sum mode: armor applied at action level
+  let sumRaw = _TW1[0] + _TW2[0];
+  if (sumRaw <= 0) return 0;
+
+  if (TACTICS_BASE_VAL > 0 && DMG_BONUS_MODE === 'per_action' && DMG_BONUS_STAGE === 'pre_armor') {
+    sumRaw += TACTICS_BASE_VAL;
+  }
+
+  let actionDmg = applyArmorAndRound(sumRaw, def.armorFactor, ARMOR_ROUND);
+
+  if (TACTICS_BASE_VAL > 0 && DMG_BONUS_MODE === 'per_action' && DMG_BONUS_STAGE === 'post_armor') {
+    // match canonical: only add if there was any raw damage pre-armor
+    if (_TW1[0] + _TW2[0] > 0) actionDmg += TACTICS_BASE_VAL;
+  }
+
+  return actionDmg >= targetHp0 ? targetHp0 : actionDmg;
 }
 
+function fightOnceCalibFast(p1, p2, MAX_TURNS) {
+  let p1hp = p1.hp;
+  let p2hp = p2.hp;
+
+  let p1First;
+  if (p1.speed > p2.speed) p1First = true;
+  else if (p1.speed < p2.speed) p1First = false;
+  else p1First = SPEED_TIE_MODE === 'random' ? RNG() < 0.5 : true;
+
+  const first = p1First ? p1 : p2;
+  const second = p1First ? p2 : p1;
+
+  let turns = 0;
+
+  while (p1hp > 0 && p2hp > 0 && turns < MAX_TURNS) {
+    turns++;
+
+    // first acts
+    if (second === p1) p1hp -= doActionFast(first, second, p1hp);
+    else p2hp -= doActionFast(first, second, p2hp);
+
+    if (p1hp <= 0 || p2hp <= 0) break;
+
+    // second acts
+    if (first === p1) p1hp -= doActionFast(second, first, p1hp);
+    else p2hp -= doActionFast(second, first, p2hp);
+  }
+
+  let winnerIsP1;
+  if (p1hp > 0 && p2hp <= 0) winnerIsP1 = 1;
+  else if (p2hp > 0 && p1hp <= 0) winnerIsP1 = 0;
+  else if (p1hp > 0 && p2hp > 0) {
+    if (p1hp === p2hp) winnerIsP1 = p1First ? 1 : 0;
+    else winnerIsP1 = p1hp > p2hp ? 1 : 0;
+  } else {
+    winnerIsP1 = p1First ? 1 : 0;
+  }
+
+  return (winnerIsP1 << 16) | (turns & 0xffff);
+}
+
+function runMatchPacked(p1, p2, trials, MAX_TURNS) {
+  let wins = 0;
+  let exSum = 0;
+  for (let i = 0; i < trials; i++) {
+    const packed = fightOnceCalibFast(p1, p2, MAX_TURNS);
+    wins += (packed >>> 16) & 1;
+    exSum += packed & 0xffff;
+  }
+  return [wins, exSum];
+}
+
+// =====================
+// MIXED WEAPON BONUS HELPERS
+// =====================
+// If both weapons exist and skill types differ => [2,2] else [1,1]
+// If both weapons exist and skill types differ => [2,2] else [1,1]
 function mixedWeaponMultsFromWeaponSkill(w1SkillIdx, w2SkillIdx) {
   if (w1SkillIdx === null || w2SkillIdx === null) return [1, 1];
   return w1SkillIdx === w2SkillIdx ? [1, 1] : [2, 2];
@@ -708,7 +717,7 @@ function mixedWeaponMultsFromWeaponSkill(w1SkillIdx, w2SkillIdx) {
 // =====================
 // CRYSTALS + UPGRADES + ITEMS
 // =====================
-const CrystalDefs = {
+let CrystalDefs = {
   'Abyss Crystal': {
     pct: { armor: 0.05, dodge: 0.04, speed: 0.1, defSkill: 0.05 },
   },
@@ -732,7 +741,7 @@ const CrystalDefs = {
   },
 };
 
-const UpgradeDefs = {
+let UpgradeDefs = {
   'Faster Reload 4': { pct: { accuracy: 0.05, damage: 0.05 } },
   'Enhanced Scope 4': { pct: { accuracy: 0.1 } },
   'Faster Ammo 4': { pct: { damage: 0.2 } },
@@ -741,7 +750,7 @@ const UpgradeDefs = {
   'Poisoned Tip': { pct: { damage: 0.1 } },
 };
 
-const ItemDefs = {
+let ItemDefs = {
   'SG1 Armor': {
     type: 'Armor',
     flatStats: { armor: 70, dodge: 75, speed: 65, defSkill: 90 },
@@ -796,7 +805,7 @@ const ItemDefs = {
     type: 'Weapon',
     skillType: 'projSkill',
     flatStats: { speed: 70, accuracy: 48, projSkill: 60, defSkill: 20 },
-    baseWeaponDamage: { min: 10, max: 125 },
+    baseWeaponDamage: { min: 25, max: 125 },
     upgradeSlots: [['Laser Sight', 'Poisoned Tip']],
   },
 
@@ -883,656 +892,119 @@ const ItemDefs = {
   },
 };
 
-// Apply "game-data" overrides (helps match in-game ranges you measured).
-// You can disable with LEGACY_CALIB_PATCHES=0 or override the values directly via env.
-(function applyItemOverrides() {
-  if (!CFG.CALIB_PATCHES) return;
-  try {
-    if (ItemDefs['Hellforged Armor'] && CFG.HF_ARMOR_BASE_OVERRIDE) {
-      ItemDefs['Hellforged Armor'].flatStats.armor = CFG.HF_ARMOR_BASE_OVERRIDE;
-    }
-    if (ItemDefs['Void Sword'] && CFG.VOID_SWORD_BASE_MAX_OVERRIDE) {
-      ItemDefs['Void Sword'].baseWeaponDamage.max = CFG.VOID_SWORD_BASE_MAX_OVERRIDE;
-    }
-  } catch (e) {
-    // ignore; never fail startup due to overrides
-  }
-})();
-
-// =====================
-// ATTACKER PRESETS (for --verify)
-// =====================
-const ATTACKER_PRESETS = {
-  MAUL_CSTAFF: {
-    stats: { level: 80, hp: 600, speed: 60, dodge: 67, accuracy: 14 },
-    armor: { name: 'SG1 Armor', crystal: 'Abyss Crystal' },
-    weapon1: { name: 'Crystal Maul', crystal: 'Amulet Crystal', upgrades: [] },
-    weapon2: { name: 'Core Staff', crystal: 'Amulet Crystal', upgrades: [] },
-    misc1: { name: 'Bio Spinal Enhancer', crystal: 'Perfect Pink Crystal' },
-    misc2: { name: 'Bio Spinal Enhancer', crystal: 'Perfect Pink Crystal' },
-  },
-
-  // Calibration presets (max HP: 865 => base acc/dodge 14/14)
-  BOMBS_RIFT_MAXHP: {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: { name: 'SG1 Armor', crystal: 'Abyss Crystal' },
-    weapon1: { name: 'Split Crystal Bombs T2', crystal: 'Amulet Crystal', upgrades: [] },
-    weapon2: { name: 'Rift Gun', crystal: 'Amulet Crystal', upgrades: [] },
-    misc1: { name: 'Scout Drones', crystal: 'Amulet Crystal' },
-    misc2: { name: 'Scout Drones', crystal: 'Amulet Crystal' },
-  },
-
-  BOMBS_BOMBS_MAXHP: {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: { name: 'SG1 Armor', crystal: 'Abyss Crystal' },
-    weapon1: { name: 'Split Crystal Bombs T2', crystal: 'Amulet Crystal', upgrades: [] },
-    weapon2: { name: 'Split Crystal Bombs T2', crystal: 'Amulet Crystal', upgrades: [] },
-    misc1: { name: 'Scout Drones', crystal: 'Amulet Crystal' },
-    misc2: { name: 'Scout Drones', crystal: 'Amulet Crystal' },
-  },
-
-  RIFT_BOMBS_MAXHP: {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: { name: 'SG1 Armor', crystal: 'Abyss Crystal' },
-    // Swapped weapon order vs BOMBS_RIFT_MAXHP:
-    weapon1: { name: 'Rift Gun', crystal: 'Amulet Crystal', upgrades: [] },
-    weapon2: { name: 'Split Crystal Bombs T2', crystal: 'Amulet Crystal', upgrades: [] },
-    misc1: { name: 'Scout Drones', crystal: 'Amulet Crystal' },
-    misc2: { name: 'Scout Drones', crystal: 'Amulet Crystal' },
-  },
-
-  // Explicit alias so the intent is obvious in shell commands.
-  RIFT_BOMBS_MAXHP_SWAP: {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: { name: 'SG1 Armor', crystal: 'Abyss Crystal' },
-    weapon1: { name: 'Rift Gun', crystal: 'Amulet Crystal', upgrades: [] },
-    weapon2: { name: 'Split Crystal Bombs T2', crystal: 'Amulet Crystal', upgrades: [] },
-    misc1: { name: 'Scout Drones', crystal: 'Amulet Crystal' },
-    misc2: { name: 'Scout Drones', crystal: 'Amulet Crystal' },
-  },
-};
+// Prefer external shared defs (single source of truth), if present.
+// This keeps brute-force and canonical aligned without duplicating tables.
+try {
+  const defs = require('./legacy-defs-latest.js');
+  const extCrystal = defs && (defs.CrystalDefs || defs.crystalDefs);
+  const extUpgrade = defs && (defs.UpgradeDefs || defs.upgradeDefs);
+  const extItem = defs && (defs.ItemDefs || defs.itemDefs);
+  if (extCrystal && typeof extCrystal === 'object') CrystalDefs = extCrystal;
+  if (extUpgrade && typeof extUpgrade === 'object') UpgradeDefs = extUpgrade;
+  if (extItem && typeof extItem === 'object') ItemDefs = extItem;
+} catch (_) {
+  // no-op
+}
 
 // =====================
 // DEFENDER PAYLOADS
 // =====================
-const DEFENDER_PAYLOADS = {
-  'DL Gun Build': {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-    },
-    weapon1: {
-      name: 'Rift Gun',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Double Barrel Sniper Rifle',
-      upgrades: [
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-      ],
-    },
-    misc1: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc2: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-  },
-  'DL Gun Build 2': {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-    },
-    weapon1: {
-      name: 'Rift Gun',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Q15 Gun',
-      upgrades: [
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-      ],
-    },
-    misc1: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc2: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-  },
-  'DL Gun Build 3': {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-    },
-    weapon1: {
-      name: 'Rift Gun',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Double Barrel Sniper Rifle',
-      upgrades: [
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-      ],
-    },
-    misc1: {
-      name: 'Bio Spinal Enhancer',
-      upgrades: [
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-      ],
-    },
-    misc2: {
-      name: 'Bio Spinal Enhancer',
-      upgrades: [
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-      ],
-    },
-  },
-  'DL Gun Build 3.1': {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-    },
-    weapon1: {
-      name: 'Rift Gun',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Double Barrel Sniper Rifle',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc1: {
-      name: 'Bio Spinal Enhancer',
-      upgrades: [
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-      ],
-    },
-    misc2: {
-      name: 'Bio Spinal Enhancer',
-      upgrades: [
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-      ],
-    },
-  },
-  'DL Gun Build 4': {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-    },
-    weapon1: {
-      name: 'Rift Gun',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Q15 Gun',
-      upgrades: [
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-      ],
-    },
-    misc1: {
-      name: 'Bio Spinal Enhancer',
-      upgrades: [
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-      ],
-    },
-    misc2: {
-      name: 'Bio Spinal Enhancer',
-      upgrades: [
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-      ],
-    },
-  },
-  'DL Gun Build 7': {
-    stats: { level: 80, hp: 700, speed: 60, dodge: 14, accuracy: 47 },
-    armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-    },
-    weapon1: {
-      name: 'Rift Gun',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Double Barrel Sniper Rifle',
-      upgrades: [
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-      ],
-    },
-    misc1: {
-      name: 'Bio Spinal Enhancer',
-      upgrades: [
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-      ],
-    },
-    misc2: {
-      name: 'Bio Spinal Enhancer',
-      upgrades: [
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-        'Perfect Green Crystal',
-      ],
-    },
-  },
-  // 'Dual Rifts': {
-  //   stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-  //   armor: {
-  //     name: 'Dark Legion Armor',
-  //     upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-  //   },
-  //   weapon1: {
-  //     name: 'Rift Gun',
-  //     upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-  //   },
-  //   weapon2: {
-  //     name: 'Rift Gun',
-  //     upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-  //   },
-  //   misc1: {
-  //     name: 'Bio Spinal Enhancer',
-  //     upgrades: [
-  //       'Perfect Pink Crystal',
-  //       'Perfect Pink Crystal',
-  //       'Perfect Pink Crystal',
-  //       'Perfect Pink Crystal',
-  //     ],
-  //   },
-  //   misc2: {
-  //     name: 'Bio Spinal Enhancer',
-  //     upgrades: [
-  //       'Perfect Pink Crystal',
-  //       'Perfect Pink Crystal',
-  //       'Perfect Pink Crystal',
-  //       'Perfect Pink Crystal',
-  //     ],
-  //   },
-  // },
-  'Core/Void Build 1': {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-    },
-    weapon1: {
-      name: 'Core Staff',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Void Sword',
-      upgrades: [
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-      ],
-    },
-    misc1: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc2: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-  },
-  'T2 Scythe Build': {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-    },
-    weapon1: {
-      name: 'Scythe T2',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Scythe T2',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc1: {
-      name: 'Bio Spinal Enhancer',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc2: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-  },
-  'T2 Scythe/Cstaff': {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-    },
-    weapon1: {
-      name: 'Scythe T2',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Core Staff',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc1: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc2: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-  },
-  'SG1 Split bombs': {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: {
-      name: 'SG1 Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-    },
-    weapon1: {
-      name: 'Split Crystal Bombs T2',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Split Crystal Bombs T2',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc1: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc2: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-  },
-  'HF Core/Void': {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: {
-      name: 'Hellforged Armor',
-      upgrades: [
-        'Cabrusion Crystal',
-        'Cabrusion Crystal',
-        'Cabrusion Crystal',
-        'Cabrusion Crystal',
-      ],
-    },
-    weapon1: {
-      name: 'Void Sword',
-      upgrades: [
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-      ],
-    },
-    weapon2: {
-      name: 'Core Staff',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc1: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc2: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-  },
-  'DL Gun Build 5': {
-    stats: { level: 80, hp: 700, speed: 60, dodge: 14, accuracy: 47 },
-    armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-    },
-    weapon1: {
-      name: 'Rift Gun',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Double Barrel Sniper Rifle',
-      upgrades: [
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-      ],
-    },
-    misc1: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc2: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-  },
+let DEFENDER_PAYLOADS;
+(function loadDefenderPayloads() {
+  const path = require('path');
 
-  'DL Gun Build 6': {
-    stats: { level: 80, hp: 700, speed: 60, dodge: 14, accuracy: 47 },
-    armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-    },
-    weapon1: {
-      name: 'Rift Gun',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Q15 Gun',
-      upgrades: [
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-      ],
-    },
-    misc1: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc2: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-  },
+  // Allow explicit override (relative or absolute):
+  //   LEGACY_DEFENDERS_FILE=./legacy_defenders.js
+  const override = String(process.env.LEGACY_DEFENDERS_FILE || '').trim();
+  const candidates = override
+    ? [override]
+    : ['./legacy-defenders-latest.js', './legacy-defenders-latest.js'];
 
-  'DL Gun Build 8': {
-    stats: { level: 80, hp: 700, speed: 60, dodge: 14, accuracy: 47 },
-    armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-    },
-    weapon1: {
-      name: 'Rift Gun',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Q15 Gun',
-      upgrades: [
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-        'Perfect Fire Crystal',
-      ],
-    },
-    misc1: {
-      name: 'Bio Spinal Enhancer',
-      upgrades: [
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-      ],
-    },
-    misc2: {
-      name: 'Bio Spinal Enhancer',
-      upgrades: [
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-      ],
-    },
-  },
-
-  'Dual Bow Build': {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-    },
-    weapon1: {
-      name: 'Void Bow',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Void Bow',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc1: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc2: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-  },
-
-  'Bow/rift build': {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: {
-      name: 'Dark Legion Armor',
-      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
-    },
-    weapon1: {
-      name: 'Rift Gun',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Void Bow',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc1: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc2: {
-      name: 'Scout Drones',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-  },
-
-  'Armour stack Cores': {
-    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
-    armor: {
-      name: 'Hellforged Armor',
-      upgrades: [
-        'Cabrusion Crystal',
-        'Cabrusion Crystal',
-        'Cabrusion Crystal',
-        'Cabrusion Crystal',
-      ],
-    },
-    weapon1: {
-      name: 'Core Staff',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    weapon2: {
-      name: 'Core Staff',
-      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
-    },
-    misc1: {
-      name: 'Scout Drones',
-      upgrades: [
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-      ],
-    },
-    misc2: {
-      name: 'Scout Drones',
-      upgrades: [
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-        'Perfect Pink Crystal',
-      ],
-    },
-  },
-};
+  for (const p of candidates) {
+    try {
+      const mod = require(path.resolve(__dirname, p));
+      // Support either `module.exports = payloads` or `{ DEFENDER_PAYLOADS }`
+      DEFENDER_PAYLOADS = (mod && mod.DEFENDER_PAYLOADS) || mod;
+      if (DEFENDER_PAYLOADS && typeof DEFENDER_PAYLOADS === 'object') return;
+    } catch (_) {
+      // keep trying
+    }
+  }
+  throw new Error(
+    `Could not load defender payloads. Tried: ${candidates
+      .map((s) => JSON.stringify(s))
+      .join(', ')} (set LEGACY_DEFENDERS_FILE to override)`,
+  );
+})();
 
 const DEFENDER_PRIORITY = [
   'DL Gun Build 3',
-  'SG1 Split bombs',
-  'T2 Scythe/Cstaff',
+  'SG1 Split Bombs T2',
+  'T2 Scythe Build',
   'DL Gun Build 4',
   'DL Gun Build 2',
   'DL Gun Build 7',
   'Core/Void Build 1',
-  'T2 Scythe Build',
   'HF Core/Void',
   // 'Dual Rifts',
-  'DL Gun Build 3.1',
 ];
 
-const defendersRaw = String(
-  process.env.LEGACY_BRUTE_DEFENDERS || process.env.LEGACY_DEFENDERS || '',
-).trim();
-const defenderNames = defendersRaw ? parseCsvList(defendersRaw) : DEFENDER_PRIORITY;
+// Defender selection:
+// - Default: run against *all* defenders in legacy-defender-payloads.js (priority list first).
+//   This keeps your gatekeeper ordering aggressive while still scoring builds vs the full set.
+// - To run ONLY the priority/core set, set:
+//     LEGACY_DEFENDERS=priority
+// - To run against *all* defenders explicitly, set (same as default):
+//     LEGACY_DEFENDERS=all
+// - To run against a custom comma-separated set, set:
+//     LEGACY_DEFENDERS="Name 1,Name 2,Name 3"
+const DEFENDER_NAMES = (() => {
+  const raw = String(process.env.LEGACY_DEFENDERS || '').trim();
+  const lower = raw.toLowerCase();
 
-const defenderBuilds = defenderNames.map((nameRaw) => {
-  const name = normalizeDefenderName(nameRaw);
+  // helper: priority-first all defenders
+  const priorityFirstAll = () => {
+    const all = Object.keys(DEFENDER_PAYLOADS).slice().sort();
+    const seen = new Set();
+    const out = [];
+    for (const n of DEFENDER_PRIORITY) {
+      if (!seen.has(n)) {
+        seen.add(n);
+        out.push(n);
+      }
+    }
+    for (const n of all) {
+      if (!seen.has(n)) {
+        seen.add(n);
+        out.push(n);
+      }
+    }
+    return out;
+  };
+
+  // default: ALL defenders (priority first)
+  if (!raw) return priorityFirstAll();
+
+  if (lower === 'all' || lower === '*') return priorityFirstAll();
+  if (lower === 'priority' || lower === 'core' || lower === 'default')
+    return DEFENDER_PRIORITY.slice();
+
+  // custom list
+  return parseCsvList(raw);
+})();
+
+const defenderBuilds = DEFENDER_NAMES.map((name) => {
   const p = DEFENDER_PAYLOADS[name];
-  if (!p)
-    throw new Error(`Missing DEFENDER_PAYLOADS entry for "${nameRaw}" (normalized="${name}")`);
+  if (!p) {
+    console.warn(`WARN: Missing DEFENDER_PAYLOADS entry for "${name}" (skipping)`);
+    return null;
+  }
   return { name, payload: p };
-});
+}).filter(Boolean);
+
+if (!defenderBuilds.length) {
+  throw new Error('No defenders loaded. Check your defenders file / DEFENDER_NAMES.');
+}
 
 // =====================
 // LOCK_ONLY_AMULET (weapons-only)
@@ -1725,115 +1197,332 @@ function isWatchBuildCandidate(av, w1v, w2v, m1v, m2v) {
 // =====================
 // VARIANT COMPUTE (numbers only) + UPGRADES
 // =====================
-function computeVariant(itemName, crystalName, upgrades = []) {
+
+// ---------------------------------------------------------------------------
+// Variant compilation (crystals + upgrades) — kept in sync with legacy-sim-latest.js
+// ---------------------------------------------------------------------------
+
+function normalizeRoundMode(mode) {
+  const m = String(mode || '')
+    .trim()
+    .toLowerCase();
+  if (!m) return 'ceil';
+  if (m === 'ceil' || m === 'floor' || m === 'round') return m;
+  throw new Error(`Unknown round mode: "${mode}" (expected ceil|floor|round)`);
+}
+
+function normalizeCrystalStackMode(mode) {
+  const m = String(mode || '')
+    .trim()
+    .toLowerCase();
+  if (!m) return 'sum4';
+  if (m === 'iter4' || m === 'sum4') return m;
+  throw new Error(`Unknown crystal stack mode: "${mode}" (expected iter4|sum4)`);
+}
+
+function roundStat(x, mode) {
+  if (mode === 'ceil') return Math.ceil(x);
+  if (mode === 'floor') return Math.floor(x);
+  return Math.round(x);
+}
+
+function roundWeaponDmg(x, mode) {
+  if (mode === 'ceil') return Math.ceil(x);
+  if (mode === 'floor') return Math.floor(x);
+  return Math.round(x);
+}
+
+function applyCrystalPctToStat(base, pct, n, mode, roundFn) {
+  if (!pct || !n) return base;
+  if (mode === 'sum4') return base + roundFn(base * pct * n);
+  // iter4
+  let x = base;
+  for (let i = 0; i < n; i++) x = x + roundFn(x * pct);
+  return x;
+}
+
+function applyCrystalPctToWeaponDmg(base, pct, n, mode, roundFn) {
+  if (!pct || !n) return base;
+  if (mode === 'sum4') return roundFn(base * (1 + pct * n));
+  // iter4
+  let x = base;
+  for (let i = 0; i < n; i++) x = roundFn(x * (1 + pct));
+  return x;
+}
+
+// Crystal stack/rounding config (legacy defaults)
+const CRYSTAL_STACK_MODE = normalizeCrystalStackMode(_envStr('LEGACY_CRYSTAL_STACK_MODE', 'sum4'));
+const CRYSTAL_STACK_STATS = normalizeCrystalStackMode(
+  _envStr('LEGACY_CRYSTAL_STACK_STATS', 'iter4') || CRYSTAL_STACK_MODE,
+);
+const CRYSTAL_STACK_DMG = normalizeCrystalStackMode(
+  _envStr('LEGACY_CRYSTAL_STACK_DMG', 'sum4') || CRYSTAL_STACK_MODE,
+);
+const CRYSTAL_SLOTS = Math.max(0, _envNum('LEGACY_CRYSTAL_SLOTS', 4));
+
+const STAT_ROUND_MODE = normalizeRoundMode(_envStr('LEGACY_STAT_ROUND', 'ceil'));
+const WEP_DMG_ROUND_MODE = normalizeRoundMode(_envStr('LEGACY_WEAPON_DMG_ROUND', 'ceil'));
+
+const ARMORSTAT_STACK_RAW = String(_envStr('LEGACY_ARMORSTAT_STACK', 'inherit') || 'inherit')
+  .trim()
+  .toLowerCase();
+const ARMORSTAT_ROUND_RAW = String(_envStr('LEGACY_ARMORSTAT_ROUND', 'inherit') || 'inherit')
+  .trim()
+  .toLowerCase();
+const ARMORSTAT_SLOTS_RAW = String(_envStr('LEGACY_ARMORSTAT_SLOTS', 'inherit') || 'inherit')
+  .trim()
+  .toLowerCase();
+
+const ARMORSTAT_STACK_MODE =
+  ARMORSTAT_STACK_RAW === 'inherit' ? 'inherit' : normalizeCrystalStackMode(ARMORSTAT_STACK_RAW);
+const ARMORSTAT_ROUND_MODE =
+  ARMORSTAT_ROUND_RAW === 'inherit' ? 'inherit' : normalizeRoundMode(ARMORSTAT_ROUND_RAW);
+const ARMORSTAT_SLOTS =
+  ARMORSTAT_SLOTS_RAW === 'inherit'
+    ? 'inherit'
+    : Math.max(0, parseInt(ARMORSTAT_SLOTS_RAW, 10) || CRYSTAL_SLOTS);
+
+const VARIANT_CFG = {
+  crystalSlots: CRYSTAL_SLOTS,
+  statRound: STAT_ROUND_MODE,
+  wepDmgRound: WEP_DMG_ROUND_MODE,
+  stackModeStats: CRYSTAL_STACK_STATS,
+  stackModeDmg: CRYSTAL_STACK_DMG,
+  armorStatStack: ARMORSTAT_STACK_MODE,
+  armorStatRound: ARMORSTAT_ROUND_MODE,
+  armorStatSlots: ARMORSTAT_SLOTS,
+};
+
+// Misc "no-crystal skill" tweaks (legacy-compatible). Note: brute sim uses orderless misc pairs;
+// slot2-specific lists are accepted but (currently) treated the same as slot1.
+function parseSkillTypeMultipliers(s) {
+  const out = new Map();
+  const txt = String(s || '').trim();
+  if (!txt) return out;
+  for (const rawTok of txt.split(',')) {
+    const tok = rawTok.trim();
+    if (!tok) continue;
+    let key = tok;
+    let mult = 0;
+    const eq = tok.indexOf('=');
+    if (eq !== -1) {
+      key = tok.slice(0, eq).trim();
+      const rhs = tok.slice(eq + 1).trim();
+      const v = Number(rhs);
+      mult = Number.isFinite(v) ? v : 0;
+    }
+    const k = key.toLowerCase();
+    if (k === 'gun' || k === 'guns' || k === 'gunskill') out.set('gun', mult);
+    else if (k === 'melee' || k === 'mels' || k === 'melees' || k === 'meleeskill')
+      out.set('melee', mult);
+    else if (k === 'proj' || k === 'projectile' || k === 'prj' || k === 'projskill')
+      out.set('proj', mult);
+    else if (k === 'def' || k === 'defense' || k === 'defskill') out.set('def', mult);
+  }
+  return out;
+}
+
+const MISC_NO_CRYSTAL_SKILL = new Set(parseCsvList(_envStr('LEGACY_MISC_NO_CRYSTAL_SKILL', '')));
+let MISC_NO_CRYSTAL_TYPE_MULTS = parseSkillTypeMultipliers(
+  _envStr('LEGACY_MISC_NO_CRYSTAL_SKILL_TYPES', 'gun,melee,proj'),
+);
+const MISC_NO_CRYSTAL_ZERO_DEF = _envBool('LEGACY_MISC_NO_CRYSTAL_SKILL_ZERO_DEF', false);
+
+if (MISC_NO_CRYSTAL_ZERO_DEF && !MISC_NO_CRYSTAL_TYPE_MULTS.has('def'))
+  MISC_NO_CRYSTAL_TYPE_MULTS.set('def', 0);
+
+// Slot2 variants: accepted, but treated the same as slot1 unless you switch to ordered misc pairs (not implemented here).
+const MISC_NO_CRYSTAL_SKILL_SLOT2 = new Set(
+  parseCsvList(_envStr('LEGACY_MISC_NO_CRYSTAL_SKILL_SLOT2', '')),
+);
+const MISC_NO_CRYSTAL_TYPE_MULTS_SLOT2 = parseSkillTypeMultipliers(
+  _envStr('LEGACY_MISC_NO_CRYSTAL_SKILL_SLOT2_TYPES', ''),
+);
+
+const HAS_SLOT2_NO_CRYSTAL_CFG =
+  MISC_NO_CRYSTAL_SKILL_SLOT2.size > 0 || MISC_NO_CRYSTAL_TYPE_MULTS_SLOT2.size > 0;
+if (HAS_SLOT2_NO_CRYSTAL_CFG) {
+  console.error(
+    'WARN: slot2-specific LEGACY_MISC_NO_CRYSTAL_* settings were provided, but brute sim uses orderless misc pairs; treating slot2 the same as slot1.',
+  );
+}
+
+function computeVariant(itemName, crystalName, upgrades = [], cfg = VARIANT_CFG, slotTag = 0) {
   const idef = ItemDefs[itemName];
-  const cdef = CrystalDefs[crystalName];
-  if (!idef) throw new Error(`Unknown item: ${itemName}`);
-  if (!cdef) throw new Error(`Unknown crystal: ${crystalName}`);
+  if (!idef) throw new Error(`Unknown item: "${itemName}"`);
 
-  const pct = cdef.pct || {};
-  const pctSum = {};
+  const cdef = crystalName ? CrystalDefs[crystalName] : null;
+  if (crystalName && !cdef) throw new Error(`Unknown crystal: "${crystalName}"`);
+  const pct = cdef && cdef.pct ? cdef.pct : {};
 
-  for (const k of Object.keys(pct)) {
-    let v = (pct[k] || 0) * 4;
-    if (
-      idef.type === 'Misc' &&
-      CFG.MISC_NO_CRYSTAL_SKILL &&
-      itemName === CFG.MISC_NO_CRYSTAL_SKILL
-    ) {
-      if (k === 'gunSkill' && CFG.MISC_NO_CRYSTAL_SKILL_TYPES.gun !== undefined)
-        v *= CFG.MISC_NO_CRYSTAL_SKILL_TYPES.gun;
-      if (k === 'meleeSkill' && CFG.MISC_NO_CRYSTAL_SKILL_TYPES.melee !== undefined)
-        v *= CFG.MISC_NO_CRYSTAL_SKILL_TYPES.melee;
-      if (k === 'projSkill' && CFG.MISC_NO_CRYSTAL_SKILL_TYPES.proj !== undefined)
-        v *= CFG.MISC_NO_CRYSTAL_SKILL_TYPES.proj;
-      if (k === 'defSkill' && CFG.MISC_NO_CRYSTAL_SKILL_TYPES.def !== undefined)
-        v *= CFG.MISC_NO_CRYSTAL_SKILL_TYPES.def;
-    }
-    pctSum[k] = v;
-  }
-
+  // Upgrade defs + validation (legacy semantics: at most one upgrade per slot)
+  const udefs = [];
+  const upgradesShort = [];
   if (upgrades && upgrades.length) {
-    for (const u of upgrades) {
-      if (!u || u === 'None') continue;
-      const udef = UpgradeDefs[u];
-      if (!udef) throw new Error(`Unknown upgrade "${u}" on item "${itemName}"`);
-      const up = udef.pct || {};
+    for (const uName of upgrades) {
+      const udef = UpgradeDefs[uName];
+      if (!udef) throw new Error(`Unknown upgrade: "${uName}"`);
+      udefs.push({ name: uName, short: shortUpgrade(uName), pct: udef.pct || {} });
+      upgradesShort.push(shortUpgrade(uName));
+    }
 
-      for (const k of Object.keys(up)) {
-        let v = up[k] || 0;
-        if (
-          idef.type === 'Misc' &&
-          CFG.MISC_NO_CRYSTAL_SKILL &&
-          itemName === CFG.MISC_NO_CRYSTAL_SKILL
-        ) {
-          if (k === 'gunSkill' && CFG.MISC_NO_CRYSTAL_SKILL_TYPES.gun !== undefined)
-            v *= CFG.MISC_NO_CRYSTAL_SKILL_TYPES.gun;
-          if (k === 'meleeSkill' && CFG.MISC_NO_CRYSTAL_SKILL_TYPES.melee !== undefined)
-            v *= CFG.MISC_NO_CRYSTAL_SKILL_TYPES.melee;
-          if (k === 'projSkill' && CFG.MISC_NO_CRYSTAL_SKILL_TYPES.proj !== undefined)
-            v *= CFG.MISC_NO_CRYSTAL_SKILL_TYPES.proj;
-          if (k === 'defSkill' && CFG.MISC_NO_CRYSTAL_SKILL_TYPES.def !== undefined)
-            v *= CFG.MISC_NO_CRYSTAL_SKILL_TYPES.def;
+    if (idef.upgradeSlots && idef.upgradeSlots.length) {
+      const taken = new Set();
+      for (const u of udefs) {
+        let ok = false;
+        for (let si = 0; si < idef.upgradeSlots.length; si++) {
+          const slot = idef.upgradeSlots[si];
+          if (slot.includes(u.name) && !taken.has(si)) {
+            ok = true;
+            taken.add(si);
+            break;
+          }
         }
-        pctSum[k] = (pctSum[k] || 0) + v;
+        if (!ok) throw new Error(`Upgrade "${u.name}" not allowed for item "${itemName}"`);
       }
+    } else {
+      throw new Error(
+        `Item "${itemName}" has no upgrade slots but upgrades were provided: ${upgrades.join(', ')}`,
+      );
     }
   }
 
-  const fs = idef.flatStats || {};
+  const isWeapon = idef.type === 'weapon';
+  const isMisc = idef.type === 'misc';
 
-  const addSpeed = (fs.speed || 0) + Math.ceil((fs.speed || 0) * (pctSum.speed || 0));
-  const addAcc = (fs.accuracy || 0) + Math.ceil((fs.accuracy || 0) * (pctSum.accuracy || 0));
-  const addDod = (fs.dodge || 0) + Math.ceil((fs.dodge || 0) * (pctSum.dodge || 0));
-  const addGun = (fs.gunSkill || 0) + Math.ceil((fs.gunSkill || 0) * (pctSum.gunSkill || 0));
-  const addMel = (fs.meleeSkill || 0) + Math.ceil((fs.meleeSkill || 0) * (pctSum.meleeSkill || 0));
-  const addPrj = (fs.projSkill || 0) + Math.ceil((fs.projSkill || 0) * (pctSum.projSkill || 0));
-  const addDef = (fs.defSkill || 0) + Math.ceil((fs.defSkill || 0) * (pctSum.defSkill || 0));
-  const addArmStat = (fs.armor || 0) + Math.ceil((fs.armor || 0) * (pctSum.armor || 0));
+  // Tag bits
+  const itemShort = idef.short || itemName;
+  const cl = crystalName ? shortCrystal(crystalName) : '-';
+  const upTag = upgradesShort.length ? `{${upgradesShort.join('+')}}` : '';
+  const tag = `${itemShort}[${cl}]${upTag}`;
 
+  // Stat keys
+  const SKILLS = ['gunSkill', 'meleeSkill', 'projSkill', 'defSkill'];
+  const CORE = ['hp', 'speed', 'accuracy', 'dodge', 'armor'];
+
+  const baseStats = idef.stats || {};
+  const outStats = {};
+
+  // Crystal slots + special handling for armor stat
+  const statRound = cfg.statRound;
+  const wepRound = cfg.wepDmgRound;
+
+  const isArmorStatKey = (k) => k === 'armor';
+
+  const roundFnStatDefault = (x) => roundStat(x, statRound);
+  const roundFnWep = (x) => roundWeaponDmg(x, wepRound);
+
+  // No-crystal misc scaling
+  let miscNoCrystal = false;
+  if (isMisc && !crystalName) {
+    // We accept slotTag (1/2) for completeness, but brute sim misc pairs are orderless.
+    const useSlot2 = slotTag === 2 && HAS_SLOT2_NO_CRYSTAL_CFG;
+    const nameSet = useSlot2 ? MISC_NO_CRYSTAL_SKILL_SLOT2 : MISC_NO_CRYSTAL_SKILL;
+    miscNoCrystal = nameSet.has(itemName);
+  }
+
+  // Compute core stats
+  for (const k of CORE) {
+    const base = baseStats[k] || 0;
+
+    const isArmorStat = isArmorStatKey(k);
+    const stackMode =
+      isArmorStat && cfg.armorStatStack !== 'inherit' ? cfg.armorStatStack : cfg.stackModeStats;
+    const roundMode =
+      isArmorStat && cfg.armorStatRound !== 'inherit' ? cfg.armorStatRound : statRound;
+    const nLocal =
+      isArmorStat && cfg.armorStatSlots !== 'inherit' ? cfg.armorStatSlots : cfg.crystalSlots;
+    const n = crystalName ? nLocal : 0;
+    const roundFn = (x) => roundStat(x, roundMode);
+
+    let x = base;
+    x = applyCrystalPctToStat(x, pct[k] || 0, n, stackMode, roundFn);
+
+    // upgrades apply after crystals
+    let upPct = 0;
+    for (const u of udefs) upPct += u.pct[k] || 0;
+    if (upPct) x = x + roundStat(x * upPct, roundMode);
+
+    outStats[k] = x;
+  }
+
+  // Compute skill stats (either the one skillType, or all)
+  const skillKeys = idef.skillType ? [idef.skillType] : SKILLS;
+  for (const k of skillKeys) {
+    const base0 = baseStats[k] || 0;
+
+    // misc no-crystal: scale base skill contributions by configured multipliers (default is 0)
+    let mult = 1;
+    if (miscNoCrystal) {
+      const token =
+        k === 'gunSkill'
+          ? 'gun'
+          : k === 'meleeSkill'
+            ? 'melee'
+            : k === 'projSkill'
+              ? 'proj'
+              : 'def';
+
+      const useSlot2 = slotTag === 2 && HAS_SLOT2_NO_CRYSTAL_CFG;
+      const m = useSlot2 ? MISC_NO_CRYSTAL_TYPE_MULTS_SLOT2 : MISC_NO_CRYSTAL_TYPE_MULTS;
+      mult = m.has(token) ? m.get(token) : 0;
+    }
+
+    const base = Math.round(base0 * mult);
+    const n = crystalName ? cfg.crystalSlots : 0;
+
+    let x = base;
+    x = applyCrystalPctToStat(x, pct[k] || 0, n, cfg.stackModeStats, roundFnStatDefault);
+
+    let upPct = 0;
+    for (const u of udefs) upPct += u.pct[k] || 0;
+    if (upPct) x = x + roundStat(x * upPct, statRound);
+
+    outStats[k] = x;
+  }
+
+  // Weapon dmg / mask
   let weapon = null;
   let weaponMaskBit = 0;
-  if (idef.baseWeaponDamage) {
-    const dmgPctSum = pctSum.damage || 0;
-    const min = Math.ceil(idef.baseWeaponDamage.min * (1 + dmgPctSum));
-    const max = Math.ceil(idef.baseWeaponDamage.max * (1 + dmgPctSum));
-    const skill = idef.skillType === 'gunSkill' ? 0 : idef.skillType === 'meleeSkill' ? 1 : 2;
+  if (isWeapon) {
+    const baseWeapon = idef.baseWeaponDamage;
+    if (!baseWeapon) throw new Error(`Weapon "${itemName}" missing baseWeaponDamage`);
+    const n = crystalName ? cfg.crystalSlots : 0;
+
+    const dmgPct = pct.weaponDamage || 0;
+    let min = applyCrystalPctToWeaponDmg(baseWeapon.min, dmgPct, n, cfg.stackModeDmg, roundFnWep);
+    let max = applyCrystalPctToWeaponDmg(baseWeapon.max, dmgPct, n, cfg.stackModeDmg, roundFnWep);
+
+    let upDmgPct = 0;
+    for (const u of udefs) upDmgPct += u.pct.weaponDamage || 0;
+    if (upDmgPct) {
+      min = min + roundWeaponDmg(min * upDmgPct, wepRound);
+      max = max + roundWeaponDmg(max * upDmgPct, wepRound);
+    }
+
+    const weaponSkill = idef.skillType;
+    const skill =
+      weaponSkill === 'gunSkill'
+        ? 0
+        : weaponSkill === 'meleeSkill'
+          ? 1
+          : weaponSkill === 'projSkill'
+            ? 2
+            : 0;
+
     weapon = { name: itemName, min, max, skill };
     weaponMaskBit = skill === 0 ? 0b001 : skill === 1 ? 0b010 : 0b100;
   }
 
-  let miscMeta = null;
-  if (idef.type === 'Misc') {
-    miscMeta = {
-      hasDef: (fs.defSkill || 0) > 0,
-      hasGun: (fs.gunSkill || 0) > 0,
-      hasMel: (fs.meleeSkill || 0) > 0,
-      hasPrj: (fs.projSkill || 0) > 0,
-    };
-  }
-
-  const u1 = upgrades && upgrades[0] ? upgrades[0] : null;
-  const u2 = upgrades && upgrades[1] ? upgrades[1] : null;
-
   return {
     itemName,
-    crystalName,
-    upgrade1: u1,
-    upgrade2: u2,
-    upgrades: [u1, u2].filter(Boolean),
-
-    addSpeed,
-    addAcc,
-    addDod,
-    addGun,
-    addMel,
-    addPrj,
-    addDef,
-    addArmStat,
-    weapon,
+    tag,
+    crystal: crystalName || null,
+    upgrades,
+    upgradesShort: upgradesShort.join('+'),
+    stats: outStats,
     weaponMaskBit,
-    __misc: miscMeta,
+    weapon,
   };
 }
 
@@ -2055,15 +1744,97 @@ function buildHpPlans() {
 // =====================
 // BUILD / COMPILE DEFENDERS
 // =====================
+
+function partName(part) {
+  if (!part) return '';
+  return String(part.name || part.item || part.itemName || '').trim();
+}
+
+// Defender payloads historically used `upgrades: [<crystal>, ...]` to mean *crystals*.
+// For weapons that support actual upgrades (Void Bow, Bio Gun Mk4, etc), you can either:
+//   A) add upgrade names after the crystal in the same array:
+//        upgrades: ['Amulet Crystal', 'Poisoned Tip']
+//   B) or use explicit fields:
+//        crystal: 'Amulet Crystal', upgrades: ['Poisoned Tip']
+//   C) or use explicit upgrade fields:
+//        upgrade1: 'Poisoned Tip', upgrade2: 'Laser Sight'
+function partCrystal(part) {
+  if (!part) return '';
+  if (typeof part.crystal === 'string' && part.crystal) return part.crystal;
+  if (typeof part.crystalName === 'string' && part.crystalName) return part.crystalName;
+  if (Array.isArray(part.crystals) && part.crystals.length) return part.crystals[0];
+  if (Array.isArray(part.upgrades) && part.upgrades.length) return part.upgrades[0];
+  if (typeof part.upgrades === 'string' && part.upgrades) return part.upgrades;
+  return '';
+}
+
+function partWeaponUpgrades(part) {
+  if (!part) return ['', ''];
+
+  let ups = [];
+  if (Array.isArray(part.weaponUpgrades)) {
+    ups = part.weaponUpgrades;
+  } else if (Array.isArray(part.upgrades) && part.crystal) {
+    // New-style: `crystal` carries the crystal, `upgrades` carries actual upgrades.
+    ups = part.upgrades;
+  } else if (Array.isArray(part.upgrades) && !part.crystal) {
+    // Legacy-style: treat entries after the crystal as upgrades *only* if they match UpgradeDefs.
+    ups = part.upgrades.slice(1).filter((u) => !!UpgradeDefs[u]);
+  } else {
+    const u1 = typeof part.upgrade1 === 'string' ? part.upgrade1 : '';
+    const u2 = typeof part.upgrade2 === 'string' ? part.upgrade2 : '';
+    ups = [u1, u2].filter(Boolean);
+  }
+
+  const u1 = (typeof part.upgrade1 === 'string' && part.upgrade1) || ups[0] || '';
+  const u2 = (typeof part.upgrade2 === 'string' && part.upgrade2) || ups[1] || '';
+  return [u1, u2];
+}
+
+function prefillVariantsFromDefenders(defenders, getV) {
+  for (const def of defenders) {
+    const p = def.payload;
+
+    getV(partName(p.armor), partCrystal(p.armor));
+
+    {
+      const [u1, u2] = partWeaponUpgrades(p.weapon1);
+      getV(partName(p.weapon1), partCrystal(p.weapon1), u1, u2);
+    }
+    {
+      const [u1, u2] = partWeaponUpgrades(p.weapon2);
+      getV(partName(p.weapon2), partCrystal(p.weapon2), u1, u2);
+    }
+
+    getV(partName(p.misc1), partCrystal(p.misc1));
+    getV(partName(p.misc2), partCrystal(p.misc2));
+  }
+}
+
 function compileDefender(def, variantCacheLocal) {
   const p = def.payload;
   const st = p.stats;
 
-  const armorV = variantCacheLocal.get(variantKey(p.armor.name, p.armor.upgrades[0], '', ''));
-  const w1V = variantCacheLocal.get(variantKey(p.weapon1.name, p.weapon1.upgrades[0], '', ''));
-  const w2V = variantCacheLocal.get(variantKey(p.weapon2.name, p.weapon2.upgrades[0], '', ''));
-  const m1V = variantCacheLocal.get(variantKey(p.misc1.name, p.misc1.upgrades[0], '', ''));
-  const m2V = variantCacheLocal.get(variantKey(p.misc2.name, p.misc2.upgrades[0], '', ''));
+  const armorName = partName(p.armor);
+  const m1Name = partName(p.misc1);
+  const m2Name = partName(p.misc2);
+  const w1Name = partName(p.weapon1);
+  const w2Name = partName(p.weapon2);
+
+  const armorCr = partCrystal(p.armor);
+  const m1Cr = partCrystal(p.misc1);
+  const m2Cr = partCrystal(p.misc2);
+
+  const w1Cr = partCrystal(p.weapon1);
+  const w2Cr = partCrystal(p.weapon2);
+  const [w1u1, w1u2] = partWeaponUpgrades(p.weapon1);
+  const [w2u1, w2u2] = partWeaponUpgrades(p.weapon2);
+
+  const armorV = variantCacheLocal.get(variantKey(armorName, armorCr, '', ''));
+  const w1V = variantCacheLocal.get(variantKey(w1Name, w1Cr, w1u1, w1u2));
+  const w2V = variantCacheLocal.get(variantKey(w2Name, w2Cr, w2u1, w2u2));
+  const m1V = variantCacheLocal.get(variantKey(m1Name, m1Cr, '', ''));
+  const m2V = variantCacheLocal.get(variantKey(m2Name, m2Cr, '', ''));
   if (!armorV || !w1V || !w2V || !m1V || !m2V)
     throw new Error(`Missing variant cache entries for defender ${def.name}`);
 
@@ -2075,7 +1846,7 @@ function compileDefender(def, variantCacheLocal) {
 
   const speed =
     baseSpeed + armorV.addSpeed + w1V.addSpeed + w2V.addSpeed + m1V.addSpeed + m2V.addSpeed;
-  let acc = baseAcc + armorV.addAcc + w1V.addAcc + w2V.addAcc + m1V.addAcc + m2V.addAcc;
+  const acc = baseAcc + armorV.addAcc + w1V.addAcc + w2V.addAcc + m1V.addAcc + m2V.addAcc;
   const dodge = baseDod + armorV.addDod + w1V.addDod + w2V.addDod + m1V.addDod + m2V.addDod;
 
   const w1SkillIdx = w1V.weapon ? w1V.weapon.skill : null;
@@ -2095,18 +1866,10 @@ function compileDefender(def, variantCacheLocal) {
   const mel = BASE.meleeSkill + armorV.addMel + w1Mel + w2Mel + m1V.addMel + m2V.addMel;
   const prj = BASE.projSkill + armorV.addPrj + w1Prj + w2Prj + m1V.addPrj + m2V.addPrj;
 
-  let defSk = BASE.defSkill + armorV.addDef + w1V.addDef + w2V.addDef + m1V.addDef + m2V.addDef;
+  const defSk = BASE.defSkill + armorV.addDef + w1V.addDef + w2V.addDef + m1V.addDef + m2V.addDef;
 
   const armor = BASE.armor + armorV.addArmStat;
-  const armorFactor = armorFactorForArmorValue(level, armor);
-  // Hidden bonuses (if enabled)
-  ({ acc, defSkill: defSk } = applyHiddenRoleBonusesAccDef(
-    'D',
-    acc,
-    defSk,
-    w1SkillIdx,
-    w2SkillIdx,
-  ));
+  const armorFactor = armorFactorForArmorValue(level, armor, ARMOR_K);
 
   return {
     name: def.name,
@@ -2136,7 +1899,7 @@ function compileAttacker(plan, av, w1v, w2v, m1v, m2v) {
   const speed =
     BASE.speed + av.addSpeed + w1v.addSpeed + w2v.addSpeed + m1v.addSpeed + m2v.addSpeed;
 
-  let acc =
+  const acc =
     BASE.accuracy + av.addAcc + w1v.addAcc + w2v.addAcc + m1v.addAcc + m2v.addAcc + plan.extraAcc;
 
   const dodge =
@@ -2158,18 +1921,10 @@ function compileAttacker(plan, av, w1v, w2v, m1v, m2v) {
   const mel = BASE.meleeSkill + av.addMel + w1Mel + w2Mel + m1v.addMel + m2v.addMel;
   const prj = BASE.projSkill + av.addPrj + w1Prj + w2Prj + m1v.addPrj + m2v.addPrj;
 
-  let defSk = BASE.defSkill + av.addDef + w1v.addDef + w2v.addDef + m1v.addDef + m2v.addDef;
+  const defSk = BASE.defSkill + av.addDef + w1v.addDef + w2v.addDef + m1v.addDef + m2v.addDef;
 
   const armor = BASE.armor + av.addArmStat;
-  const armorFactor = armorFactorForArmorValue(level, armor);
-  // Hidden bonuses (if enabled)
-  ({ acc, defSkill: defSk } = applyHiddenRoleBonusesAccDef(
-    'A',
-    acc,
-    defSk,
-    w1SkillIdx,
-    w2SkillIdx,
-  ));
+  const armorFactor = armorFactorForArmorValue(level, armor, ARMOR_K);
 
   return {
     hp: plan.hp,
@@ -2717,14 +2472,7 @@ function workerMain() {
   const { plans } = buildHpPlans();
 
   // Ensure defender variants exist in cache
-  for (const def of defenderBuilds) {
-    const p = def.payload;
-    getV(p.armor.name, p.armor.upgrades[0]);
-    getV(p.weapon1.name, p.weapon1.upgrades[0]);
-    getV(p.weapon2.name, p.weapon2.upgrades[0]);
-    getV(p.misc1.name, p.misc1.upgrades[0]);
-    getV(p.misc2.name, p.misc2.upgrades[0]);
-  }
+  prefillVariantsFromDefenders(defenderBuilds, getV);
   const defenders = defenderBuilds.map((d) => compileDefender(d, localCache));
 
   const WP = weaponPairs.length / 2;
@@ -3082,15 +2830,7 @@ function runWarmStartAndGetWorstPct({
     return v;
   }
 
-  for (const def of defenderBuilds) {
-    const p = def.payload;
-    getV(p.armor.name, p.armor.upgrades[0]);
-    getV(p.weapon1.name, p.weapon1.upgrades[0]);
-    getV(p.weapon2.name, p.weapon2.upgrades[0]);
-    getV(p.misc1.name, p.misc1.upgrades[0]);
-    getV(p.misc2.name, p.misc2.upgrades[0]);
-  }
-
+  prefillVariantsFromDefenders(defenderBuilds, getV);
   const compiledDefenders = defenders || defenderBuilds.map((d) => compileDefender(d, localCache));
 
   const av = getV(WARM_START_BUILD.armor.item, WARM_START_BUILD.armor.crystal);
@@ -3294,10 +3034,7 @@ async function main() {
     .trim()
     .toLowerCase();
   const watchEnabled =
-    watchRaw === ''
-      ? true
-      : !(watchRaw === '0' || watchRaw === 'false' || watchRaw === 'off' || watchRaw === 'no');
-
+    watchRaw === '1' || watchRaw === 'true' || watchRaw === 'on' || watchRaw === 'yes';
   const useSuperset =
     String(process.env.LEGACY_USE_SUPERSET ?? '')
       .trim()
@@ -3385,8 +3122,26 @@ async function main() {
   }
 
   console.log(
-    `LEGACY brute-force (v2.14.6-calib) | defenders=${defenderBuilds.length} | trialsGate/def=${TRIALS_GATE} | trialsScreen/def=${TRIALS_SCREEN} | trialsConfirm/def=${TRIALS_CONFIRM}`,
+    `LEGACY brute-force (v2.12.4) | defenders=${defenderBuilds.length} | trialsGate/def=${TRIALS_GATE} | trialsScreen/def=${TRIALS_SCREEN} | trialsConfirm/def=${TRIALS_CONFIRM}`,
   );
+  console.log(
+    `Crystals: slots=${CRYSTAL_SLOTS} stats=${CRYSTAL_STACK_STATS}/${STAT_ROUND_MODE} dmg=${CRYSTAL_STACK_DMG}/${WEP_DMG_ROUND_MODE}` +
+      (ARMORSTAT_STACK_MODE === 'inherit' &&
+      ARMORSTAT_ROUND_MODE === 'inherit' &&
+      ARMORSTAT_SLOTS === 'inherit'
+        ? ''
+        : ` | armorStat=${ARMORSTAT_STACK_MODE === 'inherit' ? CRYSTAL_STACK_STATS : ARMORSTAT_STACK_MODE}` +
+          `/${ARMORSTAT_ROUND_MODE === 'inherit' ? STAT_ROUND_MODE : ARMORSTAT_ROUND_MODE}` +
+          `/${ARMORSTAT_SLOTS === 'inherit' ? CRYSTAL_SLOTS : ARMORSTAT_SLOTS}`),
+  );
+  if (MISC_NO_CRYSTAL_SKILL.size) {
+    const typeStr = [...MISC_NO_CRYSTAL_TYPE_MULTS.entries()]
+      .map(([k, v]) => (v ? `${k}=${v}` : k))
+      .join(',');
+    console.log(
+      `No-crystal misc skill tweak: items=${[...MISC_NO_CRYSTAL_SKILL].join(', ')} types=${typeStr}${MISC_NO_CRYSTAL_ZERO_DEF ? ' +def' : ''}`,
+    );
+  }
   console.log(
     `Workers=${workers} (logical=${logical}, physicalGuess=${physicalGuess}) | RNG=${
       rngMode === 'fast' ? 'fast(sfc32)' : 'Math.random'
@@ -3668,15 +3423,7 @@ function printResults({
       return v;
     }
 
-    for (const def of defenderBuilds) {
-      const p = def.payload;
-      getV(p.armor.name, p.armor.upgrades[0]);
-      getV(p.weapon1.name, p.weapon1.upgrades[0]);
-      getV(p.weapon2.name, p.weapon2.upgrades[0]);
-      getV(p.misc1.name, p.misc1.upgrades[0]);
-      getV(p.misc2.name, p.misc2.upgrades[0]);
-    }
-
+    prefillVariantsFromDefenders(defenderBuilds, getV);
     return defenderBuilds.map((d) => compileDefender(d, localCache));
   })();
 
@@ -3894,168 +3641,13 @@ function printResults({
 }
 
 // =====================
-// VERIFY HARNESS (compares merged brute kernel vs main-calib expectations)
-// Run with: node gpt-brute-sim-merged-v2.14.6-calib.js --verify
-// =====================
-
-const DEFAULT_VERIFY_DEFENDERS =
-  'SG1 Split Bombs T2,DL Gun Build,DL Gun Build 2,DL Gun Build 3,DL Gun Build 4,DL Gun Build 5,DL Gun Build 6,DL Gun Build 7,DL Gun Build 8,T2 Scythe Build,HF Core/Void,Core/Void Build 1,Dual Bow Build 1,Rift Bow Build 1,Armour stack Cores';
-
-function normalizeDefenderName(raw) {
-  const s = String(raw || '').trim();
-  if (!s) return s;
-
-  const lo = s.toLowerCase();
-  if (lo === 'sg1 split bombs t2' || lo === 'sg1 split bombs') return 'SG1 Split bombs';
-
-  if (lo === 'dual bow build 1' || lo === 'dual bow build') return 'Dual Bow Build';
-
-  if (lo === 'rift bow build 1' || lo === 'rift bow build' || lo === 'bow/rift build 1')
-    return 'Bow/rift build';
-
-  if (lo === 'armor stack cores' || lo === 'armour stack cores') return 'Armour stack Cores';
-
-  return s;
-}
-
-function pickDefenderPayload(nameRaw) {
-  const name = normalizeDefenderName(nameRaw);
-  const p = DEFENDER_PAYLOADS[name];
-  if (!p) throw new Error(`Unknown defender "${nameRaw}" (normalized="${name}")`);
-  return { name, payload: p };
-}
-
-function buildVariantCacheForPayloads(payloads) {
-  const cache = new Map();
-
-  function ensure(itemName, crystalName) {
-    const key = variantKey(itemName, crystalName, '', '');
-    if (!cache.has(key)) cache.set(key, computeVariant(itemName, crystalName, []));
-  }
-
-  for (const { payload } of payloads) {
-    ensure(payload.armor.name, payload.armor.upgrades[0]);
-    ensure(payload.weapon1.name, payload.weapon1.upgrades[0]);
-    ensure(payload.weapon2.name, payload.weapon2.upgrades[0]);
-    ensure(payload.misc1.name, payload.misc1.upgrades[0]);
-    ensure(payload.misc2.name, payload.misc2.upgrades[0]);
-  }
-
-  return cache;
-}
-
-function compileAttackerFromPreset(presetName) {
-  const preset = ATTACKER_PRESETS[presetName];
-  if (!preset) throw new Error(`Unknown attacker preset "${presetName}"`);
-
-  const st = preset.stats;
-  const plan = {
-    hp: Math.floor(Number(st.hp)),
-    extraAcc: Math.floor(Number(st.accuracy)) - BASE.accuracy,
-    extraDodge: Math.floor(Number(st.dodge)) - BASE.dodge,
-  };
-
-  const av = computeVariant(preset.armor.name, preset.armor.crystal, []);
-  const w1v = computeVariant(
-    preset.weapon1.name,
-    preset.weapon1.crystal,
-    preset.weapon1.upgrades || [],
-  );
-  const w2v = computeVariant(
-    preset.weapon2.name,
-    preset.weapon2.crystal,
-    preset.weapon2.upgrades || [],
-  );
-  const m1v = computeVariant(preset.misc1.name, preset.misc1.crystal, []);
-  const m2v = computeVariant(preset.misc2.name, preset.misc2.crystal, []);
-
-  const att = compileAttacker(plan, av, w1v, w2v, m1v, m2v);
-  att.name = presetName;
-  return att;
-}
-
-function fmtPct(x) {
-  return x.toFixed(2).padStart(6);
-}
-function fmtNum(x, w) {
-  return String(x).padStart(w);
-}
-
-function verifyMain() {
-  const presetName =
-    String(process.env.LEGACY_ATTACKER_PRESET || 'MAUL_CSTAFF').trim() || 'MAUL_CSTAFF';
-
-  const rngMode = (process.env.LEGACY_RNG || 'fast').toLowerCase();
-  const seed = parseInt(process.env.LEGACY_SEED || '1337', 10) || 1337;
-  const deterministic =
-    process.env.LEGACY_DETERMINISTIC === '1' || process.env.LEGACY_DETERMINISTIC === 'true';
-
-  const trials = Math.max(
-    1,
-    parseInt(process.env.LEGACY_TRIALS || process.env.LEGACY_VERIFY_TRIALS || '200000', 10),
-  );
-  const maxTurns = SETTINGS.MAX_TURNS;
-
-  const raw = String(process.env.LEGACY_VERIFY_DEFENDERS || DEFAULT_VERIFY_DEFENDERS).trim();
-  const names = raw ? parseCsvList(raw) : [];
-
-  const defenderBuilds = names.map(pickDefenderPayload);
-  const vcache = buildVariantCacheForPayloads(defenderBuilds);
-  const defenders = defenderBuilds.map((d) => compileDefender(d, vcache));
-  const attacker = compileAttackerFromPreset(presetName);
-
-  console.log('=== LEGACY VERIFY (COPY/PASTE OUTPUT) ===');
-  console.log(
-    `Trials/def=${trials} | MAX_TURNS=${maxTurns} | RNG=${rngMode} | seed=${seed} | deterministic=${deterministic ? 'ON' : 'OFF'}`,
-  );
-  console.log(`Defenders=${defenders.length} | ${names.join(', ')}`);
-  console.log('');
-  console.log(`Attacker preset=${presetName}`);
-  console.log(
-    `Attacker: HP=${attacker.hp} Spd=${attacker.speed} Acc=${attacker.acc} Dod=${attacker.dodge} Gun=${attacker.gun} Prj=${attacker.prj} Mel=${attacker.mel} Def=${attacker.defSk} Arm=${attacker.armor} (armF=${attacker.armorFactor.toFixed(6)})`,
-  );
-  console.log(
-    `A_weps: w1=${attacker.w1 ? `${attacker.w1.name}(${attacker.w1.min}-${attacker.w1.max})` : 'none'} w2=${attacker.w2 ? `${attacker.w2.name}(${attacker.w2.min}-${attacker.w2.max})` : 'none'}`,
-  );
-  console.log('');
-
-  // deterministic reseed per defender (matches main-calib)
-  function setDetRng(di, vi = 0) {
-    const s = mix32((seed ^ mix32(0x51ed270b ^ di ^ (vi * 0x9e3779b9))) | 0);
-    RNG =
-      rngMode === 'fast'
-        ? makeRng('fast', s, s ^ 0xa341316c, s ^ 0xc8013ea4, s ^ 0xad90777d)
-        : Math.random;
-  }
-
-  console.log('Defender                    Win%   AvgTurns');
-  console.log('──────────────────────────────────────────');
-  for (let di = 0; di < defenders.length; di++) {
-    if (deterministic) setDetRng(di, 0);
-    const D = defenders[di];
-    const [wins, turnsSum] = runMatchPacked(attacker, D, trials, maxTurns);
-    const winPct = (wins / trials) * 100;
-    const avgTurns = turnsSum / trials;
-    const name = D.name.padEnd(26).slice(0, 26);
-    console.log(`${name} ${fmtPct(winPct)}  ${avgTurns.toFixed(3).padStart(8)}`);
-  }
-  console.log('=== END VERIFY ===');
-}
-
-// =====================
 // ENTRY
 // =====================
 if (isMainThread) {
-  console.log('=== COMBAT CFG === ' + cfgSummary());
-
-  if (process.argv.includes('--verify')) {
-    verifyMain();
-  } else {
-    main().catch((err) => {
-      console.error('\nFatal:', err && err.stack ? err.stack : err);
-      process.exit(1);
-    });
-  }
+  main().catch((err) => {
+    console.error('\nFatal:', err && err.stack ? err.stack : err);
+    process.exit(1);
+  });
 } else {
   workerMain();
 }
