@@ -68,7 +68,7 @@ const SETTINGS = {
   GATEKEEPERS_DEFAULT: 4,
 
   SCREEN_BAIL_MARGIN_DEFAULT: 6.0,
-  INIT_FLOOR_PCT: 40, // 0 disables manual shared-floor seeding
+  INIT_FLOOR_PCT: 41, // 0 disables manual shared-floor seeding
 
   KEEP_TOP_N_PER_HP: 10,
   PROGRESS_EVERY_MS: 2000,
@@ -89,9 +89,9 @@ const PLAN_SWEEP_CONFIG = {
   singleHp: SETTINGS.LOCKED_HP,
 
   hpSweep: {
-    min: 300,
+    min: 400,
     max: 700,
-    step: 50,
+    step: 100,
     includeSingleHp: false,
   },
 
