@@ -76,10 +76,6 @@ const SETTINGS = {
   // LOCKED ATTACKER STATS
   LOCKED_HP: 595,
 
-  // pruning (default OFF; enable with LEGACY_PRUNE=1)
-  PRUNE_DELTA_DEFAULT: 260,
-  PRUNE_DEFAULT_ENABLED: true,
-
   WORKERS_DEFAULT_CAP: 4,
 };
 
@@ -398,7 +394,6 @@ const DMG_BONUS_MODE = _envStr('LEGACY_DMG_BONUS_MODE', 'per_action').trim().toL
 const DMG_BONUS_STAGE = _envStr('LEGACY_DMG_BONUS_STAGE', 'pre_armor').trim().toLowerCase();
 
 const TACTICS_BASE_ENABLED = TACTICS_MODE === 'base' || TACTICS_MODE === 'both';
-const TACTICS_MINMAX_ENABLED = TACTICS_MODE === 'minmax' || TACTICS_MODE === 'both';
 const TACTICS_BASE_VAL = TACTICS_BASE_ENABLED ? TACTICS_VAL : 0;
 
 // ---------------------
@@ -503,11 +498,6 @@ function applyArmorAndRound(raw, armorFactor, armorRound) {
   if (armorRound === 'floor') return Math.floor(x);
   if (armorRound === 'ceil') return Math.ceil(x);
   return Math.round(x);
-}
-
-function applyMinMaxWeapon(w) {
-  if (!w || !TACTICS_MINMAX_ENABLED || TACTICS_VAL === 0) return w;
-  return { ...w, min: w.min + TACTICS_VAL, max: w.max + TACTICS_VAL };
 }
 
 const _PRE_ACTION = {
@@ -901,7 +891,7 @@ let ItemDefs = {
 // Prefer external shared defs (single source of truth), if present.
 // This keeps brute-force and canonical aligned without duplicating tables.
 try {
-  const defs = require('./legacy-defs.js');
+  const defs = require('./legacy-defs-v1.0.0.js');
   const extCrystal = defs && (defs.CrystalDefs || defs.crystalDefs);
   const extUpgrade = defs && (defs.UpgradeDefs || defs.upgradeDefs);
   const extItem = defs && (defs.ItemDefs || defs.itemDefs);
@@ -925,8 +915,11 @@ let DEFENDER_PAYLOADS;
   const candidates = override
     ? [override]
     : [
-        './legacy-defenders.js',
+        './legacy-defenders-v1.0.0.js',
+        './legacy-defenders-latest.js',
+        // Fallbacks for older repos / alternate filenames:
         './legacy_defenders.js',
+        './legacy-defenders.js',
       ];
 
   for (const p of candidates) {
@@ -1261,7 +1254,7 @@ function isWatchBuildCandidate(av, w1v, w2v, m1v, m2v) {
 
 function _envStr(name, dflt) {
   const v = process.env[name];
-  return (v === undefined || v === null || String(v).trim() === '') ? dflt : String(v).trim();
+  return v === undefined || v === null || String(v).trim() === '' ? dflt : String(v).trim();
 }
 function _envInt(name, dflt) {
   const v = parseInt(_envStr(name, ''), 10);
@@ -1273,30 +1266,26 @@ function _envInt(name, dflt) {
   const hfRaw = _envStr('LEGACY_HF_ARMOR_BASE_OVERRIDE', '125');
   if (hfRaw.toLowerCase() !== 'off') {
     const hf = parseInt(hfRaw, 10);
-    if (Number.isFinite(hf) && hf > 0 && ItemDefs['Hellforged Armor'] && ItemDefs['Hellforged Armor'].flatStats) {
+    if (
+      Number.isFinite(hf) &&
+      hf > 0 &&
+      ItemDefs['Hellforged Armor'] &&
+      ItemDefs['Hellforged Armor'].flatStats
+    ) {
       ItemDefs['Hellforged Armor'].flatStats.armor = hf;
     }
   }
 
-  const vsMinRaw = _envStr('LEGACY_VOID_SWORD_BASE_MIN_OVERRIDE', '');
-  const vsMaxRaw = _envStr('LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE', '123');
-  if (ItemDefs['Void Sword'] && ItemDefs['Void Sword'].baseWeaponDamage) {
-    if (vsMinRaw.toLowerCase() !== 'off') {
-      const mn = parseInt(vsMinRaw, 10);
-      if (Number.isFinite(mn) && mn > 0) {
-        ItemDefs['Void Sword'].baseWeaponDamage.min = mn;
-      }
-    }
-    if (vsMaxRaw.toLowerCase() !== 'off') {
-      const mx = parseInt(vsMaxRaw, 10);
-      if (Number.isFinite(mx) && mx > 0) {
-        ItemDefs['Void Sword'].baseWeaponDamage.max = mx;
-      }
-    }
-    if (ItemDefs['Void Sword'].baseWeaponDamage.min > ItemDefs['Void Sword'].baseWeaponDamage.max) {
-      const t = ItemDefs['Void Sword'].baseWeaponDamage.min;
-      ItemDefs['Void Sword'].baseWeaponDamage.min = ItemDefs['Void Sword'].baseWeaponDamage.max;
-      ItemDefs['Void Sword'].baseWeaponDamage.max = t;
+  const vsRaw = _envStr('LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE', '123');
+  if (vsRaw.toLowerCase() !== 'off') {
+    const mx = parseInt(vsRaw, 10);
+    if (
+      Number.isFinite(mx) &&
+      mx > 0 &&
+      ItemDefs['Void Sword'] &&
+      ItemDefs['Void Sword'].baseWeaponDamage
+    ) {
+      ItemDefs['Void Sword'].baseWeaponDamage.max = mx;
     }
   }
 })();
@@ -1305,8 +1294,14 @@ const VARIANT_CFG = (() => {
   const statRound = _envStr('LEGACY_STAT_ROUND', 'ceil').toLowerCase();
   const weaponDmgRound = _envStr('LEGACY_WEAPON_DMG_ROUND', 'ceil').toLowerCase();
   const crystalStackModeDefault = _envStr('LEGACY_CRYSTAL_STACK_MODE', '').toLowerCase();
-  const crystalStackStats = _envStr('LEGACY_CRYSTAL_STACK_STATS', crystalStackModeDefault || 'iter4').toLowerCase();
-  const crystalStackDmg = _envStr('LEGACY_CRYSTAL_STACK_DMG', crystalStackModeDefault || 'sum4').toLowerCase();
+  const crystalStackStats = _envStr(
+    'LEGACY_CRYSTAL_STACK_STATS',
+    crystalStackModeDefault || 'iter4',
+  ).toLowerCase();
+  const crystalStackDmg = _envStr(
+    'LEGACY_CRYSTAL_STACK_DMG',
+    crystalStackModeDefault || 'sum4',
+  ).toLowerCase();
   const crystalSlots = _envInt('LEGACY_CRYSTAL_SLOTS', 4);
 
   // Armor-stat stacking appears to differ from normal stat stacking in-game; default it to sum4.
@@ -1314,9 +1309,12 @@ const VARIANT_CFG = (() => {
   const armorStatRoundRaw = _envStr('LEGACY_ARMORSTAT_ROUND', 'inherit').toLowerCase();
   const armorStatSlotsRaw = _envStr('LEGACY_ARMORSTAT_SLOTS', 'inherit').toLowerCase();
 
-  const armorStatStack = (armorStatStackRaw === 'inherit') ? 'sum4' : armorStatStackRaw;
-  const armorStatRound = (armorStatRoundRaw === 'inherit') ? statRound : armorStatRoundRaw;
-  const armorStatSlots = (armorStatSlotsRaw === 'inherit') ? crystalSlots : (parseInt(armorStatSlotsRaw, 10) || crystalSlots);
+  const armorStatStack = armorStatStackRaw === 'inherit' ? 'sum4' : armorStatStackRaw;
+  const armorStatRound = armorStatRoundRaw === 'inherit' ? statRound : armorStatRoundRaw;
+  const armorStatSlots =
+    armorStatSlotsRaw === 'inherit'
+      ? crystalSlots
+      : parseInt(armorStatSlotsRaw, 10) || crystalSlots;
 
   return {
     statRound,
@@ -1335,8 +1333,8 @@ const VARIANT_CFG = (() => {
 const MISC_NO_CRYSTAL_SKILL = new Set(
   _envStr('LEGACY_MISC_NO_CRYSTAL_SKILL', '')
     .split(',')
-    .map(s => s.trim())
-    .filter(Boolean)
+    .map((s) => s.trim())
+    .filter(Boolean),
 );
 const MISC_NO_CRYSTAL_SKILL_TYPE_MULTS = (() => {
   const raw = _envStr('LEGACY_MISC_NO_CRYSTAL_SKILL_TYPES', '').trim();
@@ -1345,7 +1343,7 @@ const MISC_NO_CRYSTAL_SKILL_TYPE_MULTS = (() => {
   for (const chunk of raw.split(',')) {
     const s = chunk.trim();
     if (!s) continue;
-    const [k, v] = s.split('=').map(x => x.trim());
+    const [k, v] = s.split('=').map((x) => x.trim());
     const mult = v === undefined ? 1.0 : Number(v);
     if (!k) continue;
     out.set(k.toLowerCase(), Number.isFinite(mult) ? mult : 1.0);
@@ -1364,10 +1362,14 @@ const MISC_NO_CRYSTAL_SKILL_SLOT2_MULT = (() => {
 // ---- rounding + stacking helpers (matches legacy-sim-latest.js) ----
 function roundStat(v, mode) {
   switch (mode) {
-    case 'ceil': return Math.ceil(v);
-    case 'floor': return Math.floor(v);
-    case 'round': return Math.round(v);
-    default: return Math.ceil(v);
+    case 'ceil':
+      return Math.ceil(v);
+    case 'floor':
+      return Math.floor(v);
+    case 'round':
+      return Math.round(v);
+    default:
+      return Math.ceil(v);
   }
 }
 function roundWeaponDmg(v, mode) {
@@ -1419,7 +1421,9 @@ function computeVariant(itemName, crystalName, upgrade1, upgrade2) {
   if (!cdef) throw new Error(`Unknown crystal "${crystalName}"`);
   const crystalPct = cdef.pct || {};
 
-  const upgrades = [upgrade1, upgrade2].map(u => (u == null ? '' : String(u).trim())).filter(u => u.length > 0);
+  const upgrades = [upgrade1, upgrade2]
+    .map((u) => (u == null ? '' : String(u).trim()))
+    .filter((u) => u.length > 0);
 
   // Base item flat stats (bonuses from the item itself).
   const fs = idef.flatStats || {};
@@ -1436,7 +1440,7 @@ function computeVariant(itemName, crystalName, upgrade1, upgrade2) {
 
   // Weapon base damage.
   const wBase = idef.baseWeaponDamage || null;
-  let wDmg = (isWeapon && wBase) ? { min: wBase.min, max: wBase.max } : null;
+  let wDmg = isWeapon && wBase ? { min: wBase.min, max: wBase.max } : null;
 
   // Apply crystals to flat stats on the item.
   const nStats = VARIANT_CFG.crystalSlots;
@@ -1444,7 +1448,7 @@ function computeVariant(itemName, crystalName, upgrade1, upgrade2) {
   for (const sk of Object.keys(outStats)) {
     const pct = crystalPct[sk] || 0;
     if (!pct) continue;
-    const isArmorStat = (sk === 'armor');
+    const isArmorStat = sk === 'armor';
     const stackMode = isArmorStat ? VARIANT_CFG.armorStatStack : VARIANT_CFG.crystalStackStats;
     const roundMode = isArmorStat ? VARIANT_CFG.armorStatRound : VARIANT_CFG.statRound;
     const n = isArmorStat ? nArm : nStats;
@@ -1455,8 +1459,20 @@ function computeVariant(itemName, crystalName, upgrade1, upgrade2) {
   if (wDmg) {
     const dmgPct = crystalPct.damage || 0;
     if (dmgPct) {
-      wDmg.min = applyCrystalPctToWeaponDmg(wDmg.min, dmgPct, VARIANT_CFG.crystalSlots, VARIANT_CFG.weaponDmgRound, VARIANT_CFG.crystalStackDmg);
-      wDmg.max = applyCrystalPctToWeaponDmg(wDmg.max, dmgPct, VARIANT_CFG.crystalSlots, VARIANT_CFG.weaponDmgRound, VARIANT_CFG.crystalStackDmg);
+      wDmg.min = applyCrystalPctToWeaponDmg(
+        wDmg.min,
+        dmgPct,
+        VARIANT_CFG.crystalSlots,
+        VARIANT_CFG.weaponDmgRound,
+        VARIANT_CFG.crystalStackDmg,
+      );
+      wDmg.max = applyCrystalPctToWeaponDmg(
+        wDmg.max,
+        dmgPct,
+        VARIANT_CFG.crystalSlots,
+        VARIANT_CFG.weaponDmgRound,
+        VARIANT_CFG.crystalStackDmg,
+      );
     }
   }
 
@@ -1499,10 +1515,18 @@ function computeVariant(itemName, crystalName, upgrade1, upgrade2) {
   const addDod = outStats.dodge;
   const addArmStat = outStats.armor;
 
-  const addGun = isMiscSkillScaled ? Math.ceil(outStats.gunSkill * getMultForSkill('gun', 0)) : outStats.gunSkill;
-  const addMel = isMiscSkillScaled ? Math.ceil(outStats.meleeSkill * getMultForSkill('melee', 0)) : outStats.meleeSkill;
-  const addPrj = isMiscSkillScaled ? Math.ceil(outStats.projSkill * getMultForSkill('proj', 0)) : outStats.projSkill;
-  const addDef = isMiscSkillScaled ? Math.ceil(outStats.defSkill * getMultForSkill('def', 0)) : outStats.defSkill;
+  const addGun = isMiscSkillScaled
+    ? Math.ceil(outStats.gunSkill * getMultForSkill('gun', 0))
+    : outStats.gunSkill;
+  const addMel = isMiscSkillScaled
+    ? Math.ceil(outStats.meleeSkill * getMultForSkill('melee', 0))
+    : outStats.meleeSkill;
+  const addPrj = isMiscSkillScaled
+    ? Math.ceil(outStats.projSkill * getMultForSkill('proj', 0))
+    : outStats.projSkill;
+  const addDef = isMiscSkillScaled
+    ? Math.ceil(outStats.defSkill * getMultForSkill('def', 0))
+    : outStats.defSkill;
 
   const upTag = upgrades.length ? `{${upgrades.map(shortUpgrade).join('+')}}` : '';
   const tag = `${shortCrystal(crystalName)}${upTag}`;
@@ -1512,19 +1536,22 @@ function computeVariant(itemName, crystalName, upgrade1, upgrade2) {
   if (isWeapon && wDmg) {
     const st = String(idef.skillType || 'meleeSkill');
     const skill = st === 'gunSkill' ? 0 : st === 'meleeSkill' ? 1 : st === 'projSkill' ? 2 : null;
-    if (skill === null) throw new Error(`Weapon "${itemName}" has unknown skillType="${idef.skillType}"`);
+    if (skill === null)
+      throw new Error(`Weapon "${itemName}" has unknown skillType="${idef.skillType}"`);
 
     weapon = { name: itemName, min: wDmg.min, max: wDmg.max, skill, tag };
     weaponMaskBit = 1 << skill; // gun=1, melee=2, proj=4
   }
 
-  const miscMeta = isMisc ? {
-    isBio: itemName === 'Bio Spinal Enhancer',
-    hasGun: !!(fs.gunSkill || 0),
-    hasMel: !!(fs.meleeSkill || 0),
-    hasPrj: !!(fs.projSkill || 0),
-    hasDef: !!(fs.defSkill || 0),
-  } : null;
+  const miscMeta = isMisc
+    ? {
+        isBio: itemName === 'Bio Spinal Enhancer',
+        hasGun: !!(fs.gunSkill || 0),
+        hasMel: !!(fs.meleeSkill || 0),
+        hasPrj: !!(fs.projSkill || 0),
+        hasDef: !!(fs.defSkill || 0),
+      }
+    : null;
 
   return {
     itemName,
@@ -1761,7 +1788,6 @@ function buildHpPlans() {
   };
 }
 
-
 // =====================
 // HIDDEN SLOT (parity with legacy-sim)
 // =====================
@@ -1773,8 +1799,7 @@ function applyHiddenRoleBonuses(c, role) {
   if (!HIDDEN_PRESET || HIDDEN_PRESET === 'none') return;
 
   const wCount = (c.w1 ? 1 : 0) + (c.w2 ? 1 : 0);
-  const prjCount =
-    (c.w1 && c.w1.skill === 2 ? 1 : 0) + (c.w2 && c.w2.skill === 2 ? 1 : 0);
+  const prjCount = (c.w1 && c.w1.skill === 2 ? 1 : 0) + (c.w2 && c.w2.skill === 2 ? 1 : 0);
 
   if (HIDDEN_PRESET === 'slot3') {
     if (role === 'A') {
@@ -1941,8 +1966,8 @@ function compileDefender(def, variantCacheLocal) {
     mel: Math.floor(mel),
     prj: Math.floor(prj),
     defSk: Math.floor(defSk),
-    w1: applyMinMaxWeapon(w1V.weapon),
-    w2: applyMinMaxWeapon(w2V.weapon),
+    w1: w1V.weapon,
+    w2: w2V.weapon,
     baseDmg: BASE.baseDamagePerHit,
   };
   applyHiddenRoleBonuses(c, 'D');
@@ -1997,8 +2022,8 @@ function compileAttacker(plan, av, w1v, w2v, m1v, m2v) {
     mel: Math.floor(mel),
     prj: Math.floor(prj),
     defSk: Math.floor(defSk),
-    w1: applyMinMaxWeapon(w1v.weapon),
-    w2: applyMinMaxWeapon(w2v.weapon),
+    w1: w1v.weapon,
+    w2: w2v.weapon,
     baseDmg: BASE.baseDamagePerHit,
   };
   applyHiddenRoleBonuses(c, 'A');
@@ -2456,9 +2481,7 @@ function workerMain() {
     progressEveryMs,
     startIndex,
     endIndex,
-          stride,
-    pruneDelta,
-    pruneEnabled,
+    stride,
     workerId,
     rngMode,
     rngSeed,
@@ -2471,8 +2494,8 @@ function workerMain() {
     debugMixedN,
     watchEnabled,
     useSuperset,
-          schedMode,
-          profileEnabled,
+    schedMode,
+    profileEnabled,
     catalogTopN,
     catalogMargin,
   } = workerData;
@@ -2557,7 +2580,15 @@ function workerMain() {
   let processed = 0;
 
   const prof = profileEnabled
-    ? { bailedG: 0, bailedA: 0, bailedB: 0, confirmedB: 0, screenCalls: 0, screenSampledSum: 0, screenFull: 0 }
+    ? {
+        bailedG: 0,
+        bailedA: 0,
+        bailedB: 0,
+        confirmedB: 0,
+        screenCalls: 0,
+        screenSampledSum: 0,
+        screenFull: 0,
+      }
     : null;
 
   const detBaseSeed = (Number(rngSeed) || 0) >>> 0;
@@ -2624,7 +2655,7 @@ function workerMain() {
     return { plan, av, w1v, w2v, m1v, m2v, weaponMask };
   }
 
-  for (let idx = startIndex; idx < endIndex; idx += (stride || 1)) {
+  for (let idx = startIndex; idx < endIndex; idx += stride || 1) {
     processed++;
 
     const dec = useSuperset ? decodeSupersetIndex(idx) : decodeEffectiveIndex(idx);
@@ -2660,28 +2691,6 @@ function workerMain() {
         !miscVariantAllowedForWeaponMask(m1v, weaponMask) ||
         !miscVariantAllowedForWeaponMask(m2v, weaponMask)
       ) {
-        const t = nowMs();
-        if (t - lastProgress >= progressEveryMs) {
-          lastProgress = t;
-          parentPort.postMessage({ type: 'progress', processed, bestWorst: null, bestAvg: null });
-        }
-        continue;
-      }
-    }
-
-    if (pruneEnabled) {
-      const w1SkillIdx = w1v.weapon ? w1v.weapon.skill : null;
-      const w2SkillIdx = w2v.weapon ? w2v.weapon.skill : null;
-      const [w1Mult, w2Mult] = mixedWeaponMultsFromWeaponSkill(w1SkillIdx, w2SkillIdx);
-
-      const w1Mel = w1v.addMel * (w1SkillIdx === 1 ? w1Mult : 1);
-      const w2Mel = w2v.addMel * (w2SkillIdx === 1 ? w2Mult : 1);
-
-      const mel = BASE.meleeSkill + av.addMel + w1Mel + w2Mel + m1v.addMel + m2v.addMel;
-      const defSk = BASE.defSkill + av.addDef + w1v.addDef + w2v.addDef + m1v.addDef + m2v.addDef;
-      const armor = BASE.armor + av.addArmStat;
-
-      if (mel + defSk + armor < 1200 - pruneDelta) {
         const t = nowMs();
         if (t - lastProgress >= progressEveryMs) {
           lastProgress = t;
@@ -3091,19 +3100,6 @@ async function main() {
     Number.isFinite(envBailMargin) && envBailMargin >= 0
       ? envBailMargin
       : SETTINGS.SCREEN_BAIL_MARGIN_DEFAULT;
-
-  const envPruneRaw = String(process.env.LEGACY_PRUNE ?? '')
-    .trim()
-    .toLowerCase();
-  const pruneEnabled = envPruneRaw
-    ? envPruneRaw === '1' || envPruneRaw === 'true' || envPruneRaw === 'on' || envPruneRaw === 'yes'
-    : !!SETTINGS.PRUNE_DEFAULT_ENABLED;
-
-  const pruneDelta = (() => {
-    const x = parseInt(process.env.LEGACY_PRUNE_DELTA || '', 10);
-    return Number.isFinite(x) ? x : SETTINGS.PRUNE_DELTA_DEFAULT;
-  })();
-
   const rngMode = (process.env.LEGACY_RNG || 'fast').toLowerCase();
   const rngSeed = parseInt(process.env.LEGACY_SEED || '', 10) || 123456789;
   const deterministic =
@@ -3133,28 +3129,35 @@ async function main() {
   // - Default: use raw LEGACY_SCREEN_MARGIN (fast, matches older behavior)
   // - Optional: LEGACY_ALIGN_BAIL_TO_CATALOG=1 makes Stage A bail margin >= catalog margin (more forgiving, slower)
   const alignBailToCatalog = (() => {
-    const v = String(process.env.LEGACY_ALIGN_BAIL_TO_CATALOG ?? '').trim().toLowerCase();
+    const v = String(process.env.LEGACY_ALIGN_BAIL_TO_CATALOG ?? '')
+      .trim()
+      .toLowerCase();
     if (!v) return false;
     return v === '1' || v === 'true' || v === 'yes' || v === 'on';
   })();
 
   const gateBailMarginEffective = BAIL_MARGIN; // keep Stage 0 tight by default
-  const screenBailMarginEffective = alignBailToCatalog ? Math.max(BAIL_MARGIN, catalogMargin) : BAIL_MARGIN;
+  const screenBailMarginEffective = alignBailToCatalog
+    ? Math.max(BAIL_MARGIN, catalogMargin)
+    : BAIL_MARGIN;
 
   // Work scheduling:
   // - stride (default): interleave indices across workers to avoid tail slowdowns from uneven ranges
   // - range: contiguous ranges (older behavior)
   const schedMode = (() => {
-    const v = String(process.env.LEGACY_SCHED ?? '').trim().toLowerCase();
+    const v = String(process.env.LEGACY_SCHED ?? '')
+      .trim()
+      .toLowerCase();
     return v === 'range' ? 'range' : 'stride';
   })();
 
   const profileEnabled = (() => {
-    const v = String(process.env.LEGACY_PROFILE ?? '').trim().toLowerCase();
+    const v = String(process.env.LEGACY_PROFILE ?? '')
+      .trim()
+      .toLowerCase();
     if (!v) return false;
     return v === '1' || v === 'true' || v === 'yes' || v === 'on';
   })();
-
 
   // Build variants/pairs for sanity + counts
   const armorVariants = buildVariantsForArmors(pools.armors);
@@ -3244,9 +3247,7 @@ async function main() {
       rngMode === 'fast' ? 'fast(sfc32)' : 'Math.random'
     } | deterministic=${deterministic ? 'ON' : 'OFF'} | baseDmgPerHit=+${BASE.baseDamagePerHit}`,
   );
-  console.log(
-    `Mixed weapon bonus: ON | Prune: ${pruneEnabled ? `ON (delta=${pruneDelta})` : 'OFF'}`,
-  );
+  console.log(`Mixed weapon bonus: ON`);
   console.log(
     `LOCK_ONLY_AMULET (weapons-only): ${
       LOCK_ONLY_AMULET.size ? Array.from(LOCK_ONLY_AMULET).join(', ') : '(none)'
@@ -3368,8 +3369,6 @@ async function main() {
           startIndex,
           endIndex,
           stride,
-          pruneDelta,
-          pruneEnabled,
           rngMode: rngMode === 'fast' ? 'fast' : 'math',
           rngSeed,
           deterministic,
@@ -3501,7 +3500,6 @@ async function main() {
     }
     console.log('=== END PROFILE ===\n');
   }
-
 
   printResults({
     globalByHp,
