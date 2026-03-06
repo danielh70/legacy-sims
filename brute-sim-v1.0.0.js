@@ -398,6 +398,7 @@ const DMG_BONUS_MODE = _envStr('LEGACY_DMG_BONUS_MODE', 'per_action').trim().toL
 const DMG_BONUS_STAGE = _envStr('LEGACY_DMG_BONUS_STAGE', 'pre_armor').trim().toLowerCase();
 
 const TACTICS_BASE_ENABLED = TACTICS_MODE === 'base' || TACTICS_MODE === 'both';
+const TACTICS_MINMAX_ENABLED = TACTICS_MODE === 'minmax' || TACTICS_MODE === 'both';
 const TACTICS_BASE_VAL = TACTICS_BASE_ENABLED ? TACTICS_VAL : 0;
 
 // ---------------------
@@ -502,6 +503,11 @@ function applyArmorAndRound(raw, armorFactor, armorRound) {
   if (armorRound === 'floor') return Math.floor(x);
   if (armorRound === 'ceil') return Math.ceil(x);
   return Math.round(x);
+}
+
+function applyMinMaxWeapon(w) {
+  if (!w || !TACTICS_MINMAX_ENABLED || TACTICS_VAL === 0) return w;
+  return { ...w, min: w.min + TACTICS_VAL, max: w.max + TACTICS_VAL };
 }
 
 const _PRE_ACTION = {
@@ -895,7 +901,7 @@ let ItemDefs = {
 // Prefer external shared defs (single source of truth), if present.
 // This keeps brute-force and canonical aligned without duplicating tables.
 try {
-  const defs = require('./legacy-defs-v1.0.0.js');
+  const defs = require('./legacy-defs.js');
   const extCrystal = defs && (defs.CrystalDefs || defs.crystalDefs);
   const extUpgrade = defs && (defs.UpgradeDefs || defs.upgradeDefs);
   const extItem = defs && (defs.ItemDefs || defs.itemDefs);
@@ -919,11 +925,8 @@ let DEFENDER_PAYLOADS;
   const candidates = override
     ? [override]
     : [
-        './legacy-defenders-v1.0.0.js',
-        './legacy-defenders-latest.js',
-        // Fallbacks for older repos / alternate filenames:
-        './legacy_defenders.js',
         './legacy-defenders.js',
+        './legacy_defenders.js',
       ];
 
   for (const p of candidates) {
@@ -1275,11 +1278,25 @@ function _envInt(name, dflt) {
     }
   }
 
-  const vsRaw = _envStr('LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE', '123');
-  if (vsRaw.toLowerCase() !== 'off') {
-    const mx = parseInt(vsRaw, 10);
-    if (Number.isFinite(mx) && mx > 0 && ItemDefs['Void Sword'] && ItemDefs['Void Sword'].baseWeaponDamage) {
-      ItemDefs['Void Sword'].baseWeaponDamage.max = mx;
+  const vsMinRaw = _envStr('LEGACY_VOID_SWORD_BASE_MIN_OVERRIDE', '');
+  const vsMaxRaw = _envStr('LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE', '123');
+  if (ItemDefs['Void Sword'] && ItemDefs['Void Sword'].baseWeaponDamage) {
+    if (vsMinRaw.toLowerCase() !== 'off') {
+      const mn = parseInt(vsMinRaw, 10);
+      if (Number.isFinite(mn) && mn > 0) {
+        ItemDefs['Void Sword'].baseWeaponDamage.min = mn;
+      }
+    }
+    if (vsMaxRaw.toLowerCase() !== 'off') {
+      const mx = parseInt(vsMaxRaw, 10);
+      if (Number.isFinite(mx) && mx > 0) {
+        ItemDefs['Void Sword'].baseWeaponDamage.max = mx;
+      }
+    }
+    if (ItemDefs['Void Sword'].baseWeaponDamage.min > ItemDefs['Void Sword'].baseWeaponDamage.max) {
+      const t = ItemDefs['Void Sword'].baseWeaponDamage.min;
+      ItemDefs['Void Sword'].baseWeaponDamage.min = ItemDefs['Void Sword'].baseWeaponDamage.max;
+      ItemDefs['Void Sword'].baseWeaponDamage.max = t;
     }
   }
 })();
@@ -1924,8 +1941,8 @@ function compileDefender(def, variantCacheLocal) {
     mel: Math.floor(mel),
     prj: Math.floor(prj),
     defSk: Math.floor(defSk),
-    w1: w1V.weapon,
-    w2: w2V.weapon,
+    w1: applyMinMaxWeapon(w1V.weapon),
+    w2: applyMinMaxWeapon(w2V.weapon),
     baseDmg: BASE.baseDamagePerHit,
   };
   applyHiddenRoleBonuses(c, 'D');
@@ -1980,8 +1997,8 @@ function compileAttacker(plan, av, w1v, w2v, m1v, m2v) {
     mel: Math.floor(mel),
     prj: Math.floor(prj),
     defSk: Math.floor(defSk),
-    w1: w1v.weapon,
-    w2: w2v.weapon,
+    w1: applyMinMaxWeapon(w1v.weapon),
+    w2: applyMinMaxWeapon(w2v.weapon),
     baseDmg: BASE.baseDamagePerHit,
   };
   applyHiddenRoleBonuses(c, 'A');

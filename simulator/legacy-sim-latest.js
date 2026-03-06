@@ -39,7 +39,7 @@ const USER_CONFIG = {
   },
 
   defenders: {
-    file: './legacy_defenders.js',
+    file: '../legacy-defenders.js',
   },
 };
 // === END USER CONFIG =========================================================
@@ -1201,7 +1201,7 @@ let ItemDefs = {
 // Prefer external shared defs (single source of truth), if present.
 // This keeps canonical and brute-force aligned without duplicating tables.
 try {
-  const defs = require('./legacy-defs-latest.js');
+  const defs = require('../legacy-defs.js');
   const extCrystal = defs && (defs.CrystalDefs || defs.crystalDefs);
   const extUpgrade = defs && (defs.UpgradeDefs || defs.upgradeDefs);
   const extItem = defs && (defs.ItemDefs || defs.itemDefs);
@@ -1601,7 +1601,7 @@ try {
   DEFENDER_PAYLOADS = require(path.resolve(__dirname, USER_CONFIG.defenders.file));
 } catch (e) {
   // Fallback for older repos that still have the original filename.
-  DEFENDER_PAYLOADS = require(path.resolve(__dirname, './legacy-defenders-latest.js'));
+  DEFENDER_PAYLOADS = require(path.resolve(__dirname, '../legacy-defenders.js'));
 }
 
 // --- Defender name aliases / backwards-compat ---

@@ -895,7 +895,7 @@ let ItemDefs = {
 // Prefer external shared defs (single source of truth), if present.
 // This keeps brute-force and canonical aligned without duplicating tables.
 try {
-  const defs = require('./legacy-defs-latest.js');
+  const defs = require('../legacy-defs.js');
   const extCrystal = defs && (defs.CrystalDefs || defs.crystalDefs);
   const extUpgrade = defs && (defs.UpgradeDefs || defs.upgradeDefs);
   const extItem = defs && (defs.ItemDefs || defs.itemDefs);
@@ -919,10 +919,8 @@ let DEFENDER_PAYLOADS;
   const candidates = override
     ? [override]
     : [
-        './legacy-defenders-latest.js',
-        // Fallbacks for older repos / alternate filenames:
+        '../legacy-defenders.js',
         './legacy_defenders.js',
-        './legacy-defenders.js',
       ];
 
   for (const p of candidates) {
