@@ -4,7 +4,7 @@
 /**
  * =====================
  * LEGACY BRUTE FORCE (CONSTRAINED + STAGED + DETERMINISTIC RNG OPTION)
- * v2.12.2 (CATALOG CONFIRM SPEEDUP + mixed bonus clarified)
+ * v1.0.0 (workspace snapshot of current stable brute)
  * =====================
  *
  * Fixes / Improvements:
@@ -64,8 +64,8 @@ const SETTINGS = {
   MAX_TURNS: 200,
 
   TRIALS_CONFIRM_DEFAULT: 20000,
-  TRIALS_SCREEN_DEFAULT: 2000,
-  TRIALS_GATE_DEFAULT: 500,
+  TRIALS_SCREEN_DEFAULT: 1200,
+  TRIALS_GATE_DEFAULT: 300,
   GATEKEEPERS_DEFAULT: 4,
 
   SCREEN_BAIL_MARGIN_DEFAULT: 6.0,
@@ -125,7 +125,7 @@ const BASE = {
   meleeSkill: 450,
   projSkill: 450,
   defSkill: 450,
-  baseDamagePerHit: 5,
+  baseDamagePerHit: 0,
 };
 
 // =====================
@@ -895,7 +895,7 @@ let ItemDefs = {
 // Prefer external shared defs (single source of truth), if present.
 // This keeps brute-force and canonical aligned without duplicating tables.
 try {
-  const defs = require('./legacy-defenders-v1.0.0.js');
+  const defs = require('./legacy-defs-v1.0.0.js');
   const extCrystal = defs && (defs.CrystalDefs || defs.crystalDefs);
   const extUpgrade = defs && (defs.UpgradeDefs || defs.upgradeDefs);
   const extItem = defs && (defs.ItemDefs || defs.itemDefs);
@@ -919,6 +919,7 @@ let DEFENDER_PAYLOADS;
   const candidates = override
     ? [override]
     : [
+        './legacy-defenders-v1.0.0.js',
         './legacy-defenders-latest.js',
         // Fallbacks for older repos / alternate filenames:
         './legacy_defenders.js',
@@ -946,22 +947,20 @@ const DEFENDER_PRIORITY = [
   // Priority order for gatekeepers (Stage 0).
   // NOTE: aliases are accepted; we'll canonicalize and de-dupe at runtime.
   'DL Gun Build 3',
-  'SG1 Split bombs',
-  'T2 Scythe/Cstaff',
+  'SG1 Split Bombs T2',
   'DL Gun Build 4',
   'DL Gun Build 2',
   'DL Gun Build 7',
   'Core/Void Build 1',
   'T2 Scythe Build',
   'HF Core/Void',
-  'DL Gun Build 3.1',
 ];
 
 // Defender-name aliases (backwards compat).
 // We canonicalize names for selection so aliases don't inflate defender count
 // (e.g. "SG1 Split bombs" vs "SG1 Split Bombs T2").
 const DEFENDER_ALIAS_TO_CANON = new Map([
-  ['SG1 Split bombs', 'SG1 Split Bombs T2'],
+  ['SG1 Split Bombs T2', 'SG1 Split Bombs T2'],
   ['Dual Bow Build', 'Dual Bow Build 1'],
   ['Bow/rift build', 'Rift Bow Build 1'],
 ]);
@@ -970,12 +969,11 @@ function resolveDefenderKey(raw) {
   const name = String(raw || '').trim();
   if (!name) return null;
 
-  // If this name is a known alias *and* the canonical key exists, always prefer canonical.
-  // This prevents aliases from inflating defender counts and double-weighting a defender.
+  // Prefer canonical name when the input is a known alias *and* the canonical exists.
   const canon = DEFENDER_ALIAS_TO_CANON.get(name);
   if (canon && DEFENDER_PAYLOADS && DEFENDER_PAYLOADS[canon]) return canon;
 
-  // Exact match (canonical or otherwise).
+  // Otherwise accept the exact key if present.
   if (DEFENDER_PAYLOADS && DEFENDER_PAYLOADS[name]) return name;
 
   // Inverse lookup: if someone passes the canonical name but the file only has an alias.
@@ -1006,7 +1004,7 @@ function priorityFirstAll(mode) {
   const push = (raw) => {
     const key = resolveDefenderKey(raw);
     if (!key) {
-      if (isMainThread) console.warn(`WARN: defender "${raw}" not found; skipping`);
+      console.warn(`WARN: defender "${raw}" not found; skipping`);
       return;
     }
     if (!seen.has(key)) {
@@ -1036,7 +1034,7 @@ function DEFENDER_NAMES() {
   for (const it of items) {
     const key = resolveDefenderKey(it);
     if (!key) {
-      if (isMainThread) console.warn(`WARN: defender "${it}" not found; skipping`);
+      console.warn(`WARN: defender "${it}" not found; skipping`);
       continue;
     }
     if (!seen.has(key)) {
@@ -1052,10 +1050,7 @@ for (const rawName of DEFENDER_NAMES()) {
   const key = resolveDefenderKey(rawName) || rawName;
   const payload = DEFENDER_PAYLOADS[key];
   if (!payload) {
-    if (isMainThread)
-      console.warn(
-        `WARN: defender "${rawName}" resolved to "${key}" but payload missing; skipping`,
-      );
+    console.warn(`WARN: defender "${rawName}" resolved to "${key}" but payload missing; skipping`);
     continue;
   }
   defenderBuilds.push({ name: key, payload });
@@ -1255,68 +1250,271 @@ function isWatchBuildCandidate(av, w1v, w2v, m1v, m2v) {
 // =====================
 // VARIANT COMPUTE (numbers only) + UPGRADES
 // =====================
-function computeVariant(itemName, crystalName, upgrades = []) {
-  const idef = ItemDefs[itemName];
-  const cdef = CrystalDefs[crystalName];
-  if (!idef) throw new Error(`Unknown item: ${itemName}`);
-  if (!cdef) throw new Error(`Unknown crystal: ${crystalName}`);
+//
+// This section is intentionally kept in lock-step with legacy-sim-latest.js for:
+//   - crystal stacking modes (sum4 vs iter4)
+//   - rounding behavior (ceil/floor/round)
+//   - default calibration overrides (HF armor base, Void Sword max)
 
-  const pct = cdef.pct || {};
-  const pctSum = {};
-  for (const k of Object.keys(pct)) pctSum[k] = (pct[k] || 0) * 4;
+function _envStr(name, dflt) {
+  const v = process.env[name];
+  return (v === undefined || v === null || String(v).trim() === '') ? dflt : String(v).trim();
+}
+function _envInt(name, dflt) {
+  const v = parseInt(_envStr(name, ''), 10);
+  return Number.isFinite(v) ? v : dflt;
+}
 
-  if (upgrades && upgrades.length) {
-    for (const u of upgrades) {
-      if (!u || u === 'None') continue;
-      const udef = UpgradeDefs[u];
-      if (!udef) throw new Error(`Unknown upgrade "${u}" on item "${itemName}"`);
-      const up = udef.pct || {};
-      for (const k of Object.keys(up)) pctSum[k] = (pctSum[k] || 0) + (up[k] || 0);
+// ---- default calibration overrides (match legacy-sim-latest defaults) ----
+(function applyCalibOverrides() {
+  const hfRaw = _envStr('LEGACY_HF_ARMOR_BASE_OVERRIDE', '125');
+  if (hfRaw.toLowerCase() !== 'off') {
+    const hf = parseInt(hfRaw, 10);
+    if (Number.isFinite(hf) && hf > 0 && ItemDefs['Hellforged Armor'] && ItemDefs['Hellforged Armor'].flatStats) {
+      ItemDefs['Hellforged Armor'].flatStats.armor = hf;
     }
   }
 
-  const fs = idef.flatStats || {};
+  const vsRaw = _envStr('LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE', '123');
+  if (vsRaw.toLowerCase() !== 'off') {
+    const mx = parseInt(vsRaw, 10);
+    if (Number.isFinite(mx) && mx > 0 && ItemDefs['Void Sword'] && ItemDefs['Void Sword'].baseWeaponDamage) {
+      ItemDefs['Void Sword'].baseWeaponDamage.max = mx;
+    }
+  }
+})();
 
-  const addSpeed = (fs.speed || 0) + Math.ceil((fs.speed || 0) * (pctSum.speed || 0));
-  const addAcc = (fs.accuracy || 0) + Math.ceil((fs.accuracy || 0) * (pctSum.accuracy || 0));
-  const addDod = (fs.dodge || 0) + Math.ceil((fs.dodge || 0) * (pctSum.dodge || 0));
-  const addGun = (fs.gunSkill || 0) + Math.ceil((fs.gunSkill || 0) * (pctSum.gunSkill || 0));
-  const addMel = (fs.meleeSkill || 0) + Math.ceil((fs.meleeSkill || 0) * (pctSum.meleeSkill || 0));
-  const addPrj = (fs.projSkill || 0) + Math.ceil((fs.projSkill || 0) * (pctSum.projSkill || 0));
-  const addDef = (fs.defSkill || 0) + Math.ceil((fs.defSkill || 0) * (pctSum.defSkill || 0));
-  const addArmStat = (fs.armor || 0) + Math.ceil((fs.armor || 0) * (pctSum.armor || 0));
+const VARIANT_CFG = (() => {
+  const statRound = _envStr('LEGACY_STAT_ROUND', 'ceil').toLowerCase();
+  const weaponDmgRound = _envStr('LEGACY_WEAPON_DMG_ROUND', 'ceil').toLowerCase();
+  const crystalStackModeDefault = _envStr('LEGACY_CRYSTAL_STACK_MODE', '').toLowerCase();
+  const crystalStackStats = _envStr('LEGACY_CRYSTAL_STACK_STATS', crystalStackModeDefault || 'iter4').toLowerCase();
+  const crystalStackDmg = _envStr('LEGACY_CRYSTAL_STACK_DMG', crystalStackModeDefault || 'sum4').toLowerCase();
+  const crystalSlots = _envInt('LEGACY_CRYSTAL_SLOTS', 4);
+
+  // Armor-stat stacking appears to differ from normal stat stacking in-game; default it to sum4.
+  const armorStatStackRaw = _envStr('LEGACY_ARMORSTAT_STACK', 'inherit').toLowerCase();
+  const armorStatRoundRaw = _envStr('LEGACY_ARMORSTAT_ROUND', 'inherit').toLowerCase();
+  const armorStatSlotsRaw = _envStr('LEGACY_ARMORSTAT_SLOTS', 'inherit').toLowerCase();
+
+  const armorStatStack = (armorStatStackRaw === 'inherit') ? 'sum4' : armorStatStackRaw;
+  const armorStatRound = (armorStatRoundRaw === 'inherit') ? statRound : armorStatRoundRaw;
+  const armorStatSlots = (armorStatSlotsRaw === 'inherit') ? crystalSlots : (parseInt(armorStatSlotsRaw, 10) || crystalSlots);
+
+  return {
+    statRound,
+    weaponDmgRound,
+    crystalStackStats,
+    crystalStackDmg,
+    crystalSlots,
+    armorStatStack,
+    armorStatRound,
+    armorStatSlots,
+  };
+})();
+
+// Optional: calibration-style "misc has NO crystal" skill scaling.
+// Brute-force normally always uses crystals, so this only matters if you add a blank/none crystal option.
+const MISC_NO_CRYSTAL_SKILL = new Set(
+  _envStr('LEGACY_MISC_NO_CRYSTAL_SKILL', '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+);
+const MISC_NO_CRYSTAL_SKILL_TYPE_MULTS = (() => {
+  const raw = _envStr('LEGACY_MISC_NO_CRYSTAL_SKILL_TYPES', '').trim();
+  const out = new Map();
+  if (!raw) return out;
+  for (const chunk of raw.split(',')) {
+    const s = chunk.trim();
+    if (!s) continue;
+    const [k, v] = s.split('=').map(x => x.trim());
+    const mult = v === undefined ? 1.0 : Number(v);
+    if (!k) continue;
+    out.set(k.toLowerCase(), Number.isFinite(mult) ? mult : 1.0);
+  }
+  return out;
+})();
+const MISC_NO_CRYSTAL_SKILL_SLOT1_MULT = (() => {
+  const v = Number(_envStr('LEGACY_MISC_NO_CRYSTAL_SLOT1_MULT', '1'));
+  return Number.isFinite(v) ? v : 1.0;
+})();
+const MISC_NO_CRYSTAL_SKILL_SLOT2_MULT = (() => {
+  const v = Number(_envStr('LEGACY_MISC_NO_CRYSTAL_SLOT2_MULT', '1'));
+  return Number.isFinite(v) ? v : 1.0;
+})();
+
+// ---- rounding + stacking helpers (matches legacy-sim-latest.js) ----
+function roundStat(v, mode) {
+  switch (mode) {
+    case 'ceil': return Math.ceil(v);
+    case 'floor': return Math.floor(v);
+    case 'round': return Math.round(v);
+    default: return Math.ceil(v);
+  }
+}
+function roundWeaponDmg(v, mode) {
+  // weapon dmg behaves like stats rounding for our current best-fit; keep distinct for future.
+  return roundStat(v, mode);
+}
+function normalizeCrystalStackMode(mode) {
+  if (!mode) return 'sum4';
+  mode = String(mode).toLowerCase();
+  if (mode === 'iter4' || mode === 'iter') return 'iter4';
+  return 'sum4';
+}
+function applyCrystalPctToStat(base, pctPerCrystal, nCrystals, roundMode, stackMode) {
+  const m = normalizeCrystalStackMode(stackMode);
+  const pct = pctPerCrystal || 0;
+  if (!pct || !nCrystals) return base;
+
+  if (m === 'iter4') {
+    let v = base;
+    for (let i = 0; i < nCrystals; i++) v += roundStat(v * pct, roundMode);
+    return v;
+  }
+  // sum4
+  return base + roundStat(base * pct * nCrystals, roundMode);
+}
+function applyCrystalPctToWeaponDmg(base, pctPerCrystal, nCrystals, roundMode, stackMode) {
+  const m = normalizeCrystalStackMode(stackMode);
+  const pct = pctPerCrystal || 0;
+  if (!pct || !nCrystals) return base;
+
+  if (m === 'iter4') {
+    let v = base;
+    for (let i = 0; i < nCrystals; i++) v += roundWeaponDmg(v * pct, roundMode);
+    return v;
+  }
+  // sum4
+  return base + roundWeaponDmg(base * pct * nCrystals, roundMode);
+}
+
+function computeVariant(itemName, crystalName, upgrade1, upgrade2) {
+  const idef = ItemDefs[itemName];
+  if (!idef) throw new Error(`Unknown item "${itemName}"`);
+
+  const isArmor = idef.type === 'Armor';
+  const isWeapon = idef.type === 'Weapon';
+  const isMisc = idef.type === 'Misc';
+
+  const cdef = CrystalDefs[crystalName];
+  if (!cdef) throw new Error(`Unknown crystal "${crystalName}"`);
+  const crystalPct = cdef.pct || {};
+
+  const upgrades = [upgrade1, upgrade2].map(u => (u == null ? '' : String(u).trim())).filter(u => u.length > 0);
+
+  // Base item flat stats (bonuses from the item itself).
+  const fs = idef.flatStats || {};
+  let outStats = {
+    speed: fs.speed || 0,
+    accuracy: fs.accuracy || 0,
+    dodge: fs.dodge || 0,
+    gunSkill: fs.gunSkill || 0,
+    meleeSkill: fs.meleeSkill || 0,
+    projSkill: fs.projSkill || 0,
+    defSkill: fs.defSkill || 0,
+    armor: fs.armor || 0,
+  };
+
+  // Weapon base damage.
+  const wBase = idef.baseWeaponDamage || null;
+  let wDmg = (isWeapon && wBase) ? { min: wBase.min, max: wBase.max } : null;
+
+  // Apply crystals to flat stats on the item.
+  const nStats = VARIANT_CFG.crystalSlots;
+  const nArm = VARIANT_CFG.armorStatSlots;
+  for (const sk of Object.keys(outStats)) {
+    const pct = crystalPct[sk] || 0;
+    if (!pct) continue;
+    const isArmorStat = (sk === 'armor');
+    const stackMode = isArmorStat ? VARIANT_CFG.armorStatStack : VARIANT_CFG.crystalStackStats;
+    const roundMode = isArmorStat ? VARIANT_CFG.armorStatRound : VARIANT_CFG.statRound;
+    const n = isArmorStat ? nArm : nStats;
+    outStats[sk] = applyCrystalPctToStat(outStats[sk], pct, n, roundMode, stackMode);
+  }
+
+  // Apply crystals to weapon damage (uses 'damage' key).
+  if (wDmg) {
+    const dmgPct = crystalPct.damage || 0;
+    if (dmgPct) {
+      wDmg.min = applyCrystalPctToWeaponDmg(wDmg.min, dmgPct, VARIANT_CFG.crystalSlots, VARIANT_CFG.weaponDmgRound, VARIANT_CFG.crystalStackDmg);
+      wDmg.max = applyCrystalPctToWeaponDmg(wDmg.max, dmgPct, VARIANT_CFG.crystalSlots, VARIANT_CFG.weaponDmgRound, VARIANT_CFG.crystalStackDmg);
+    }
+  }
+
+  // Apply upgrades (once each, multiplicative on the current outStats / wDmg).
+  for (const upName of upgrades) {
+    if (!upName) continue;
+    const udef = UpgradeDefs[upName];
+    if (!udef) throw new Error(`Unknown upgrade "${upName}"`);
+    const upPct = udef.pct || {};
+
+    for (const sk of Object.keys(outStats)) {
+      const pct = upPct[sk] || 0;
+      if (!pct) continue;
+      outStats[sk] += roundStat(outStats[sk] * pct, VARIANT_CFG.statRound);
+    }
+
+    if (wDmg) {
+      const pct = upPct.damage || 0;
+      if (pct) {
+        wDmg.min += roundWeaponDmg(wDmg.min * pct, VARIANT_CFG.weaponDmgRound);
+        wDmg.max += roundWeaponDmg(wDmg.max * pct, VARIANT_CFG.weaponDmgRound);
+      }
+    }
+  }
+
+  // Optional "misc has NO crystal" scaling (only if the crystal is explicitly blank/none).
+  const noCrystal = !crystalName || crystalName.toLowerCase() === 'none';
+  const isMiscSkillScaled = isMisc && noCrystal && MISC_NO_CRYSTAL_SKILL.has(itemName);
+
+  const getMultForSkill = (skillName, slotTag) => {
+    const k = String(skillName || '').toLowerCase();
+    let mult = MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.get(k) ?? 1.0;
+    if (slotTag === 1) mult *= MISC_NO_CRYSTAL_SKILL_SLOT1_MULT;
+    if (slotTag === 2) mult *= MISC_NO_CRYSTAL_SKILL_SLOT2_MULT;
+    return mult;
+  };
+
+  const addSpeed = outStats.speed;
+  const addAcc = outStats.accuracy;
+  const addDod = outStats.dodge;
+  const addArmStat = outStats.armor;
+
+  const addGun = isMiscSkillScaled ? Math.ceil(outStats.gunSkill * getMultForSkill('gun', 0)) : outStats.gunSkill;
+  const addMel = isMiscSkillScaled ? Math.ceil(outStats.meleeSkill * getMultForSkill('melee', 0)) : outStats.meleeSkill;
+  const addPrj = isMiscSkillScaled ? Math.ceil(outStats.projSkill * getMultForSkill('proj', 0)) : outStats.projSkill;
+  const addDef = isMiscSkillScaled ? Math.ceil(outStats.defSkill * getMultForSkill('def', 0)) : outStats.defSkill;
+
+  const upTag = upgrades.length ? `{${upgrades.map(shortUpgrade).join('+')}}` : '';
+  const tag = `${shortCrystal(crystalName)}${upTag}`;
 
   let weapon = null;
   let weaponMaskBit = 0;
-  if (idef.baseWeaponDamage) {
-    const dmgPctSum = pctSum.damage || 0;
-    const min = Math.ceil(idef.baseWeaponDamage.min * (1 + dmgPctSum));
-    const max = Math.ceil(idef.baseWeaponDamage.max * (1 + dmgPctSum));
-    const skill = idef.skillType === 'gunSkill' ? 0 : idef.skillType === 'meleeSkill' ? 1 : 2;
-    weapon = { min, max, skill };
-    weaponMaskBit = skill === 0 ? 0b001 : skill === 1 ? 0b010 : 0b100;
+  if (isWeapon && wDmg) {
+    const st = String(idef.skillType || 'meleeSkill');
+    const skill = st === 'gunSkill' ? 0 : st === 'meleeSkill' ? 1 : st === 'projSkill' ? 2 : null;
+    if (skill === null) throw new Error(`Weapon "${itemName}" has unknown skillType="${idef.skillType}"`);
+
+    weapon = { name: itemName, min: wDmg.min, max: wDmg.max, skill, tag };
+    weaponMaskBit = 1 << skill; // gun=1, melee=2, proj=4
   }
 
-  let miscMeta = null;
-  if (idef.type === 'Misc') {
-    miscMeta = {
-      hasDef: (fs.defSkill || 0) > 0,
-      hasGun: (fs.gunSkill || 0) > 0,
-      hasMel: (fs.meleeSkill || 0) > 0,
-      hasPrj: (fs.projSkill || 0) > 0,
-    };
-  }
-
-  const u1 = upgrades && upgrades[0] ? upgrades[0] : null;
-  const u2 = upgrades && upgrades[1] ? upgrades[1] : null;
+  const miscMeta = isMisc ? {
+    isBio: itemName === 'Bio Spinal Enhancer',
+    hasGun: !!(fs.gunSkill || 0),
+    hasMel: !!(fs.meleeSkill || 0),
+    hasPrj: !!(fs.projSkill || 0),
+    hasDef: !!(fs.defSkill || 0),
+  } : null;
 
   return {
     itemName,
     crystalName,
-    upgrade1: u1,
-    upgrade2: u2,
-    upgrades: [u1, u2].filter(Boolean),
-
+    upgrade1: upgrade1 || '',
+    upgrade2: upgrade2 || '',
+    tag,
     addSpeed,
     addAcc,
     addDod,
@@ -1346,7 +1544,7 @@ function buildVariantsForArmors(names) {
       const key = variantKey(nm, c, '', '');
       let v = cache.get(key);
       if (!v) {
-        v = computeVariant(nm, c, []);
+        v = computeVariant(nm, c, '', '');
         cache.set(key, v);
       }
       out.push(v);
@@ -1394,7 +1592,7 @@ function buildVariantsForWeapons(names) {
         const key = variantKey(nm, c, u1, u2);
         let v = cache.get(key);
         if (!v) {
-          v = computeVariant(nm, c, ups);
+          v = computeVariant(nm, c, u1, u2);
           cache.set(key, v);
         }
         out.push(v);
@@ -1413,7 +1611,7 @@ function buildVariantsForMiscsSuperset(names) {
       const key = variantKey(nm, c, '', '');
       let v = cache.get(key);
       if (!v) {
-        v = computeVariant(nm, c, []);
+        v = computeVariant(nm, c, '', '');
         cache.set(key, v);
       }
       out.push(v);
@@ -1546,6 +1744,7 @@ function buildHpPlans() {
   };
 }
 
+
 // =====================
 // HIDDEN SLOT (parity with legacy-sim)
 // =====================
@@ -1557,7 +1756,8 @@ function applyHiddenRoleBonuses(c, role) {
   if (!HIDDEN_PRESET || HIDDEN_PRESET === 'none') return;
 
   const wCount = (c.w1 ? 1 : 0) + (c.w2 ? 1 : 0);
-  const prjCount = (c.w1 && c.w1.skill === 2 ? 1 : 0) + (c.w2 && c.w2.skill === 2 ? 1 : 0);
+  const prjCount =
+    (c.w1 && c.w1.skill === 2 ? 1 : 0) + (c.w2 && c.w2.skill === 2 ? 1 : 0);
 
   if (HIDDEN_PRESET === 'slot3') {
     if (role === 'A') {
@@ -2239,6 +2439,7 @@ function workerMain() {
     progressEveryMs,
     startIndex,
     endIndex,
+          stride,
     pruneDelta,
     pruneEnabled,
     workerId,
@@ -2253,6 +2454,8 @@ function workerMain() {
     debugMixedN,
     watchEnabled,
     useSuperset,
+          schedMode,
+          profileEnabled,
     catalogTopN,
     catalogMargin,
   } = workerData;
@@ -2277,10 +2480,7 @@ function workerMain() {
     const key = variantKey(itemName, crystalName, upgrade1, upgrade2);
     let v = localCache.get(key);
     if (!v) {
-      const ups = [];
-      if (upgrade1) ups.push(upgrade1);
-      if (upgrade2) ups.push(upgrade2);
-      v = computeVariant(itemName, crystalName, ups);
+      v = computeVariant(itemName, crystalName, upgrade1, upgrade2);
       localCache.set(key, v);
     }
     return v;
@@ -2338,6 +2538,10 @@ function workerMain() {
   const t0 = nowMs();
   let lastProgress = t0;
   let processed = 0;
+
+  const prof = profileEnabled
+    ? { bailedG: 0, bailedA: 0, bailedB: 0, confirmedB: 0, screenCalls: 0, screenSampledSum: 0, screenFull: 0 }
+    : null;
 
   const detBaseSeed = (Number(rngSeed) || 0) >>> 0;
   let debugPrinted = 0;
@@ -2403,7 +2607,7 @@ function workerMain() {
     return { plan, av, w1v, w2v, m1v, m2v, weaponMask };
   }
 
-  for (let idx = startIndex; idx < endIndex; idx++) {
+  for (let idx = startIndex; idx < endIndex; idx += (stride || 1)) {
     processed++;
 
     const dec = useSuperset ? decodeSupersetIndex(idx) : decodeEffectiveIndex(idx);
@@ -2516,6 +2720,20 @@ function workerMain() {
       baseSeed: detBaseSeed,
       candidateKey: idx,
     });
+
+    if (prof) {
+      if (score.stage === 'G') prof.bailedG++;
+      else if (score.stage === 'A') prof.bailedA++;
+      else if (score.stage === 'B') {
+        if (score.bailed) prof.bailedB++;
+        else prof.confirmedB++;
+      }
+      if (typeof score.screenSampled === 'number' && score.screenSampled > 0) {
+        prof.screenCalls++;
+        prof.screenSampledSum += score.screenSampled;
+        if (score.screenSampled === defenders.length) prof.screenFull++;
+      }
+    }
 
     const wpTag = weaponPairTagFromSkills(w1v.weapon.skill, w2v.weapon.skill);
     const label = buildLabel(plan, av, w1v, w2v, m1v, m2v);
@@ -2630,6 +2848,7 @@ function workerMain() {
     catalogTopByHp,
     catalogBestTypeByHp,
     elapsedSec: (nowMs() - t0) / 1000,
+    profile: prof,
   });
 }
 
@@ -2672,10 +2891,7 @@ function runWarmStartAndGetWorstPct({
     const key = variantKey(itemName, crystalName, upgrade1, upgrade2);
     let v = localCache.get(key);
     if (!v) {
-      const ups = [];
-      if (upgrade1) ups.push(upgrade1);
-      if (upgrade2) ups.push(upgrade2);
-      v = computeVariant(itemName, crystalName, ups);
+      v = computeVariant(itemName, crystalName, upgrade1, upgrade2);
       localCache.set(key, v);
     }
     return v;
@@ -2753,7 +2969,7 @@ function confirmSpecAgainstDefenders({
       const ups = [];
       if (u1) ups.push(u1);
       if (u2) ups.push(u2);
-      v = computeVariant(itemName, crystalName, ups);
+      v = computeVariant(itemName, crystalName, u1, u2);
       localCache.set(key, v);
     }
     return v;
@@ -2814,14 +3030,6 @@ function confirmSpecAgainstDefenders({
 // MAIN THREAD
 // =====================
 async function main() {
-  // NOTE: These legacy-sim knobs are not modeled in the brute sim yet.
-  // If you have them exported in your shell, you'll get mismatched results vs legacy-sim.
-  if (process.env.LEGACY_MISC_NO_CRYSTAL_SKILL || process.env.LEGACY_MISC_NO_CRYSTAL_SKILL_TYPES) {
-    console.warn(
-      'WARN: LEGACY_MISC_NO_CRYSTAL_* is set but is currently ignored by brute-sim (results may differ vs legacy-sim).',
-    );
-  }
-
   const single = process.argv.includes('--single');
 
   const logical =
@@ -2904,21 +3112,32 @@ async function main() {
   const catalogMargin = parseCatalogMargin();
   const catalogConfirmTrials = parseCatalogConfirmTrials(TRIALS_CONFIRM);
 
-  // By default, Stage 0/Stage A early-bail uses the raw screen margin (LEGACY_SCREEN_MARGIN).
-  // If you want the bailing to be as forgiving as the catalog capture band, enable:
-  //   LEGACY_ALIGN_BAIL_TO_CATALOG=1
-  const alignBailRaw = String(process.env.LEGACY_ALIGN_BAIL_TO_CATALOG ?? '')
-    .trim()
-    .toLowerCase();
-  const alignBailToCatalog =
-    alignBailRaw === '1' ||
-    alignBailRaw === 'true' ||
-    alignBailRaw === 'on' ||
-    alignBailRaw === 'yes';
+  // Bail-margin behavior:
+  // - Default: use raw LEGACY_SCREEN_MARGIN (fast, matches older behavior)
+  // - Optional: LEGACY_ALIGN_BAIL_TO_CATALOG=1 makes Stage A bail margin >= catalog margin (more forgiving, slower)
+  const alignBailToCatalog = (() => {
+    const v = String(process.env.LEGACY_ALIGN_BAIL_TO_CATALOG ?? '').trim().toLowerCase();
+    if (!v) return false;
+    return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+  })();
 
-  const effectiveBailMargin = alignBailToCatalog
-    ? Math.max(BAIL_MARGIN, catalogMargin)
-    : BAIL_MARGIN;
+  const gateBailMarginEffective = BAIL_MARGIN; // keep Stage 0 tight by default
+  const screenBailMarginEffective = alignBailToCatalog ? Math.max(BAIL_MARGIN, catalogMargin) : BAIL_MARGIN;
+
+  // Work scheduling:
+  // - stride (default): interleave indices across workers to avoid tail slowdowns from uneven ranges
+  // - range: contiguous ranges (older behavior)
+  const schedMode = (() => {
+    const v = String(process.env.LEGACY_SCHED ?? '').trim().toLowerCase();
+    return v === 'range' ? 'range' : 'stride';
+  })();
+
+  const profileEnabled = (() => {
+    const v = String(process.env.LEGACY_PROFILE ?? '').trim().toLowerCase();
+    if (!v) return false;
+    return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+  })();
+
 
   // Build variants/pairs for sanity + counts
   const armorVariants = buildVariantsForArmors(pools.armors);
@@ -2998,7 +3217,10 @@ async function main() {
   }
 
   console.log(
-    `LEGACY brute-force (v2.12.2) | defenders=${defenderBuilds.length} | trialsGate/def=${TRIALS_GATE} | trialsScreen/def=${TRIALS_SCREEN} | trialsConfirm/def=${TRIALS_CONFIRM} | hidden=${HIDDEN_PRESET}`,
+    `LEGACY brute-force (v1.0.0) | defenders=${defenderBuilds.length} | trialsGate/def=${TRIALS_GATE} | trialsScreen/def=${TRIALS_SCREEN} | trialsConfirm/def=${TRIALS_CONFIRM} | hidden=${HIDDEN_PRESET}`,
+  );
+  console.log(
+    `Crystals: slots=${VARIANT_CFG.crystalSlots} stats=${normalizeCrystalStackMode(VARIANT_CFG.crystalStackStats)}/${VARIANT_CFG.statRound} dmg=${normalizeCrystalStackMode(VARIANT_CFG.crystalStackDmg)}/${VARIANT_CFG.weaponDmgRound} armorStat=${normalizeCrystalStackMode(VARIANT_CFG.armorStatStack)}/${VARIANT_CFG.armorStatRound}`,
   );
   console.log(
     `Workers=${workers} (logical=${logical}, physicalGuess=${physicalGuess}) | RNG=${
@@ -3032,11 +3254,7 @@ async function main() {
     `LOCKED attacker plan: HP=${locked.hp} extraAcc=${locked.extraAcc} extraDodge=${locked.extraDodge} (freePoints=${locked.freePoints})`,
   );
   console.log(
-    `Gatekeepers: N=${GATEKEEPERS} trialsGate=${TRIALS_GATE} | bail margin=${effectiveBailMargin.toFixed(
-      2,
-    )}% (raw=${BAIL_MARGIN.toFixed(2)}%, catalog=${catalogMargin.toFixed(2)}%, align=${
-      alignBailToCatalog ? 'ON' : 'OFF'
-    })`,
+    `Gatekeepers: N=${GATEKEEPERS} trialsGate=${TRIALS_GATE} | bail margin=${screenBailMarginEffective.toFixed(2)}% (raw=${BAIL_MARGIN.toFixed(2)}%, catalog=${catalogMargin.toFixed(2)}%, align=${alignBailToCatalog ? 'ON' : 'OFF'})`,
   );
   console.log(
     `Catalog: topN=${catalogTopN} | marginBelowFloor=${catalogMargin.toFixed(1)}% | confirmTrials=${catalogConfirmTrials}`,
@@ -3091,20 +3309,32 @@ async function main() {
   const start = nowMs();
   let lastRender = start;
   const processedByWorker = new Array(workers).fill(0);
+  const profileByWorker = new Array(workers).fill(null);
 
-  const perWorker = Math.floor(totalCandidates / workers);
   const ranges = [];
-  for (let w = 0; w < workers; w++) {
-    const s = w * perWorker;
-    const e = w === workers - 1 ? totalCandidates : (w + 1) * perWorker;
-    ranges.push([s, e]);
+  if (schedMode === 'range') {
+    const perWorker = Math.floor(totalCandidates / workers);
+    for (let w = 0; w < workers; w++) {
+      const s = w * perWorker;
+      const e = w === workers - 1 ? totalCandidates : (w + 1) * perWorker;
+      ranges.push([s, e]);
+    }
   }
 
   await new Promise((resolve, reject) => {
     let doneCount = 0;
 
     for (let w = 0; w < workers; w++) {
-      const [startIndex, endIndex] = ranges[w];
+      let startIndex, endIndex, stride;
+      if (schedMode === 'range') {
+        [startIndex, endIndex] = ranges[w];
+        stride = 1;
+      } else {
+        // stride scheduling: interleave indices (w, w+workers, ...)
+        startIndex = w;
+        endIndex = totalCandidates;
+        stride = workers;
+      }
 
       const wk = new Worker(__filename, {
         workerData: {
@@ -3113,13 +3343,14 @@ async function main() {
           trialsScreen: TRIALS_SCREEN,
           trialsGate: TRIALS_GATE,
           gatekeepers: GATEKEEPERS,
-          gateBailMargin: effectiveBailMargin,
-          screenBailMargin: effectiveBailMargin,
+          gateBailMargin: gateBailMarginEffective,
+          screenBailMargin: screenBailMarginEffective,
           maxTurns: SETTINGS.MAX_TURNS,
           keepTopNPerHp: SETTINGS.KEEP_TOP_N_PER_HP,
           progressEveryMs: SETTINGS.PROGRESS_EVERY_MS,
           startIndex,
           endIndex,
+          stride,
           pruneDelta,
           pruneEnabled,
           rngMode: rngMode === 'fast' ? 'fast' : 'math',
@@ -3131,6 +3362,8 @@ async function main() {
           debugMixedN,
           watchEnabled,
           useSuperset,
+          schedMode,
+          profileEnabled,
           catalogTopN,
           catalogMargin,
         },
@@ -3173,6 +3406,7 @@ async function main() {
 
         if (msg.type === 'done') {
           processedByWorker[w] = msg.processed || processedByWorker[w];
+          if (msg.profile) profileByWorker[w] = msg.profile;
 
           const topsByHp = msg.topsByHp || {};
           for (const hpKey in topsByHp) {
@@ -3236,6 +3470,22 @@ async function main() {
   process.stdout.write('\n');
   const elapsedAll = (nowMs() - start) / 1000;
 
+  if (profileEnabled) {
+    console.log('\n\n=== PROFILE (LEGACY_PROFILE=1) ===');
+    for (let w = 0; w < workers; w++) {
+      const p = profileByWorker[w];
+      if (!p) continue;
+      const avgSampled = p.screenCalls ? p.screenSampledSum / p.screenCalls : 0;
+      console.log(
+        `worker=${w} processed=${processedByWorker[w]} | G_bail=${p.bailedG} A_bail=${p.bailedA} B_bail=${p.bailedB} B_keep=${p.confirmedB} | screenAvgSampled=${avgSampled.toFixed(
+          2,
+        )}/${defenderBuilds.length} fullScreens=${p.screenFull}`,
+      );
+    }
+    console.log('=== END PROFILE ===\n');
+  }
+
+
   printResults({
     globalByHp,
     globalBestByTypeByHp,
@@ -3280,7 +3530,7 @@ function printResults({
         const ups = [];
         if (u1) ups.push(u1);
         if (u2) ups.push(u2);
-        v = computeVariant(itemName, crystalName, ups);
+        v = computeVariant(itemName, crystalName, u1, u2);
         localCache.set(key, v);
       }
       return v;
