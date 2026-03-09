@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.1.1';
+  const VERSION = '0.1.2';
 
   function nowIso() {
     return new Date().toISOString();
@@ -13,6 +13,51 @@
 
   function deepClone(x) {
     return JSON.parse(JSON.stringify(x));
+  }
+
+  function parseCsv(str) {
+    return String(str || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
+  function normalizeNameKey(s) {
+    return String(s || '')
+      .trim()
+      .toLowerCase()
+      .replace(/['"]/g, '')
+      .replace(/[^a-z0-9]+/g, '');
+  }
+
+  function toFiniteNumber(v) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function averageFinite(values, digits = 4) {
+    const xs = values.map(toFiniteNumber).filter((n) => n !== null);
+    if (!xs.length) return null;
+    const out = xs.reduce((a, b) => a + b, 0) / xs.length;
+    return digits == null ? out : Number(out.toFixed(digits));
+  }
+
+  function minFinite(values) {
+    const xs = values.map(toFiniteNumber).filter((n) => n !== null);
+    return xs.length ? Math.min(...xs) : null;
+  }
+
+  function maxFinite(values) {
+    const xs = values.map(toFiniteNumber).filter((n) => n !== null);
+    return xs.length ? Math.max(...xs) : null;
+  }
+
+  function firstFinite(values) {
+    for (const value of values || []) {
+      const n = toFiniteNumber(value);
+      if (n !== null) return n;
+    }
+    return null;
   }
 
   function slug(s) {
@@ -155,6 +200,214 @@
 
   function makeBuild(name, build) {
     return { name, build: deepClone(build) };
+  }
+
+  function resolveBuildList(requested, defaults, filters, kindLabel) {
+    const defaultMap = new Map(
+      defaults.map((entry) => [normalizeNameKey(entry.name), deepClone(entry)]),
+    );
+
+    if (Array.isArray(requested) && requested.length && typeof requested[0] !== 'string') {
+      return deepClone(requested);
+    }
+
+    const names = requested == null
+      ? (Array.isArray(filters) ? filters : parseCsv(filters))
+      : (Array.isArray(requested) ? requested : parseCsv(requested));
+
+    if (!names.length) return deepClone(defaults);
+
+    const missing = [];
+    const out = [];
+    for (const rawName of names) {
+      const hit = defaultMap.get(normalizeNameKey(rawName));
+      if (!hit) {
+        missing.push(rawName);
+        continue;
+      }
+      out.push(deepClone(hit));
+    }
+
+    if (missing.length) {
+      throw new Error(
+        `Unknown ${kindLabel}: ${missing.join(', ')}`,
+      );
+    }
+
+    return out;
+  }
+
+  function extractRunMetrics(parsed, bestNetwork) {
+    const json = bestNetwork && bestNetwork.json ? bestNetwork.json : null;
+    const parsedAttackerWins = firstFinite([
+      parsed && parsed.attacker && parsed.attacker.wins,
+    ]);
+    const parsedDefenderWins = firstFinite([
+      parsed && parsed.defender && parsed.defender.wins,
+    ]);
+    const times = firstFinite([
+      json && json.times,
+      parsedAttackerWins != null && parsedDefenderWins != null
+        ? parsedAttackerWins + parsedDefenderWins
+        : null,
+    ]);
+
+    const attackerWins = firstFinite([
+      json && json.attackerWins,
+      parsedAttackerWins,
+    ]);
+    const defenderWins = firstFinite([
+      json && json.defenderWins,
+      parsedDefenderWins,
+    ]);
+
+    const attackerWinPct = firstFinite([
+      times && attackerWins != null ? (attackerWins / times) * 100 : null,
+      parsed && parsed.attacker && parsed.attacker.winPct,
+    ]);
+    const defenderWinPct = firstFinite([
+      times && defenderWins != null ? (defenderWins / times) * 100 : null,
+      parsed && parsed.defender && parsed.defender.winPct,
+    ]);
+
+    return {
+      times,
+      attackerWins,
+      defenderWins,
+      attackerWinPct,
+      defenderWinPct,
+      avgTurns: firstFinite([json && json.averageTurns, parsed && parsed.meta && parsed.meta.avgTurns]),
+      totalTurns: firstFinite([json && json.turns && json.turns.total, parsed && parsed.meta && parsed.meta.totalTurns]),
+      shortestFight: firstFinite([json && json.turns && json.turns.min, parsed && parsed.meta && parsed.meta.shortestFight]),
+      longestFight: firstFinite([json && json.turns && json.turns.max, parsed && parsed.meta && parsed.meta.longestFight]),
+      A_hit: firstFinite([json && json.attackerChances && json.attackerChances.hit]),
+      A_dmg1: firstFinite([json && json.attackerChances && json.attackerChances.damage1]),
+      A_dmg2: firstFinite([json && json.attackerChances && json.attackerChances.damage2]),
+      D_hit: firstFinite([json && json.defenderChances && json.defenderChances.hit]),
+      D_dmg1: firstFinite([json && json.defenderChances && json.defenderChances.damage1]),
+      D_dmg2: firstFinite([json && json.defenderChances && json.defenderChances.damage2]),
+      A_totalDmg: firstFinite([json && json.attackerDamage && json.attackerDamage.total, parsed && parsed.attacker && parsed.attacker.totalDmg]),
+      D_totalDmg: firstFinite([json && json.defenderDamage && json.defenderDamage.total, parsed && parsed.defender && parsed.defender.totalDmg]),
+      A_minDmg: firstFinite([json && json.attackerDamage && json.attackerDamage.min, parsed && parsed.attacker && parsed.attacker.minDmg]),
+      A_maxDmg: firstFinite([json && json.attackerDamage && json.attackerDamage.max, parsed && parsed.attacker && parsed.attacker.maxDmg]),
+      D_minDmg: firstFinite([json && json.defenderDamage && json.defenderDamage.min, parsed && parsed.defender && parsed.defender.minDmg]),
+      D_maxDmg: firstFinite([json && json.defenderDamage && json.defenderDamage.max, parsed && parsed.defender && parsed.defender.maxDmg]),
+    };
+  }
+
+  function aggregateMatchupRuns(attacker, defender, rawRuns, repeatTarget) {
+    const successfulRuns = rawRuns.filter((row) => !row.error);
+    if (!successfulRuns.length) return null;
+
+    const metricsRows = successfulRuns.map((row) => row.metrics || {});
+    const repeatCount = successfulRuns.length;
+    const times = firstFinite(metricsRows.map((m) => m.times));
+    const avgAttackerWinPct = averageFinite(metricsRows.map((m) => m.attackerWinPct), 4);
+    const avgDefenderWinPct = averageFinite(metricsRows.map((m) => m.defenderWinPct), 4);
+    const avgTurns = averageFinite(metricsRows.map((m) => m.avgTurns), 4);
+    const avgAHit = averageFinite(metricsRows.map((m) => m.A_hit), 4);
+    const avgADmg1 = averageFinite(metricsRows.map((m) => m.A_dmg1), 4);
+    const avgADmg2 = averageFinite(metricsRows.map((m) => m.A_dmg2), 4);
+    const avgDHit = averageFinite(metricsRows.map((m) => m.D_hit), 4);
+    const avgDDmg1 = averageFinite(metricsRows.map((m) => m.D_dmg1), 4);
+    const avgDDmg2 = averageFinite(metricsRows.map((m) => m.D_dmg2), 4);
+
+    const avgAttackerWins = times != null && avgAttackerWinPct != null
+      ? Number(((avgAttackerWinPct / 100) * times).toFixed(4))
+      : null;
+    const avgDefenderWins = times != null && avgDefenderWinPct != null
+      ? Number(((avgDefenderWinPct / 100) * times).toFixed(4))
+      : null;
+
+    const aggregateJson = {
+      times,
+      attackerWins: avgAttackerWins,
+      defenderWins: avgDefenderWins,
+      averageTurns: avgTurns,
+      turns: {
+        total: averageFinite(metricsRows.map((m) => m.totalTurns), null),
+        min: minFinite(metricsRows.map((m) => m.shortestFight)),
+        max: maxFinite(metricsRows.map((m) => m.longestFight)),
+      },
+      attackerDamage: {
+        total: averageFinite(metricsRows.map((m) => m.A_totalDmg), null),
+        min: minFinite(metricsRows.map((m) => m.A_minDmg)),
+        max: maxFinite(metricsRows.map((m) => m.A_maxDmg)),
+      },
+      defenderDamage: {
+        total: averageFinite(metricsRows.map((m) => m.D_totalDmg), null),
+        min: minFinite(metricsRows.map((m) => m.D_minDmg)),
+        max: maxFinite(metricsRows.map((m) => m.D_maxDmg)),
+      },
+      attackerChances: {
+        hit: avgAHit,
+        damage1: avgADmg1,
+        damage2: avgADmg2,
+      },
+      defenderChances: {
+        hit: avgDHit,
+        damage1: avgDDmg1,
+        damage2: avgDDmg2,
+      },
+      error: '',
+    };
+
+    return {
+      attacker: attacker.name,
+      defender: defender.name,
+      startedAt: successfulRuns[0].startedAt,
+      finishedAt: successfulRuns[successfulRuns.length - 1].finishedAt,
+      pageBuilds: {
+        attacker: buildToPageImport(attacker.build),
+        defender: buildToPageImport(defender.build),
+      },
+      repeatCount,
+      repeatTarget,
+      parsedResults: {
+        attacker: {
+          wins: avgAttackerWins,
+          winPct: avgAttackerWinPct,
+          minDmg: aggregateJson.attackerDamage.min,
+          maxDmg: aggregateJson.attackerDamage.max,
+          totalDmg: aggregateJson.attackerDamage.total,
+        },
+        defender: {
+          wins: avgDefenderWins,
+          winPct: avgDefenderWinPct,
+          minDmg: aggregateJson.defenderDamage.min,
+          maxDmg: aggregateJson.defenderDamage.max,
+          totalDmg: aggregateJson.defenderDamage.total,
+        },
+        meta: {
+          totalTurns: aggregateJson.turns.total,
+          avgTurns,
+          shortestFight: aggregateJson.turns.min,
+          longestFight: aggregateJson.turns.max,
+        },
+      },
+      aggregates: {
+        attackerWinPct: avgAttackerWinPct,
+        defenderWinPct: avgDefenderWinPct,
+        avgTurns,
+        A_hit: avgAHit,
+        A_dmg1: avgADmg1,
+        A_dmg2: avgADmg2,
+        D_hit: avgDHit,
+        D_dmg1: avgDDmg1,
+        D_dmg2: avgDDmg2,
+        attackerWinPctMin: minFinite(metricsRows.map((m) => m.attackerWinPct)),
+        attackerWinPctMax: maxFinite(metricsRows.map((m) => m.attackerWinPct)),
+        defenderWinPctMin: minFinite(metricsRows.map((m) => m.defenderWinPct)),
+        defenderWinPctMax: maxFinite(metricsRows.map((m) => m.defenderWinPct)),
+        repeatCount,
+      },
+      network: {
+        best: {
+          kind: 'aggregate',
+          json: aggregateJson,
+        },
+      },
+    };
   }
 
   const DEFAULT_ATTACKERS = [
@@ -502,8 +755,19 @@
     }
 
     const net = installNetworkHooks();
-    const attackers = config.attackers || DEFAULT_ATTACKERS;
-    const defenders = config.defenders || DEFAULT_DEFENDERS;
+    const attackers = resolveBuildList(
+      config.attackers,
+      DEFAULT_ATTACKERS,
+      config.attackerFilters,
+      'attackers',
+    );
+    const defenders = resolveBuildList(
+      config.defenders,
+      DEFAULT_DEFENDERS,
+      config.defenderFilters,
+      'defenders',
+    );
+    const repeats = Math.max(1, Number(config.repeats || 1) || 1);
     const trialText = config.trialsText || '10,000 times';
     const timeoutMs = Number(config.timeoutMs || 30000);
     const importDelayMs = Number(config.importDelayMs || 250);
@@ -519,78 +783,113 @@
       startedAt: nowIso(),
       pageUrl: location.href,
       trialsText: trialText,
+      repeats,
+      filters: {
+        attackers: Array.isArray(config.attackers) && typeof config.attackers[0] === 'string'
+          ? config.attackers.slice()
+          : parseCsv(config.attackerFilters),
+        defenders: Array.isArray(config.defenders) && typeof config.defenders[0] === 'string'
+          ? config.defenders.slice()
+          : parseCsv(config.defenderFilters),
+      },
       counts: {
         attackers: attackers.length,
         defenders: defenders.length,
         matchups: attackers.length * defenders.length,
+        repeats,
+        runsPlanned: attackers.length * defenders.length * repeats,
       },
       matchups: [],
+      rawRuns: [],
       errors: [],
     };
 
-    console.log(`[LegacyTruthCollector] Starting ${run.counts.matchups} matchups (${attackers.length} attackers x ${defenders.length} defenders).`);
+    console.log(
+      `[LegacyTruthCollector] Starting ${run.counts.matchups} matchups x ${repeats} repeats = ${run.counts.runsPlanned} runs (${attackers.length} attackers x ${defenders.length} defenders).`,
+    );
 
-    let idx = 0;
+    let runIdx = 0;
     for (const attacker of attackers) {
       for (const defender of defenders) {
-        idx += 1;
         const label = `${attacker.name} vs ${defender.name}`;
-        console.log(`[LegacyTruthCollector] [${idx}/${run.counts.matchups}] ${label}`);
+        const rawRowsForMatchup = [];
 
-        const beforeText = textOf(handles.resultsBox);
-        const netStart = net.logs.length;
-        const startedAt = nowIso();
+        for (let repeatIndex = 1; repeatIndex <= repeats; repeatIndex += 1) {
+          runIdx += 1;
+          console.log(
+            `[LegacyTruthCollector] [${runIdx}/${run.counts.runsPlanned}] ${label} (repeat ${repeatIndex}/${repeats})`,
+          );
 
-        try {
-          await importBuildByButton(handles.importButtons[0], buildToPageImport(attacker.build), {
-            importDelayMs,
-            strictPrompt: false,
-          });
-          await importBuildByButton(handles.importButtons[1], buildToPageImport(defender.build), {
-            importDelayMs,
-            strictPrompt: false,
-          });
+          const beforeText = textOf(handles.resultsBox);
+          const netStart = net.logs.length;
+          const startedAt = nowIso();
 
-          handles.attackP1.click();
-          const rawText = await waitForSim(handles, beforeText, timeoutMs);
-          const networkLogs = net.getSlice(netStart);
-          const bestNetwork = pickBestNetworkResult(networkLogs);
-          const parsed = parseResultsText(rawText);
+          try {
+            await importBuildByButton(handles.importButtons[0], buildToPageImport(attacker.build), {
+              importDelayMs,
+              strictPrompt: false,
+            });
+            await importBuildByButton(handles.importButtons[1], buildToPageImport(defender.build), {
+              importDelayMs,
+              strictPrompt: false,
+            });
 
-          run.matchups.push({
-            attacker: attacker.name,
-            defender: defender.name,
-            startedAt,
-            finishedAt: nowIso(),
-            pageBuilds: {
-              attacker: buildToPageImport(attacker.build),
-              defender: buildToPageImport(defender.build),
-            },
-            parsedResults: parsed,
-            rawResultsText: rawText,
-            network: {
-              best: bestNetwork,
-              all: networkLogs,
-            },
-          });
-        } catch (err) {
-          const message = err && err.message ? err.message : String(err);
-          console.error(`[LegacyTruthCollector] ERROR on ${label}:`, err);
-          run.errors.push({
-            attacker: attacker.name,
-            defender: defender.name,
-            startedAt,
-            failedAt: nowIso(),
-            error: message,
-          });
+            handles.attackP1.click();
+            const rawText = await waitForSim(handles, beforeText, timeoutMs);
+            const networkLogs = net.getSlice(netStart);
+            const bestNetwork = pickBestNetworkResult(networkLogs);
+            const parsed = parseResultsText(rawText);
+            const metrics = extractRunMetrics(parsed, bestNetwork);
+
+            const rawRun = {
+              attacker: attacker.name,
+              defender: defender.name,
+              repeatIndex,
+              repeatCount: repeats,
+              startedAt,
+              finishedAt: nowIso(),
+              pageBuilds: {
+                attacker: buildToPageImport(attacker.build),
+                defender: buildToPageImport(defender.build),
+              },
+              parsedResults: parsed,
+              metrics,
+              rawResultsText: rawText,
+              network: {
+                best: bestNetwork,
+                all: networkLogs,
+              },
+            };
+
+            run.rawRuns.push(rawRun);
+            rawRowsForMatchup.push(rawRun);
+          } catch (err) {
+            const message = err && err.message ? err.message : String(err);
+            console.error(`[LegacyTruthCollector] ERROR on ${label} repeat ${repeatIndex}/${repeats}:`, err);
+            run.errors.push({
+              attacker: attacker.name,
+              defender: defender.name,
+              repeatIndex,
+              repeatCount: repeats,
+              startedAt,
+              failedAt: nowIso(),
+              error: message,
+            });
+          }
+
+          await sleep(betweenRunsMs);
         }
 
-        await sleep(betweenRunsMs);
+        const aggregated = aggregateMatchupRuns(attacker, defender, rawRowsForMatchup, repeats);
+        if (aggregated) {
+          run.matchups.push(aggregated);
+        }
       }
     }
 
     run.finishedAt = nowIso();
     run.completed = run.matchups.length;
+    run.completedRuns = run.rawRuns.length;
     run.failed = run.errors.length;
 
     const filename = config.outputFile || `legacy-truth-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
@@ -598,6 +897,7 @@
 
     console.log('[LegacyTruthCollector] Done.', {
       completed: run.completed,
+      completedRuns: run.completedRuns,
       failed: run.failed,
       filename,
       run,

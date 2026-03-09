@@ -1103,8 +1103,8 @@ function applyQuarterRound(x, qround) {
   return x;
 }
 
-// default: attacker wins speed ties (matches legacy_simulator.canonical)
-const SPEED_TIE_MODE = _envStr("LEGACY_SPEED_TIE_MODE", "attacker")
+// default: random speed ties (matches legacy-sim-v1.0.4 direction)
+const SPEED_TIE_MODE = _envStr("LEGACY_SPEED_TIE_MODE", "random")
   .trim()
   .toLowerCase();
 

@@ -112,7 +112,7 @@ const __DEFAULT_ENV__ = {
   LEGACY_DISP_ROUND: "floor",
 
   LEGACY_PROJ_DEF_MULT: "1",
-  LEGACY_SPEED_TIE_MODE: "attacker",
+  LEGACY_SPEED_TIE_MODE: "random",
 
   LEGACY_HIDDEN_PRESET: "none",
 
@@ -133,7 +133,7 @@ const __DEFAULT_ENV__ = {
   LEGACY_HF_ARMOR_BASE_OVERRIDE: "125",
 
   LEGACY_VOID_SWORD_BASE_MIN_OVERRIDE: "",
-  LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE: "123",
+  LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE: "120",
 
   LEGACY_SHARED_HIT: "0",
   LEGACY_ACTION_STOP_ON_KILL: "0",
@@ -1378,6 +1378,18 @@ if (ItemDefs["Void Sword"] && ItemDefs["Void Sword"].baseWeaponDamage) {
       ItemDefs["Void Sword"].baseWeaponDamage.max;
     ItemDefs["Void Sword"].baseWeaponDamage.max = t;
   }
+}
+
+// Empirical calibration package adjustments for the v1.0.5-calib branch.
+// These are intentionally baked in here so the file stays clean and does not
+// carry the temporary env-gated package sweep plumbing from calibration work.
+if (ItemDefs["Split Crystal Bombs T2"] && ItemDefs["Split Crystal Bombs T2"].baseWeaponDamage) {
+  ItemDefs["Split Crystal Bombs T2"].baseWeaponDamage.min = 57;
+  ItemDefs["Split Crystal Bombs T2"].baseWeaponDamage.max = 89;
+}
+if (ItemDefs["Double Barrel Sniper Rifle"] && ItemDefs["Double Barrel Sniper Rifle"].baseWeaponDamage) {
+  ItemDefs["Double Barrel Sniper Rifle"].baseWeaponDamage.min = 97;
+  ItemDefs["Double Barrel Sniper Rifle"].baseWeaponDamage.max = 107;
 }
 
 const BASE = {
