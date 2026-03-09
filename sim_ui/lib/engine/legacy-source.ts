@@ -29,7 +29,7 @@ export async function loadLegacyModules() {
       const [legacySimMod, legacyDefsMod, legacyDefendersMod] = await Promise.all([
         import(
           /* webpackIgnore: true */ pathToFileURL(
-            path.join(repoRoot, 'legacy-sim-v1.0.4-clean.js'),
+            path.join(repoRoot, 'legacy-sim-v1.0.4-ui.js'),
           ).href
         ),
         import(

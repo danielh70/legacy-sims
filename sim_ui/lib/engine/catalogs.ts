@@ -11,6 +11,55 @@ import {
   type UpgradeCatalogEntry,
 } from '@/lib/engine/types';
 
+function normalizeCrystalList(part: any): string[] | undefined {
+  if (Array.isArray(part?.crystals)) {
+    const crystals = part.crystals.filter((value: unknown): value is string => typeof value === 'string' && Boolean(value));
+    return crystals.length ? crystals : undefined;
+  }
+
+  if (typeof part?.crystal === 'string' && part.crystal) {
+    return [part.crystal, part.crystal, part.crystal, part.crystal];
+  }
+
+  if (typeof part?.crystalName === 'string' && part.crystalName) {
+    return [part.crystalName, part.crystalName, part.crystalName, part.crystalName];
+  }
+
+  if (Array.isArray(part?.upgrades)) {
+    const crystals = part.upgrades.filter(
+      (value: unknown): value is string =>
+        typeof value === 'string' && value.toLowerCase().includes('crystal'),
+    );
+    return crystals.length ? crystals.slice(0, 4) : undefined;
+  }
+
+  if (typeof part?.upgrades === 'string' && part.upgrades.toLowerCase().includes('crystal')) {
+    return [part.upgrades];
+  }
+
+  return undefined;
+}
+
+function normalizePart(part: any) {
+  const crystals = normalizeCrystalList(part);
+  const upgrades = Array.isArray(part?.upgrades)
+    ? part.upgrades.filter(
+        (value: unknown): value is string =>
+          typeof value === 'string' && !value.toLowerCase().includes('crystal'),
+      )
+    : [];
+  return {
+    name: part?.name || part?.item || '',
+    crystal:
+      part?.crystal ||
+      part?.crystalName ||
+      crystals?.[0] ||
+      '',
+    upgrades,
+    crystals,
+  };
+}
+
 function normalizeBuild(build: SimBuild): SimBuild {
   return cloneBuild({
     stats: {
@@ -20,31 +69,11 @@ function normalizeBuild(build: SimBuild): SimBuild {
       dodge: Number(build.stats.dodge),
       accuracy: Number(build.stats.accuracy),
     },
-    armor: {
-      name: build.armor.name,
-      crystal: build.armor.crystal,
-      upgrades: [...(build.armor.upgrades || [])],
-    },
-    weapon1: {
-      name: build.weapon1.name,
-      crystal: build.weapon1.crystal,
-      upgrades: [...(build.weapon1.upgrades || [])],
-    },
-    weapon2: {
-      name: build.weapon2.name,
-      crystal: build.weapon2.crystal,
-      upgrades: [...(build.weapon2.upgrades || [])],
-    },
-    misc1: {
-      name: build.misc1.name,
-      crystal: build.misc1.crystal,
-      upgrades: [...(build.misc1.upgrades || [])],
-    },
-    misc2: {
-      name: build.misc2.name,
-      crystal: build.misc2.crystal,
-      upgrades: [...(build.misc2.upgrades || [])],
-    },
+    armor: normalizePart(build.armor),
+    weapon1: normalizePart(build.weapon1),
+    weapon2: normalizePart(build.weapon2),
+    misc1: normalizePart(build.misc1),
+    misc2: normalizePart(build.misc2),
   });
 }
 

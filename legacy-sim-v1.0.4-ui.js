@@ -2212,6 +2212,42 @@ function resolveVerifySelection(rawCsv, attackerPreset) {
   };
 }
 
+function partName(part) {
+  if (!part) return '';
+  if (typeof part.name === 'string' && part.name) return part.name;
+  if (typeof part.item === 'string' && part.item) return part.item;
+  return '';
+}
+
+function partCrystal(part) {
+  if (!part) return '';
+  if (typeof part.crystal === 'string' && part.crystal) return part.crystal;
+  if (typeof part.crystalName === 'string' && part.crystalName) return part.crystalName;
+  if (Array.isArray(part.crystals) && part.crystals.length) return part.crystals[0];
+  if (Array.isArray(part.upgrades) && part.upgrades.length) return part.upgrades[0];
+  if (typeof part.upgrades === 'string' && part.upgrades) return part.upgrades;
+  return '';
+}
+
+function partWeaponUpgrades(part) {
+  if (!part) return ['', ''];
+  let ups = [];
+  if (Array.isArray(part.weaponUpgrades)) {
+    ups = part.weaponUpgrades;
+  } else if (Array.isArray(part.upgrades) && part.crystal) {
+    ups = part.upgrades;
+  } else if (Array.isArray(part.upgrades) && !part.crystal) {
+    ups = part.upgrades.slice(1).filter((u) => !!UpgradeDefs[u]);
+  } else {
+    const u1 = typeof part.upgrade1 === 'string' ? part.upgrade1 : '';
+    const u2 = typeof part.upgrade2 === 'string' ? part.upgrade2 : '';
+    ups = [u1, u2].filter(Boolean);
+  }
+  const u1 = (typeof part.upgrade1 === 'string' && part.upgrade1) || ups[0] || '';
+  const u2 = (typeof part.upgrade2 === 'string' && part.upgrade2) || ups[1] || '';
+  return [u1, u2];
+}
+
 function fmtSignedFixed2(x) {
   const n = Number(x);
   if (!Number.isFinite(n)) return 'n/a';
@@ -3239,6 +3275,346 @@ function makeVariantList() {
       });
 }
 
+function variantToCfg(v, overrides = {}) {
+  return {
+    trials:
+      overrides.trials !== undefined
+        ? Math.max(1, Number(overrides.trials) || DEFAULTS.TRIALS)
+        : Math.max(1, parseInt(pickEnv('LEGACY_TRIALS', String(DEFAULTS.TRIALS)), 10)),
+    maxTurns:
+      overrides.maxTurns !== undefined
+        ? Math.max(1, Number(overrides.maxTurns) || DEFAULTS.MAX_TURNS)
+        : Math.max(1, parseInt(pickEnv('LEGACY_MAX_TURNS', String(DEFAULTS.MAX_TURNS)), 10)),
+    diag: overrides.diag !== undefined ? !!overrides.diag : yn(pickEnv('LEGACY_DIAG', '0')),
+    diagArmor:
+      overrides.diagArmor !== undefined
+        ? !!overrides.diagArmor
+        : yn(pickEnv('LEGACY_DIAG_ARMOR', '0')),
+    speedTieMode: overrides.speedTieMode || v.speedTieMode || 'attacker',
+    hiddenPreset: overrides.hiddenPreset || v.hiddenPreset || 'none',
+    hitRollMode: overrides.hitRollMode || v.hitRollMode,
+    skillRollMode: overrides.skillRollMode || v.skillRollMode,
+    hitGe: overrides.hitGe !== undefined ? !!overrides.hitGe : !!v.hitGe,
+    skillGe: overrides.skillGe !== undefined ? !!overrides.skillGe : !!v.skillGe,
+    hitQround: overrides.hitQround || v.hitQround || 'none',
+    skillQround: overrides.skillQround || v.skillQround || 'none',
+    dmgRoll: overrides.dmgRoll || v.dmgRoll,
+    projDefMult:
+      overrides.projDefMult !== undefined ? Number(overrides.projDefMult) : Number(v.projDefMult),
+    armorK: overrides.armorK !== undefined ? Number(overrides.armorK) : v.armorK,
+    armorApply: overrides.armorApply || v.armorApply,
+    armorRound: overrides.armorRound || v.armorRound,
+    tacticsMode: overrides.tacticsMode || v.tacticsMode,
+    tacticsVal:
+      overrides.tacticsVal !== undefined ? Number(overrides.tacticsVal) : Number(v.tacticsVal),
+    dmgBonusMode: overrides.dmgBonusMode || v.dmgBonusMode,
+    dmgBonusStage: overrides.dmgBonusStage || v.dmgBonusStage,
+    statRound: overrides.statRound || v.statRound,
+    weaponDmgRound: overrides.weaponDmgRound || v.weaponDmgRound,
+    armorStatStack:
+      overrides.armorStatStack ||
+      (v.armorStatStack && v.armorStatStack !== 'inherit' ? v.armorStatStack : 'sum4'),
+    armorStatRound:
+      overrides.armorStatRound ||
+      (v.armorStatRound && v.armorStatRound !== 'inherit' ? v.armorStatRound : v.statRound),
+    armorStatSlots:
+      overrides.armorStatSlots !== undefined
+        ? Number(overrides.armorStatSlots)
+        : v.armorStatSlots !== undefined &&
+            v.armorStatSlots !== null &&
+            v.armorStatSlots !== 'inherit'
+          ? Number(v.armorStatSlots)
+          : Number.isFinite(Number(v.crystalSlots))
+            ? Number(v.crystalSlots)
+            : 4,
+    crystalStackStats: overrides.crystalStackStats || v.crystalStackStats || 'sum4',
+    crystalStackDmg: overrides.crystalStackDmg || v.crystalStackDmg || 'sum4',
+    crystalSlots:
+      overrides.crystalSlots !== undefined
+        ? Number(overrides.crystalSlots)
+        : Number.isFinite(Number(v.crystalSlots))
+          ? Number(v.crystalSlots)
+          : 4,
+    sharedHit: overrides.sharedHit !== undefined ? !!overrides.sharedHit : Number(v.sharedHit) === 1,
+    sharedSkillMode: overrides.sharedSkillMode || overrides.sharedSkill || v.sharedSkillMode || 'none',
+    exactVerbose:
+      overrides.exactVerbose !== undefined ? !!overrides.exactVerbose : EXACT_VERBOSE,
+    exactSwap: overrides.exactSwap !== undefined ? !!overrides.exactSwap : EXACT_SWAP,
+    gameTrials:
+      overrides.gameTrials !== undefined ? Number(overrides.gameTrials) : GAME_TRIALS,
+    actionStopOnKill:
+      overrides.actionStopOnKill !== undefined
+        ? !!overrides.actionStopOnKill
+        : ACTION_STOP_ON_KILL,
+  };
+}
+
+function getDefaultVariant() {
+  const variants = makeVariantList();
+  if (!variants.length) throw new Error('No variants resolved from environment');
+  return variants[0];
+}
+
+function createVariantGetter(cfg) {
+  const cache = new Map();
+  function vKey(itemName, crystalName, u1 = '', u2 = '', slotTag = 0) {
+    return [
+      cfg.statRound,
+      cfg.weaponDmgRound,
+      cfg.armorStatStack,
+      cfg.armorStatRound,
+      cfg.armorStatSlots,
+      cfg.crystalStackStats,
+      cfg.crystalStackDmg,
+      cfg.crystalSlots,
+      cfg.sharedHit ? 1 : 0,
+      cfg.sharedSkillMode,
+      slotTag,
+      itemName,
+      crystalName,
+      u1,
+      u2,
+    ].join('|');
+  }
+  return function getV(itemName, crystalName, u1 = '', u2 = '', slotTag = 0) {
+    const k = vKey(itemName, crystalName, u1, u2, slotTag);
+    let vv = cache.get(k);
+    if (!vv) {
+      const ups = [];
+      if (u1) ups.push(u1);
+      if (u2) ups.push(u2);
+      vv = computeVariant(itemName, crystalName, ups, cfg, slotTag);
+      cache.set(k, vv);
+    }
+    return vv;
+  };
+}
+
+function compileBuild(name, payload, cfg, role) {
+  const getV = createVariantGetter(cfg);
+  const [w1u1, w1u2] = partWeaponUpgrades(payload.weapon1);
+  const [w2u1, w2u2] = partWeaponUpgrades(payload.weapon2);
+  return compileCombatantFromParts({
+    name,
+    stats: payload.stats,
+    armorV: getV(partName(payload.armor), partCrystal(payload.armor)),
+    w1V: getV(partName(payload.weapon1), partCrystal(payload.weapon1), w1u1, w1u2),
+    w2V: getV(partName(payload.weapon2), partCrystal(payload.weapon2), w2u1, w2u2),
+    m1V: getV(partName(payload.misc1), partCrystal(payload.misc1), '', '', 1),
+    m2V: getV(partName(payload.misc2), partCrystal(payload.misc2), '', '', 2),
+    cfg,
+    role,
+  });
+}
+
+function buildCfgSignatureObject(cfg, rngMode = 'fast') {
+  return {
+    hitRollMode: cfg.hitRollMode,
+    hitGe: cfg.hitGe,
+    hitQround: cfg.hitQround,
+    skillRollMode: cfg.skillRollMode,
+    skillGe: cfg.skillGe,
+    skillQround: cfg.skillQround,
+    dmgRoll: cfg.dmgRoll,
+    armorK: cfg.armorK,
+    armorApply: cfg.armorApply,
+    armorRound: cfg.armorRound,
+    projDefMult: cfg.projDefMult,
+    hiddenPreset: cfg.hiddenPreset,
+    speedTieMode: cfg.speedTieMode,
+    tacticsMode: cfg.tacticsMode,
+    tacticsVal: cfg.tacticsVal,
+    sharedHit: cfg.sharedHit,
+    sharedSkillMode: cfg.sharedSkillMode,
+    crystalStackStats: cfg.crystalStackStats,
+    crystalStackDmg: cfg.crystalStackDmg,
+    crystalSlots: cfg.crystalSlots,
+    actionStopOnKill: cfg.actionStopOnKill,
+    maxTurns: cfg.maxTurns,
+    rngMode,
+    miscSkillTag: MISC_NO_CRYSTAL_SKILL_TWEAK_TAG,
+    hfArmorBaseOverride: HF_ARMOR_BASE_OVERRIDE,
+    voidSwordBaseMaxOverride: VOID_SWORD_BASE_MAX_OVERRIDE,
+    armorStatStack: cfg.armorStatStack,
+    armorStatRound: cfg.armorStatRound,
+    armorStatSlots: cfg.armorStatSlots,
+  };
+}
+
+function buildSimulationSignature({
+  attackerKey = 'CUSTOM',
+  attackerBuild,
+  defenderName = 'Defender',
+  defenderBuild,
+  cfg,
+  rngMode = 'fast',
+  swapAttackerWeps = false,
+}) {
+  const defsSig = hashStr32(
+    stableStringify([{ name: defenderName, payload: defenderBuild }]),
+  );
+  const attSig = hashStr32(
+    stableStringify({
+      preset: attackerKey,
+      build: attackerBuild,
+      swapWeps: !!swapAttackerWeps,
+    }),
+  );
+  const cfgSig = hashStr32(stableStringify(buildCfgSignatureObject(cfg, rngMode)));
+  const logicKey = hashStr32(stableStringify({ attSig, cfgSig, defsSig }));
+  return { defsSig, attSig, cfgSig, logicKey };
+}
+
+function applyDeterministicRng({
+  seed = 1337,
+  rngMode = 'fast',
+  deterministic = true,
+  logicKey = 0,
+  defenderIndex = 0,
+  variantIndex = 0,
+  detTagBase = parseInt(pickEnv('LEGACY_DET_TAG', '2'), 10) | 0 || 2,
+}) {
+  if (!deterministic) {
+    RNG =
+      rngMode === 'fast'
+        ? makeRng('fast', seed, seed ^ 0xa341316c, seed ^ 0xc8013ea4, seed ^ 0xad90777d)
+        : Math.random;
+    return;
+  }
+  const tag = (detTagBase ^ variantIndex) | 0;
+  const s = mix32((seed ^ mix32((logicKey ^ Math.imul(defenderIndex, 0x9e3779b9) ^ tag) | 0)) | 0);
+  RNG =
+    rngMode === 'fast'
+      ? makeRng('fast', s, s ^ 0xa341316c, s ^ 0xc8013ea4, s ^ 0xad90777d)
+      : Math.random;
+}
+
+function summarizeMatchStats(stats, cfg) {
+  const A1 = stats.A.w1;
+  const A2 = stats.A.w2;
+  const D1 = stats.D.w1;
+  const D2 = stats.D.w2;
+
+  const attackerWinPct = pct(stats.wins, cfg.trials);
+  const defenderWinPct = 100 - attackerWinPct;
+  const avgTurns = stats.turnsTotal / cfg.trials;
+
+  const aMin = stats.A.minActionDmg === 1e9 ? 0 : stats.A.minActionDmg;
+  const dMin = stats.D.minActionDmg === 1e9 ? 0 : stats.D.minActionDmg;
+
+  function summarizeSide(sideLabel, w1, w2, sideStats, minDamage) {
+    return {
+      totalDamage: sideStats.totalActionDmg,
+      minDamage,
+      maxDamage: sideStats.maxActionDmg,
+      attempts: sideStats.acts,
+      overallDamageChancePct: pct(w1.skill + w2.skill, w1.attempts + w2.attempts),
+      weapon1: {
+        attempts: w1.attempts,
+        hitChancePct: pct(w1.hit, w1.attempts),
+        skillGivenHitPct: pct(w1.skill, w1.hit),
+        overallDamageChancePct: pct(w1.skill, w1.attempts),
+        damageRollRange: [
+          Number.isFinite(w1.rngMin) ? w1.rngMin : 0,
+          Number.isFinite(w1.rngMax) ? w1.rngMax : 0,
+        ],
+      },
+      weapon2: {
+        attempts: w2.attempts,
+        hitChancePct: pct(w2.hit, w2.attempts),
+        skillGivenHitPct: pct(w2.skill, w2.hit),
+        overallDamageChancePct: pct(w2.skill, w2.attempts),
+        damageRollRange: [
+          Number.isFinite(w2.rngMin) ? w2.rngMin : 0,
+          Number.isFinite(w2.rngMax) ? w2.rngMax : 0,
+        ],
+      },
+      diag: sideLabel === 'A' ? stats.diagA : stats.diagD,
+    };
+  }
+
+  return {
+    attackerWinPct,
+    defenderWinPct,
+    avgTurns,
+    turnsMin: stats.turnsMin === 1e9 ? 0 : stats.turnsMin,
+    turnsMax: stats.turnsMax,
+    attacker: summarizeSide('A', A1, A2, stats.A, aMin),
+    defender: summarizeSide('D', D1, D2, stats.D, dMin),
+  };
+}
+
+function runSingleSimulation({
+  attackerName = 'Attacker',
+  attackerBuild,
+  attackerKey = 'CUSTOM',
+  defenderName = 'Defender',
+  defenderBuild,
+  cfg = null,
+  trials,
+  maxTurns,
+  deterministic = true,
+  seed = 1337,
+  rngMode = 'fast',
+  swapAttackerWeps = false,
+  swapDefenderWeps = false,
+  traceFights = 0,
+  variantIndex = 0,
+  defenderIndex = 0,
+}) {
+  if (!attackerBuild) throw new Error('Missing attackerBuild');
+  if (!defenderBuild) throw new Error('Missing defenderBuild');
+
+  const resolvedCfg = cfg || variantToCfg(getDefaultVariant(), { trials, maxTurns });
+  if (trials !== undefined) resolvedCfg.trials = Math.max(1, Number(trials) || resolvedCfg.trials);
+  if (maxTurns !== undefined) {
+    resolvedCfg.maxTurns = Math.max(1, Number(maxTurns) || resolvedCfg.maxTurns);
+  }
+
+  const sig = buildSimulationSignature({
+    attackerKey,
+    attackerBuild,
+    defenderName,
+    defenderBuild,
+    cfg: resolvedCfg,
+    rngMode,
+    swapAttackerWeps,
+  });
+
+  applyDeterministicRng({
+    seed,
+    rngMode,
+    deterministic,
+    logicKey: sig.logicKey,
+    defenderIndex,
+    variantIndex,
+  });
+
+  const attacker = compileBuild(attackerName, attackerBuild, resolvedCfg, 'A');
+  const defender = compileBuild(defenderName, defenderBuild, resolvedCfg, 'D');
+
+  if (swapAttackerWeps) swapWeaponsInPlace(attacker);
+  if (swapDefenderWeps) swapWeaponsInPlace(defender);
+
+  const traceCfg = { traceFights: Math.max(0, Number(traceFights) || 0), rollDump: null };
+  const { stats, traceLines } = runMatch(attacker, defender, resolvedCfg, traceCfg);
+
+  return {
+    cfg: resolvedCfg,
+    signatures: {
+      attSig: hex8(sig.attSig),
+      cfgSig: hex8(sig.cfgSig),
+      defsSig: hex8(sig.defsSig),
+      logicKey: hex8(sig.logicKey),
+    },
+    attacker,
+    defender,
+    summary: summarizeMatchStats(stats, resolvedCfg),
+    stats,
+    traceLines,
+  };
+}
+
 function main() {
   const trials = Math.max(1, parseInt(pickEnv('LEGACY_TRIALS', String(DEFAULTS.TRIALS)), 10));
   const maxTurns = Math.max(
@@ -3703,43 +4079,6 @@ function main() {
     };
     exportVariants.push(exportVariant);
 
-    // --- Payload helpers ---
-    // Defender payloads historically used `upgrades: [<crystal>, <crystal>, <crystal>, <crystal>]` to mean *crystals*.
-    // For weapons that support actual upgrades (Void Bow, Bio Gun Mk4, etc), you can now either:
-    //   A) add upgrade names after the crystal in the same array:
-    //        upgrades: ['Amulet Crystal', 'Laser Sight']
-    //   B) or use explicit fields:
-    //        crystal: 'Amulet Crystal', upgrades: ['Laser Sight']
-    function partCrystal(part) {
-      if (!part) return '';
-      if (typeof part.crystal === 'string' && part.crystal) return part.crystal;
-      if (typeof part.crystalName === 'string' && part.crystalName) return part.crystalName;
-      if (Array.isArray(part.crystals) && part.crystals.length) return part.crystals[0];
-      if (Array.isArray(part.upgrades) && part.upgrades.length) return part.upgrades[0];
-      if (typeof part.upgrades === 'string' && part.upgrades) return part.upgrades;
-      return '';
-    }
-    function partWeaponUpgrades(part) {
-      if (!part) return ['', ''];
-      // Prefer explicit weaponUpgrades if present.
-      let ups = [];
-      if (Array.isArray(part.weaponUpgrades)) {
-        ups = part.weaponUpgrades;
-      } else if (Array.isArray(part.upgrades) && part.crystal) {
-        // New-style: `crystal` carries the crystal, `upgrades` carries actual upgrades.
-        ups = part.upgrades;
-      } else if (Array.isArray(part.upgrades) && !part.crystal) {
-        // Legacy-style: treat entries after the crystal as upgrades *only* if they match UpgradeDefs.
-        ups = part.upgrades.slice(1).filter((u) => !!UpgradeDefs[u]);
-      } else {
-        const u1 = typeof part.upgrade1 === 'string' ? part.upgrade1 : '';
-        const u2 = typeof part.upgrade2 === 'string' ? part.upgrade2 : '';
-        ups = [u1, u2].filter(Boolean);
-      }
-      const u1 = (typeof part.upgrade1 === 'string' && part.upgrade1) || ups[0] || '';
-      const u2 = (typeof part.upgrade2 === 'string' && part.upgrade2) || ups[1] || '';
-      return [u1, u2];
-    }
     for (let di = 0; di < payloads.length; di++) {
       const { name, payload } = payloads[di];
 
@@ -4625,4 +4964,37 @@ function main() {
   console.log('=== END OUTPUT ===');
 }
 
-main();
+module.exports = {
+  ATTACKER_BUILD,
+  ATTACKER_PRESET,
+  ATTACKER_PRESETS,
+  BASE,
+  CrystalDefs,
+  DEFAULTS,
+  DEFENDER_PAYLOADS,
+  DEFENDER_SOURCE_FILE,
+  DEFENDER_TRIED_FILES,
+  ItemDefs,
+  LOADED_DEFS_PATH,
+  UpgradeDefs,
+  buildCfgSignatureObject,
+  buildSimulationSignature,
+  compileBuild,
+  compileCombatantFromParts,
+  computeVariant,
+  createVariantGetter,
+  getDefaultVariant,
+  loadDefenderPayloads,
+  partCrystal,
+  partName,
+  partWeaponUpgrades,
+  runMatch,
+  runSingleSimulation,
+  summarizeMatchStats,
+  swapWeaponsInPlace,
+  variantToCfg,
+};
+
+if (require.main === module) {
+  main();
+}

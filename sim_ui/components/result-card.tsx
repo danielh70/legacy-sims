@@ -1,19 +1,46 @@
 'use client';
 
-import { type SimResponse } from '@/lib/engine/types';
+import { type CompiledCombatant, type SideSummary, type SimResponse } from '@/lib/engine/types';
+import {
+  disclosureClass,
+  disclosureSummaryClass,
+  innerSurfaceClass,
+  labelClass,
+  panelCardClass,
+} from '@/lib/ui/layout-system';
 
 interface ResultCardProps {
   result: SimResponse | null;
   isPending: boolean;
   error: string | null;
   statusText: string;
+  showDebug: boolean;
 }
 
-function StatPill({ label, value }: { label: string; value: string }) {
+const wholeNumber = new Intl.NumberFormat('en-US', {
+  maximumFractionDigits: 0,
+});
+
+const summaryCardClass = `${innerSurfaceClass} border border-line/60`;
+const summaryPillClass = 'rounded-xl bg-white/88 px-3 py-2 ring-1 ring-line/10';
+const subpanelClass = 'rounded-2xl bg-panel/60 p-3 ring-1 ring-line/10';
+
+function formatNumber(value: number, digits = 2) {
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: digits,
+  }).format(value);
+}
+
+function formatPercent(value: number) {
+  return `${formatNumber(value, 2)}%`;
+}
+
+function SummaryPill({ label, value, tone = 'text-ink' }: { label: string; value: string; tone?: string }) {
   return (
-    <div className="rounded-2xl border border-line/80 bg-white/80 px-3 py-2">
-      <div className="text-[11px] uppercase tracking-[0.16em] text-ink/50">{label}</div>
-      <div className="mt-1 font-display text-lg font-semibold text-ink">{value}</div>
+    <div className={summaryPillClass}>
+      <div className={labelClass}>{label}</div>
+      <div className={`mt-1 font-display text-sm font-semibold ${tone}`}>{value}</div>
     </div>
   );
 }
@@ -22,209 +49,260 @@ function ComparisonRow({
   label,
   attacker,
   defender,
-  emphasize = false,
 }: {
   label: string;
   attacker: string;
   defender: string;
-  emphasize?: boolean;
 }) {
   return (
-    <div className={`grid grid-cols-[minmax(120px,1fr)_minmax(88px,0.8fr)_minmax(88px,0.8fr)] items-center gap-3 rounded-2xl border px-3 py-2 ${
-      emphasize ? 'border-accent/25 bg-accent/10' : 'border-line/70 bg-white/80'
-    }`}>
-      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-ink/55">{label}</div>
-      <div className="text-right font-display text-lg font-semibold text-accent">{attacker}</div>
-      <div className="text-right font-display text-lg font-semibold text-steel">{defender}</div>
+    <div className="grid grid-cols-[minmax(92px,1fr)_minmax(72px,0.8fr)_minmax(72px,0.8fr)] items-center gap-2 rounded-xl bg-white/88 px-3 py-2 ring-1 ring-line/10">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">{label}</div>
+      <div className="text-right text-sm font-semibold text-accent">{attacker}</div>
+      <div className="text-right text-sm font-semibold text-steel">{defender}</div>
     </div>
   );
 }
 
-export function ResultCard({ result, isPending, error, statusText }: ResultCardProps) {
+function CompiledCard({
+  label,
+  tone,
+  side,
+}: {
+  label: string;
+  tone: string;
+  side: CompiledCombatant;
+}) {
+  const weaponLines = [side.weapon1, side.weapon2].filter(Boolean);
+  const statRows = [
+    ['HP', wholeNumber.format(side.hp)],
+    ['Arm', wholeNumber.format(side.armor)],
+    ['Spd', wholeNumber.format(side.speed)],
+    ['Acc', wholeNumber.format(side.acc)],
+    ['Dod', wholeNumber.format(side.dodge)],
+    ['Gun', wholeNumber.format(side.gun)],
+    ['Mel', wholeNumber.format(side.mel)],
+    ['Prj', wholeNumber.format(side.prj)],
+    ['Def', wholeNumber.format(side.defSk)],
+  ];
+
   return (
-    <section className="rounded-[28px] border border-line bg-panel/90 p-4 shadow-panel">
-      <div className="mb-4 flex items-center justify-between gap-3">
+    <div className={subpanelClass}>
+      <div className={`mb-2 font-display text-sm font-semibold ${tone}`}>{label}</div>
+      {weaponLines.length ? (
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {weaponLines.map((weapon, index) => (
+            <span
+              key={`${label}-w${index + 1}-${weapon?.name}`}
+              className="inline-flex h-7 items-center rounded-full border border-line/60 bg-white/92 px-2.5 text-[11px] font-semibold text-ink/70"
+            >
+              W{index + 1} {weapon?.name} {weapon?.min}-{weapon?.max}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      <div className="grid grid-cols-3 gap-2">
+        {statRows.map(([statLabel, value]) => (
+          <div key={`${label}-${statLabel}`} className="rounded-xl bg-white/88 px-2.5 py-2 ring-1 ring-line/10">
+            <div className="text-[10px] uppercase tracking-[0.14em] text-ink/45">{statLabel}</div>
+            <div className="mt-1 font-display text-sm font-semibold text-ink">{value}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function WeaponDetailSection({
+  label,
+  tone,
+  side,
+}: {
+  label: string;
+  tone: string;
+  side: SideSummary;
+}) {
+  return (
+    <div className={subpanelClass}>
+      <div className={`mb-2 font-display text-sm font-semibold ${tone}`}>{label} Weapon Detail</div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {[
+          { weaponLabel: 'Weapon 1', weapon: side.weapon1 },
+          { weaponLabel: 'Weapon 2', weapon: side.weapon2 },
+        ].map(({ weaponLabel, weapon }) => (
+          <div key={weaponLabel} className="rounded-xl bg-white/88 px-3 py-2 text-xs text-ink/70 ring-1 ring-line/10">
+            <div className="font-semibold uppercase tracking-[0.12em] text-ink/45">{weaponLabel}</div>
+            <div className="mt-1">Attempts {wholeNumber.format(weapon.attempts)}</div>
+            <div>Hit {formatPercent(weapon.hitChancePct)}</div>
+            <div>Skill | Hit {formatPercent(weapon.skillGivenHitPct)}</div>
+            <div>Overall Proc {formatPercent(weapon.overallDamageChancePct)}</div>
+            <div>
+              Damage Range {wholeNumber.format(weapon.damageRollRange[0])}-
+              {wholeNumber.format(weapon.damageRollRange[1])}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function ResultCard({ result, isPending, error, statusText, showDebug }: ResultCardProps) {
+  const winnerLabel =
+    result && result.attackerWinPct !== result.defenderWinPct
+      ? result.attackerWinPct > result.defenderWinPct
+        ? 'Attacker favored'
+        : 'Defender favored'
+      : 'Even matchup';
+
+  return (
+    <section className={panelCardClass}>
+      <div className="mb-3 flex items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-xl font-bold text-ink">Simulation Result</h2>
-          <p className="text-sm text-ink/60">Server-side execution against the shared Legacy engine.</p>
+          <h2 className="font-display text-lg font-bold text-ink">Results</h2>
+          <div className="text-xs text-ink/55">{statusText}</div>
         </div>
         {isPending ? (
-          <div className="rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-accent">
+          <div className="rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">
             Running
           </div>
         ) : null}
       </div>
 
       {error ? (
-        <div className="rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-2xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
         </div>
       ) : null}
 
       {!result && !error ? (
-        <div className="rounded-2xl border border-dashed border-line bg-white/50 px-4 py-8 text-center text-sm text-ink/55">
-          {statusText || 'Run a sim to populate win rate, damage totals, and compiled combat stats.'}
+        <div className="rounded-2xl border border-dashed border-line bg-white/55 px-4 py-7 text-center text-sm text-ink/50">
+          Run a simulation to populate the matchup summary.
         </div>
       ) : null}
 
       {result ? (
-        <div className="grid gap-4">
-          <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-6">
-            <StatPill label="Attacker Win" value={`${result.attackerWinPct.toFixed(2)}%`} />
-            <StatPill label="Defender Win" value={`${result.defenderWinPct.toFixed(2)}%`} />
-            <StatPill label="Avg Turns" value={result.avgTurns.toFixed(2)} />
-            <StatPill label="Turn Range" value={`${result.turnsMin}-${result.turnsMax}`} />
-            <StatPill label="Att Total Dmg" value={result.attacker.totalDamage.toFixed(1)} />
-            <StatPill label="Def Total Dmg" value={result.defender.totalDamage.toFixed(1)} />
+        <div className="grid gap-3">
+          <div className={summaryCardClass}>
+            <div className={labelClass}>Summary</div>
+            <div className="mt-1 font-display text-base font-semibold text-ink">{winnerLabel}</div>
           </div>
 
-          <div className="grid gap-3 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-            <div className="rounded-2xl border border-line/80 bg-white/80 p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-display text-lg font-semibold text-ink">Side-by-Side Compare</h3>
-                <div className="grid grid-cols-2 gap-3 text-xs font-semibold uppercase tracking-[0.16em] text-ink/45">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <SummaryPill label="Attacker Win" value={formatPercent(result.attackerWinPct)} tone="text-accent" />
+            <SummaryPill label="Defender Win" value={formatPercent(result.defenderWinPct)} tone="text-steel" />
+            <SummaryPill label="Avg Turns" value={formatNumber(result.avgTurns, 2)} />
+            <SummaryPill
+              label="Turn Range"
+              value={`${wholeNumber.format(result.turnsMin)}-${wholeNumber.format(result.turnsMax)}`}
+            />
+          </div>
+
+          <details className={disclosureClass}>
+            <summary className={disclosureSummaryClass}>
+              <span>Final combat stats</span>
+              <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink/35">
+                Expand
+              </span>
+            </summary>
+            <div className="grid gap-2 border-t border-line/40 px-3 py-3">
+              <CompiledCard label="Attacker" tone="text-accent" side={result.compiled.attacker} />
+              <CompiledCard label="Defender" tone="text-steel" side={result.compiled.defender} />
+            </div>
+          </details>
+
+          <details className={disclosureClass}>
+            <summary className={disclosureSummaryClass}>
+              <span>Advanced metrics</span>
+              <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink/35">
+                Expand
+              </span>
+            </summary>
+            <div className="grid gap-3 border-t border-line/40 px-3 py-3">
+              <div className="grid gap-2">
+                <div className="grid grid-cols-[minmax(92px,1fr)_minmax(72px,0.8fr)_minmax(72px,0.8fr)] gap-2 px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink/40">
+                  <div />
                   <div className="text-right text-accent">Attacker</div>
                   <div className="text-right text-steel">Defender</div>
                 </div>
-              </div>
-              <div className="grid gap-2">
                 <ComparisonRow
-                  label="Win Rate"
-                  attacker={`${result.attackerWinPct.toFixed(2)}%`}
-                  defender={`${result.defenderWinPct.toFixed(2)}%`}
-                  emphasize
-                />
-                <ComparisonRow
-                  label="Total Damage"
-                  attacker={result.attacker.totalDamage.toFixed(1)}
-                  defender={result.defender.totalDamage.toFixed(1)}
+                  label="Overall Proc"
+                  attacker={formatPercent(result.attacker.overallDamageChancePct)}
+                  defender={formatPercent(result.defender.overallDamageChancePct)}
                 />
                 <ComparisonRow
                   label="Min Action"
-                  attacker={result.attacker.minDamage.toFixed(1)}
-                  defender={result.defender.minDamage.toFixed(1)}
+                  attacker={formatNumber(result.attacker.minDamage, 1)}
+                  defender={formatNumber(result.defender.minDamage, 1)}
                 />
                 <ComparisonRow
                   label="Max Action"
-                  attacker={result.attacker.maxDamage.toFixed(1)}
-                  defender={result.defender.maxDamage.toFixed(1)}
-                />
-                <ComparisonRow
-                  label="Overall Proc"
-                  attacker={`${result.attacker.overallDamageChancePct.toFixed(2)}%`}
-                  defender={`${result.defender.overallDamageChancePct.toFixed(2)}%`}
+                  attacker={formatNumber(result.attacker.maxDamage, 1)}
+                  defender={formatNumber(result.defender.maxDamage, 1)}
                 />
                 <ComparisonRow
                   label="W1 Hit"
-                  attacker={`${result.attacker.weapon1.hitChancePct.toFixed(2)}%`}
-                  defender={`${result.defender.weapon1.hitChancePct.toFixed(2)}%`}
+                  attacker={formatPercent(result.attacker.weapon1.hitChancePct)}
+                  defender={formatPercent(result.defender.weapon1.hitChancePct)}
                 />
                 <ComparisonRow
                   label="W2 Hit"
-                  attacker={`${result.attacker.weapon2.hitChancePct.toFixed(2)}%`}
-                  defender={`${result.defender.weapon2.hitChancePct.toFixed(2)}%`}
+                  attacker={formatPercent(result.attacker.weapon2.hitChancePct)}
+                  defender={formatPercent(result.defender.weapon2.hitChancePct)}
                 />
                 <ComparisonRow
-                  label="W1 Dmg Proc"
-                  attacker={`${result.attacker.weapon1.overallDamageChancePct.toFixed(2)}%`}
-                  defender={`${result.defender.weapon1.overallDamageChancePct.toFixed(2)}%`}
+                  label="W1 Proc"
+                  attacker={formatPercent(result.attacker.weapon1.overallDamageChancePct)}
+                  defender={formatPercent(result.defender.weapon1.overallDamageChancePct)}
                 />
                 <ComparisonRow
-                  label="W2 Dmg Proc"
-                  attacker={`${result.attacker.weapon2.overallDamageChancePct.toFixed(2)}%`}
-                  defender={`${result.defender.weapon2.overallDamageChancePct.toFixed(2)}%`}
+                  label="W2 Proc"
+                  attacker={formatPercent(result.attacker.weapon2.overallDamageChancePct)}
+                  defender={formatPercent(result.defender.weapon2.overallDamageChancePct)}
                 />
               </div>
-            </div>
 
-            <div className="grid gap-3">
-              {[
-                { label: 'Attacker', side: result.attacker, tone: 'text-accent' },
-                { label: 'Defender', side: result.defender, tone: 'text-steel' },
-              ].map(({ label, side, tone }) => (
-                <div key={label} className="rounded-2xl border border-line/80 bg-white/80 p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className={`font-display text-lg font-semibold ${tone}`}>{label}</h3>
-                    <div className="text-sm text-ink/60">
-                      proc {side.overallDamageChancePct.toFixed(2)}%
-                    </div>
-                  </div>
-                  <div className="grid gap-2 md:grid-cols-3">
-                    <StatPill label="Min Dmg" value={side.minDamage.toFixed(1)} />
-                    <StatPill label="Max Dmg" value={side.maxDamage.toFixed(1)} />
-                    <StatPill label="Attempts" value={String(side.attempts)} />
-                  </div>
-                  <div className="mt-3 grid gap-3 md:grid-cols-2">
-                    {[
-                      { weaponLabel: 'Weapon 1', weapon: side.weapon1 },
-                      { weaponLabel: 'Weapon 2', weapon: side.weapon2 },
-                    ].map(({ weaponLabel, weapon }) => (
-                      <div key={weaponLabel} className="rounded-2xl border border-line/70 bg-panel px-3 py-3">
-                        <div className="font-display text-sm font-semibold uppercase tracking-[0.14em] text-steel">
-                          {weaponLabel}
-                        </div>
-                        <div className="mt-2 space-y-1 text-sm text-ink/75">
-                          <div>hit {weapon.hitChancePct.toFixed(2)}%</div>
-                          <div>skill|hit {weapon.skillGivenHitPct.toFixed(2)}%</div>
-                          <div>overall dmg {weapon.overallDamageChancePct.toFixed(2)}%</div>
-                          <div>
-                            dmg range {weapon.damageRollRange[0]}-{weapon.damageRollRange[1]}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <details className="rounded-2xl border border-line/80 bg-white/80 p-4">
-            <summary className="cursor-pointer font-display text-base font-semibold text-ink">
-              Details / Debug
-            </summary>
-            <div className="mt-4 grid gap-4 xl:grid-cols-2">
-              <div>
-                <h3 className="mb-2 text-sm font-semibold uppercase tracking-[0.14em] text-steel">
-                  Compiled Attacker
-                </h3>
-                <pre className="overflow-x-auto rounded-2xl bg-ink px-4 py-3 text-xs text-slate-100">
-                  {JSON.stringify(result.compiled.attacker, null, 2)}
-                </pre>
-              </div>
-              <div>
-                <h3 className="mb-2 text-sm font-semibold uppercase tracking-[0.14em] text-steel">
-                  Compiled Defender
-                </h3>
-                <pre className="overflow-x-auto rounded-2xl bg-ink px-4 py-3 text-xs text-slate-100">
-                  {JSON.stringify(result.compiled.defender, null, 2)}
-                </pre>
-              </div>
-              <div>
-                <h3 className="mb-2 text-sm font-semibold uppercase tracking-[0.14em] text-steel">
-                  Engine Signatures
-                </h3>
-                <pre className="overflow-x-auto rounded-2xl bg-ink px-4 py-3 text-xs text-slate-100">
-                  {JSON.stringify(
-                    {
-                      signatures: result.signatures,
-                      cfg: result.cfg,
-                    },
-                    null,
-                    2,
-                  )}
-                </pre>
-              </div>
-              <div>
-                <h3 className="mb-2 text-sm font-semibold uppercase tracking-[0.14em] text-steel">
-                  Trace
-                </h3>
-                <pre className="max-h-80 overflow-auto rounded-2xl bg-ink px-4 py-3 text-xs text-slate-100">
-                  {result.traceLines.length ? result.traceLines.join('\n') : 'Trace disabled'}
-                </pre>
+              <div className="grid gap-2">
+                <WeaponDetailSection label="Attacker" tone="text-accent" side={result.attacker} />
+                <WeaponDetailSection label="Defender" tone="text-steel" side={result.defender} />
               </div>
             </div>
           </details>
+
+          {showDebug ? (
+            <details className={disclosureClass}>
+              <summary className={disclosureSummaryClass}>
+                <span>Debug output</span>
+                <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink/35">
+                  Expand
+                </span>
+              </summary>
+              <div className="grid gap-3 border-t border-line/40 px-3 py-3">
+                <div>
+                  <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
+                    Engine Signatures
+                  </div>
+                  <pre className="overflow-x-auto rounded-2xl bg-ink px-4 py-3 text-xs text-slate-100">
+                    {JSON.stringify(
+                      {
+                        signatures: result.signatures,
+                        cfg: result.cfg,
+                      },
+                      null,
+                      2,
+                    )}
+                  </pre>
+                </div>
+                <div>
+                  <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/50">
+                    Trace
+                  </div>
+                  <pre className="max-h-80 overflow-auto rounded-2xl bg-ink px-4 py-3 text-xs text-slate-100">
+                    {result.traceLines.length ? result.traceLines.join('\n') : 'No trace recorded'}
+                  </pre>
+                </div>
+              </div>
+            </details>
+          ) : null}
         </div>
       ) : null}
     </section>

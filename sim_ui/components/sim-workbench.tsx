@@ -4,8 +4,18 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 
 import { BuildPanel } from '@/components/build-panel';
 import { ResultCard } from '@/components/result-card';
+import { SlotEditor } from '@/components/slot-editor';
 import { cloneBuild, type NamedBuildPreset, type SimBuild, type SimCatalog, type SimRequest, type SimResponse } from '@/lib/engine/types';
-import { swapBuildWeapons, validateBuild } from '@/lib/ui/build-ux';
+import {
+  buttonClass,
+  labelClass,
+  numericControlClass,
+  pageGridClass,
+  pageShellClass,
+  panelCardClass,
+  railClass,
+} from '@/lib/ui/layout-system';
+import { swapBuildWeapons, type SlotKey, validateBuild } from '@/lib/ui/build-ux';
 
 interface SimWorkbenchProps {
   catalog: SimCatalog;
@@ -22,11 +32,31 @@ interface PersistedWorkbenchState {
   includeTrace: boolean;
 }
 
+interface ActiveEditorState {
+  side: 'attacker' | 'defender';
+  slot: SlotKey;
+}
+
 const STORAGE_KEY = 'legacy-sim-ui-state-v1';
 
 function presetMap(list: NamedBuildPreset[]) {
   return new Map(list.map((preset) => [preset.key, preset]));
 }
+
+const SLOT_LABELS: Record<SlotKey, string> = {
+  armor: 'Armor',
+  weapon1: 'Weapon 1',
+  weapon2: 'Weapon 2',
+  misc1: 'Misc 1',
+  misc2: 'Misc 2',
+};
+
+const toolbarPrimaryButtonClass =
+  'inline-flex h-10 items-center justify-center rounded-xl border border-steel/20 bg-steel px-4 text-sm font-semibold text-white transition hover:bg-steel/90';
+const toolbarToggleOffClass =
+  'inline-flex h-10 items-center justify-center rounded-xl border border-line/60 bg-white/90 px-3 text-sm font-semibold text-ink/70 transition hover:border-accent hover:text-accent';
+const toolbarToggleOnClass =
+  'inline-flex h-10 items-center justify-center rounded-xl border border-accent/40 bg-accent/10 px-3 text-sm font-semibold text-accent transition';
 
 export function SimWorkbench({ catalog }: SimWorkbenchProps) {
   const attackerPresets = presetMap(catalog.attackerPresets);
@@ -47,6 +77,7 @@ export function SimWorkbench({ catalog }: SimWorkbenchProps) {
   const [result, setResult] = useState<SimResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [statusText, setStatusText] = useState<string>('Idle');
+  const [activeEditor, setActiveEditor] = useState<ActiveEditorState | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [isPending, useServerTransition] = useTransition();
 
@@ -115,6 +146,44 @@ export function SimWorkbench({ catalog }: SimWorkbenchProps) {
   );
   const validationErrors = [...attackerValidation.summary, ...defenderValidation.summary];
   const canRun = !isPending && validationErrors.length === 0;
+  const panelEditor = useMemo(() => {
+    if (!activeEditor) return null;
+
+    const sideLabel = activeEditor.side === 'attacker' ? 'Attacker' : 'Defender';
+    const tint = activeEditor.side === 'attacker' ? 'attacker' : 'defender';
+    const build = activeEditor.side === 'attacker' ? attackerBuild : defenderBuild;
+    const slotLabel = SLOT_LABELS[activeEditor.slot];
+    const items =
+      activeEditor.slot === 'armor'
+        ? catalog.armors
+        : activeEditor.slot === 'weapon1' || activeEditor.slot === 'weapon2'
+          ? catalog.weapons
+          : catalog.miscs;
+    const errors =
+      activeEditor.side === 'attacker'
+        ? attackerValidation.slotErrors[activeEditor.slot]
+        : defenderValidation.slotErrors[activeEditor.slot];
+
+    return {
+      side: activeEditor.side,
+      sideLabel,
+      tint,
+      slot: activeEditor.slot,
+      slotLabel,
+      value: build[activeEditor.slot],
+      items,
+      errors,
+    } as const;
+  }, [
+    activeEditor,
+    attackerBuild,
+    attackerValidation.slotErrors,
+    catalog.armors,
+    catalog.miscs,
+    catalog.weapons,
+    defenderBuild,
+    defenderValidation.slotErrors,
+  ]);
 
   function assignPreset(
     side: 'attacker' | 'defender',
@@ -171,6 +240,15 @@ export function SimWorkbench({ catalog }: SimWorkbenchProps) {
     setDefenderReferenceBuild(nextDefenderReference);
   }
 
+  function updateEditorSlot(nextSlotBuild: SimBuild[SlotKey]) {
+    if (!activeEditor) return;
+
+    const sourceBuild = activeEditor.side === 'attacker' ? attackerBuild : defenderBuild;
+    const nextBuild = cloneBuild(sourceBuild);
+    nextBuild[activeEditor.slot] = nextSlotBuild;
+    markCustom(activeEditor.side, nextBuild);
+  }
+
   async function runSimulation() {
     if (!canRun) return;
 
@@ -191,10 +269,10 @@ export function SimWorkbench({ catalog }: SimWorkbenchProps) {
     };
 
     setError(null);
-    setStatusText('Sending build to server...');
+    setStatusText('Submitting run...');
 
     try {
-      setStatusText('Legacy simulator running on the server...');
+      setStatusText('Running server sim...');
       const response = await fetch('/api/sim', {
         method: 'POST',
         headers: {
@@ -212,7 +290,7 @@ export function SimWorkbench({ catalog }: SimWorkbenchProps) {
       }
 
       setResult(data as SimResponse);
-      setStatusText(`Completed with exact legacy server logic key ${String((data as SimResponse).signatures.logicKey)}`);
+      setStatusText(`Complete · key ${String((data as SimResponse).signatures.logicKey)}`);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Simulation failed.');
       setResult(null);
@@ -221,136 +299,82 @@ export function SimWorkbench({ catalog }: SimWorkbenchProps) {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-[1560px] flex-col gap-4 px-4 py-6 lg:px-6">
-      <section className="overflow-hidden rounded-[32px] border border-line bg-panel/90 shadow-panel">
-        <div className="grid gap-4 px-5 py-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)] lg:px-6">
-          <div>
-            <div className="mb-3 inline-flex rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
+    <main className={pageShellClass}>
+      <section className={`${panelCardClass} px-4`}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
               Legacy Combat Simulator
             </div>
-            <h1 className="font-display text-3xl font-bold tracking-tight text-ink lg:text-4xl">
-              Accuracy-first UI over the existing server-side sim.
+            <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-ink">
+              Fast loadout editor and match summary
             </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-ink/70">
-              `sim_ui` keeps item defs, defender payloads, and combat execution rooted in the current
-              `legacy-sim-v1.0.4-clean.js` module. The UI only edits build payloads and sends them to a
-              Node route for execution.
-            </p>
-            <div className="mt-4 inline-flex rounded-2xl border border-moss/30 bg-moss/10 px-4 py-2 text-sm text-ink">
-              Server sim uses the exact legacy Node logic. No client-side combat resolution is used.
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <span className="rounded-full border border-line/70 bg-white/80 px-3 py-1 text-[11px] font-medium text-ink/65">
+                {statusText}
+              </span>
+              <span className="rounded-full border border-line/70 bg-white/80 px-3 py-1 text-[11px] font-medium text-ink/55">
+                {hydrated ? 'Autosaved' : 'Loading saved state'}
+              </span>
+              {validationErrors.length ? (
+                <span className="rounded-full border border-red-300 bg-red-50 px-3 py-1 text-[11px] font-medium text-red-700">
+                  {validationErrors.length} validation issue{validationErrors.length === 1 ? '' : 's'}
+                </span>
+              ) : null}
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-line/80 bg-white/70 p-4">
-            <div className="mb-4 rounded-2xl border border-line/70 bg-panel px-3 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/50">
-                    Run Status
-                  </div>
-                  <div className="mt-1 text-sm text-ink/75">{statusText}</div>
-                </div>
-                <div className="text-xs text-ink/50">{hydrated ? 'Autosaved locally' : 'Loading local state'}</div>
-              </div>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-line/70">
-                <div
-                  className={`h-full rounded-full bg-gradient-to-r from-accent via-steel to-moss transition-all ${
-                    isPending ? 'w-2/3 animate-pulse' : result ? 'w-full' : 'w-1/5'
-                  }`}
-                />
-              </div>
-            </div>
+          <div className="flex flex-wrap items-end justify-end gap-2.5 xl:max-w-[520px]">
+            <label className="grid gap-1 text-sm">
+              <span className={labelClass}>Trials</span>
+              <input
+                className={`${numericControlClass} w-28 bg-white`}
+                type="number"
+                min={1}
+                step={100}
+                value={trials}
+                onChange={(event) => setTrials(Math.max(1, Math.floor(Number(event.target.value) || 1)))}
+              />
+            </label>
 
-            <div className="mb-4 grid gap-3 sm:grid-cols-2">
-              <label className="grid gap-1 text-sm">
-                <span className="text-xs uppercase tracking-[0.14em] text-ink/55">Trials</span>
-                <input
-                  className="rounded-xl border border-line bg-white px-3 py-2 outline-none transition focus:border-accent"
-                  type="number"
-                  min={1}
-                  step={100}
-                  value={trials}
-                  onChange={(event) => setTrials(Math.max(1, Math.floor(Number(event.target.value) || 1)))}
-                />
-              </label>
+            <button
+              type="button"
+              className={includeTrace ? toolbarToggleOnClass : toolbarToggleOffClass}
+              onClick={() => setIncludeTrace((current) => !current)}
+            >
+              {includeTrace ? 'Trace on' : 'Trace off'}
+            </button>
 
-              <label className="grid gap-1 text-sm">
-                <span className="text-xs uppercase tracking-[0.14em] text-ink/55">Debug</span>
-                <button
-                  type="button"
-                  className={`rounded-xl border px-3 py-2 text-left transition ${
-                    includeTrace
-                      ? 'border-accent bg-accent/10 text-accent'
-                      : 'border-line bg-white text-ink/70 hover:border-accent/40'
-                  }`}
-                  onClick={() => setIncludeTrace((current) => !current)}
-                >
-                  {includeTrace ? 'Trace on' : 'Trace off'}
-                </button>
-              </label>
-            </div>
+            <button
+              type="button"
+              className={
+                canRun
+                  ? toolbarPrimaryButtonClass
+                  : 'inline-flex h-10 items-center justify-center rounded-xl border border-line/60 bg-line/50 px-4 text-sm font-semibold text-ink/45'
+              }
+              disabled={!canRun}
+              onClick={() =>
+                useServerTransition(() => {
+                  void runSimulation();
+                })
+              }
+            >
+              Run
+            </button>
 
-            <div className="grid gap-2 sm:grid-cols-2">
-              <button
-                type="button"
-                className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${
-                  canRun
-                    ? 'border-steel/20 bg-steel text-white hover:bg-steel/90'
-                    : 'cursor-not-allowed border-line bg-line/50 text-ink/45'
-                }`}
-                disabled={!canRun}
-                onClick={() =>
-                  useServerTransition(() => {
-                    void runSimulation();
-                  })
-                }
-              >
-                Run Sim
-              </button>
-              <button
-                type="button"
-                className="rounded-xl border border-line bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:border-accent hover:text-accent"
-                disabled={isPending}
-                onClick={swapSides}
-              >
-                Swap Attacker / Defender
-              </button>
-              <button
-                type="button"
-                className="rounded-xl border border-line bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:border-accent hover:text-accent"
-                disabled={isPending}
-                onClick={() => {
-                  setDefenderBuild(cloneBuild(attackerBuild));
-                  setDefenderPresetKey('__custom__');
-                  setDefenderReferenceBuild(cloneBuild(attackerBuild));
-                }}
-              >
-                Copy Attacker to Defender
-              </button>
-              <button
-                type="button"
-                className="rounded-xl border border-line bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:border-accent hover:text-accent"
-                disabled={isPending}
-                onClick={() => {
-                  setAttackerBuild(cloneBuild(defenderBuild));
-                  setAttackerPresetKey('__custom__');
-                  setAttackerReferenceBuild(cloneBuild(defenderBuild));
-                }}
-              >
-                Copy Defender to Attacker
-              </button>
-            </div>
-
-            {validationErrors.length ? (
-              <div className="rounded-2xl border border-red-300 bg-red-50 px-3 py-3 text-sm text-red-700">
-                Resolve validation issues before running the server sim.
-              </div>
-            ) : null}
+            <button
+              type="button"
+              className={buttonClass}
+              disabled={isPending}
+              onClick={swapSides}
+            >
+              Swap sides
+            </button>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-2">
+      <section className={pageGridClass}>
         <BuildPanel
           title="Attacker"
           tint="attacker"
@@ -362,9 +386,15 @@ export function SimWorkbench({ catalog }: SimWorkbenchProps) {
           catalog={catalog}
           validationSummary={attackerValidation.summary}
           slotErrors={attackerValidation.slotErrors}
+          activeSlot={activeEditor?.side === 'attacker' ? activeEditor.slot : null}
           onPresetChange={(presetKey) => assignPreset('attacker', presetKey)}
           onBuildChange={(next) => markCustom('attacker', next)}
           onSwapWeapons={() => markCustom('attacker', swapWeapons(attackerBuild))}
+          onSlotFocus={(slot) =>
+            setActiveEditor((current) =>
+              slot ? { side: 'attacker', slot } : current?.side === 'attacker' ? null : current,
+            )
+          }
         />
         <BuildPanel
           title="Defender"
@@ -377,13 +407,40 @@ export function SimWorkbench({ catalog }: SimWorkbenchProps) {
           catalog={catalog}
           validationSummary={defenderValidation.summary}
           slotErrors={defenderValidation.slotErrors}
+          activeSlot={activeEditor?.side === 'defender' ? activeEditor.slot : null}
           onPresetChange={(presetKey) => assignPreset('defender', presetKey)}
           onBuildChange={(next) => markCustom('defender', next)}
           onSwapWeapons={() => markCustom('defender', swapWeapons(defenderBuild))}
+          onSlotFocus={(slot) =>
+            setActiveEditor((current) =>
+              slot ? { side: 'defender', slot } : current?.side === 'defender' ? null : current,
+            )
+          }
         />
+        <div className={railClass}>
+          {panelEditor ? (
+            <SlotEditor
+              key={`${panelEditor.side}-${panelEditor.slot}-${panelEditor.value.name}`}
+              label={`${panelEditor.sideLabel} -> ${panelEditor.slotLabel}`}
+              tint={panelEditor.tint}
+              value={panelEditor.value}
+              items={panelEditor.items}
+              catalog={catalog}
+              errors={panelEditor.errors}
+              onChange={updateEditorSlot}
+              onClose={() => setActiveEditor(null)}
+            />
+          ) : (
+            <ResultCard
+              result={result}
+              isPending={isPending}
+              error={error}
+              statusText={statusText}
+              showDebug={includeTrace}
+            />
+          )}
+        </div>
       </section>
-
-      <ResultCard result={result} isPending={isPending} error={error} statusText={statusText} />
     </main>
   );
 }

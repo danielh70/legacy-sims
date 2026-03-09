@@ -24,6 +24,7 @@ export interface BuildPart {
   name: string;
   crystal: string;
   upgrades: string[];
+  crystals?: string[];
 }
 
 export interface SimBuild {

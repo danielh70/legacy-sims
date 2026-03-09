@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 
 const require = createRequire(import.meta.url);
 const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
-const legacySim = require(path.join(repoRoot, 'legacy-sim-v1.0.4-clean.js'));
+const legacySim = require(path.join(repoRoot, 'legacy-sim-v1.0.4-ui.js'));
 
 const CASES = ['DL Gun Build', 'SG1 Split Bombs T2'];
 const TRIALS = 500;

@@ -45,6 +45,49 @@ export interface BuildValidation {
   slotErrors: Partial<Record<SlotKey, string[]>>;
 }
 
+export interface BuildPreviewStats {
+  hp: number;
+  level: number;
+  speed: number;
+  accuracy: number;
+  dodge: number;
+  armor: number;
+  gunSkill: number;
+  meleeSkill: number;
+  projSkill: number;
+  defSkill: number;
+}
+
+export const BUILD_PART_SOCKET_COUNT = CRYSTAL_SLOT_COUNT;
+
+export function getBuildPartCrystals(part: BuildPart): string[] {
+  if (Array.isArray(part.crystals) && part.crystals.length) {
+    return part.crystals.filter((value): value is string => typeof value === 'string' && Boolean(value));
+  }
+
+  if (part.crystal) {
+    return [part.crystal, part.crystal, part.crystal, part.crystal];
+  }
+
+  return [];
+}
+
+export function getBuildPartSocketCrystals(part: BuildPart, socketCount = BUILD_PART_SOCKET_COUNT): string[] {
+  const explicit = Array.isArray(part.crystals)
+    ? part.crystals.slice(0, socketCount).map((value) => (typeof value === 'string' ? value : ''))
+    : [];
+
+  if (explicit.length) {
+    return Array.from({ length: socketCount }, (_, index) => explicit[index] || '');
+  }
+
+  if (part.crystal) {
+    return Array.from({ length: socketCount }, () => part.crystal);
+  }
+
+  return Array.from({ length: socketCount }, () => '');
+}
+
 function roundValue(value: number, mode: 'floor' | 'round' | 'ceil') {
   if (mode === 'floor') return Math.floor(value);
   if (mode === 'round') return Math.round(value);
@@ -238,9 +281,9 @@ export function validateBuild(build: SimBuild, catalog: SimCatalog): BuildValida
   };
 }
 
-function sumPreview(build: SimBuild, catalog: SimCatalog) {
+export function buildPreviewStats(build: SimBuild, catalog: SimCatalog): BuildPreviewStats {
   const slotKeys: SlotKey[] = ['armor', 'weapon1', 'weapon2', 'misc1', 'misc2'];
-  const totals = {
+  const totals: BuildPreviewStats = {
     hp: build.stats.hp,
     level: build.stats.level,
     speed: build.stats.speed,
@@ -269,8 +312,8 @@ function sumPreview(build: SimBuild, catalog: SimCatalog) {
 }
 
 export function buildDeltaLines(build: SimBuild, referenceBuild: SimBuild, catalog: SimCatalog) {
-  const current = sumPreview(build, catalog);
-  const reference = sumPreview(referenceBuild, catalog);
+  const current = buildPreviewStats(build, catalog);
+  const reference = buildPreviewStats(referenceBuild, catalog);
 
   const deltas: Array<[keyof typeof current, string]> = [
     ['hp', 'HP'],
