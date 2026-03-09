@@ -27,6 +27,7 @@ const saveJson = /^(1|true|yes|on)$/i.test(
 const saveIntermediate = /^(1|true|yes|on)$/i.test(
   String(process.env.LEGACY_REPLAY_SAVE_INTERMEDIATE || '0'),
 );
+const WORST_MISMATCH_LIMIT = 15;
 
 const NUMERIC_FIELDS = {
   winPct: 2,
@@ -97,7 +98,7 @@ function pageBuildToLegacyCustom(pageBuild) {
 }
 
 function patchSimToCustom(simText, customBuild) {
-  const modePat = /mode:\s*"env"\s*,\s*\/\/ env \| preset \| custom/;
+  const modePat = /mode:\s*"(?:env|preset|custom)"\s*,\s*\/\/ env \| preset \| custom/;
   if (!modePat.test(simText)) {
     throw new Error('Could not find USER_CONFIG attacker mode line to patch');
   }
@@ -116,6 +117,25 @@ function patchSimToCustom(simText, customBuild) {
   }
   out = out.replace(customPat, repl);
   return out;
+}
+
+function isUsablePageBuild(pageBuild) {
+  if (!pageBuild || typeof pageBuild !== 'object') return false;
+  const stats = pageBuild.stats || {};
+  const statKeys = ['level', 'hp', 'speed', 'dodge', 'accuracy'];
+  for (const key of statKeys) {
+    if (!Number.isFinite(Number(stats[key]))) return false;
+  }
+  const slotKeys = ['armor', 'weapon1', 'weapon2', 'misc1', 'misc2'];
+  for (const key of slotKeys) {
+    if (!pageBuild[key] || !String(pageBuild[key].name || '').trim()) return false;
+  }
+  return true;
+}
+
+function getCustomBuildFromPageBuild(pageBuild) {
+  if (!isUsablePageBuild(pageBuild)) return null;
+  return pageBuildToLegacyCustom(pageBuild);
 }
 
 function toFiniteNumber(v) {
@@ -209,6 +229,21 @@ function formatPairDelta(delta) {
   return delta
     ? `${formatSigned(delta.min, 0)}/${formatSigned(delta.max, 0)}`
     : 'n/a';
+}
+
+function formatDeltaWithAbs(delta, abs, digits) {
+  const signed = toFiniteNumber(delta);
+  const absolute = toFiniteNumber(abs);
+  if (signed === null || absolute === null) return 'n/a';
+  return `${formatSigned(signed, digits)} / ${formatNum(absolute, digits)}`;
+}
+
+function formatPairDeltaWithAbs(delta, abs) {
+  if (!delta || !abs) return 'n/a';
+  return (
+    `${formatSigned(delta.min, 0)}/${formatSigned(delta.max, 0)} / ` +
+    `${formatNum(abs.min, 0)}/${formatNum(abs.max, 0)}`
+  );
 }
 
 function matchupKey(attacker, defender) {
@@ -794,57 +829,61 @@ function printMatchupRow(rank, row) {
       `win ${formatNum(row.truth.winPct, 2)}->${formatNum(
         row.sim.winPct,
         2,
-      )} Δ${formatSigned(row.dWinPct, 2)} abs=${formatNum(row.absWinPct, 2)} | ` +
+      )} s/a ${formatDeltaWithAbs(row.dWinPct, row.absWinPct, 2)} | ` +
       `avgT ${formatNum(row.truth.avgTurns, 4)}->${formatNum(
         row.sim.avgTurns,
         4,
-      )} Δ${formatSigned(row.dAvgTurns, 4)} abs=${formatNum(row.absAvgTurns, 4)}`,
+      )} s/a ${formatDeltaWithAbs(row.dAvgTurns, row.absAvgTurns, 4)}`,
   );
   console.log(
     `   A hit ${formatNum(row.truth.A_hit, 0)}->${formatNum(
       row.sim.A_hit,
       0,
-    )} Δ${formatSigned(row.delta.A_hit, 0)} | ` +
-      `dmg ${formatNum(row.truth.A_dmg1, 0)}/${formatNum(
-        row.truth.A_dmg2,
+    )} s/a ${formatDeltaWithAbs(row.delta.A_hit, row.absDelta.A_hit, 0)} | ` +
+      `dmg1 ${formatNum(row.truth.A_dmg1, 0)}->${formatNum(
+        row.sim.A_dmg1,
         0,
-      )}->${formatNum(row.sim.A_dmg1, 0)}/${formatNum(
+      )} s/a ${formatDeltaWithAbs(row.delta.A_dmg1, row.absDelta.A_dmg1, 0)} | ` +
+      `dmg2 ${formatNum(row.truth.A_dmg2, 0)}->${formatNum(
         row.sim.A_dmg2,
         0,
-      )} Δ${formatSigned(row.delta.A_dmg1, 0)}/${formatSigned(
-        row.delta.A_dmg2,
-        0,
-      )} | ` +
-      `rng ${formatPair(row.truth.A_rng)}->${formatPair(
-        row.sim.A_rng,
-      )} Δ${formatPairDelta(row.delta.A_rng)} | ` +
+      )} s/a ${formatDeltaWithAbs(row.delta.A_dmg2, row.absDelta.A_dmg2, 0)} | ` +
       `dmg/f ${formatNum(row.truth.A_damagePerFight, 1)}->${formatNum(
         row.sim.A_damagePerFight,
         1,
-      )} Δ${formatSigned(row.delta.A_damagePerFight, 1)}`,
+      )} s/a ${formatDeltaWithAbs(
+        row.delta.A_damagePerFight,
+        row.absDelta.A_damagePerFight,
+        1,
+      )} | ` +
+      `rng ${formatPair(row.truth.A_rng)}->${formatPair(
+        row.sim.A_rng,
+      )} s/a ${formatPairDeltaWithAbs(row.delta.A_rng, row.absDelta.A_rng)}`,
   );
   console.log(
     `   D hit ${formatNum(row.truth.D_hit, 0)}->${formatNum(
       row.sim.D_hit,
       0,
-    )} Δ${formatSigned(row.delta.D_hit, 0)} | ` +
-      `dmg ${formatNum(row.truth.D_dmg1, 0)}/${formatNum(
-        row.truth.D_dmg2,
+    )} s/a ${formatDeltaWithAbs(row.delta.D_hit, row.absDelta.D_hit, 0)} | ` +
+      `dmg1 ${formatNum(row.truth.D_dmg1, 0)}->${formatNum(
+        row.sim.D_dmg1,
         0,
-      )}->${formatNum(row.sim.D_dmg1, 0)}/${formatNum(
+      )} s/a ${formatDeltaWithAbs(row.delta.D_dmg1, row.absDelta.D_dmg1, 0)} | ` +
+      `dmg2 ${formatNum(row.truth.D_dmg2, 0)}->${formatNum(
         row.sim.D_dmg2,
         0,
-      )} Δ${formatSigned(row.delta.D_dmg1, 0)}/${formatSigned(
-        row.delta.D_dmg2,
-        0,
-      )} | ` +
-      `rng ${formatPair(row.truth.D_rng)}->${formatPair(
-        row.sim.D_rng,
-      )} Δ${formatPairDelta(row.delta.D_rng)} | ` +
+      )} s/a ${formatDeltaWithAbs(row.delta.D_dmg2, row.absDelta.D_dmg2, 0)} | ` +
       `dmg/f ${formatNum(row.truth.D_damagePerFight, 1)}->${formatNum(
         row.sim.D_damagePerFight,
         1,
-      )} Δ${formatSigned(row.delta.D_damagePerFight, 1)}`,
+      )} s/a ${formatDeltaWithAbs(
+        row.delta.D_damagePerFight,
+        row.absDelta.D_damagePerFight,
+        1,
+      )} | ` +
+      `rng ${formatPair(row.truth.D_rng)}->${formatPair(
+        row.sim.D_rng,
+      )} s/a ${formatPairDeltaWithAbs(row.delta.D_rng, row.absDelta.D_rng)}`,
   );
 }
 
@@ -859,8 +898,8 @@ function printVariantReport(report) {
       `worstAbsΔwin=${formatNum(report.summary.worstAbsWinPct, 2)} ` +
       `(${report.summary.worstAttacker} vs ${report.summary.worstDefender})`,
   );
-  console.log('Top mismatches:');
-  report.topRows.forEach((row, idx) =>
+  console.log(`Worst mismatches (top ${WORST_MISMATCH_LIMIT}):`);
+  report.worstMismatches.forEach((row, idx) =>
     printMatchupRow(String(idx + 1).padStart(2, '0'), row),
   );
   printGroupedSummary('\nBy attacker:', report.byAttacker);
@@ -1048,6 +1087,7 @@ function buildFinalPayload({
     summary: first.summary,
     byAttacker: first.byAttacker,
     byDefender: first.byDefender,
+    worstMismatches: first.worstMismatches,
     rows: first.rows,
     scores: scores || null,
     best: best || null,
@@ -1065,17 +1105,17 @@ function createJobRunner({
 }) {
   return async function runJob(row) {
     let scriptToRun = simAbs;
+    const customBuild = getCustomBuildFromPageBuild(row.pageBuild);
     const exportPath = path.join(
       variantTmpDir,
       `${sanitizeFilePart(row.attacker)}--${sanitizeFilePart(row.defender)}--${process.pid}.json`,
     );
 
-    if (row.attacker === 'CORE_VOID_ATTACKER') {
-      const key = JSON.stringify(pageBuildToLegacyCustom(row.pageBuild));
+    if (customBuild) {
+      const key = JSON.stringify(customBuild);
       scriptToRun = customScriptCache.get(key);
       if (!scriptToRun) {
-        const custom = pageBuildToLegacyCustom(row.pageBuild);
-        const patched = patchSimToCustom(fs.readFileSync(simAbs, 'utf8'), custom);
+        const patched = patchSimToCustom(fs.readFileSync(simAbs, 'utf8'), customBuild);
         scriptToRun = path.join(
           path.dirname(simAbs),
           `.legacy-sim-custom--${process.pid}--${sanitizeFilePart(variant.name)}--${customScriptCache.size + 1}.js`,
@@ -1102,7 +1142,7 @@ function createJobRunner({
       ...(variant.env || {}),
     };
 
-    if (row.attacker !== 'CORE_VOID_ATTACKER') {
+    if (!customBuild) {
       env.LEGACY_ATTACKER_PRESET = row.attacker;
     }
 
@@ -1206,6 +1246,7 @@ async function buildVariantReport({
       env: variant.env,
       rows: sortedRows,
       topRows: sortedRows.slice(0, topN),
+      worstMismatches: sortedRows.slice(0, WORST_MISMATCH_LIMIT),
       byAttacker: buildGroupedSummary(sortedRows, 'attacker'),
       byDefender: buildGroupedSummary(sortedRows, 'defender'),
       summary: buildSummary(sortedRows),

@@ -202,6 +202,12 @@
     return { name, build: deepClone(build) };
   }
 
+  function cloneBuildWithStats(entry, stats) {
+    const next = deepClone(entry.build);
+    next.stats = { ...next.stats, ...stats };
+    return makeBuild(entry.name, next);
+  }
+
   function resolveBuildList(requested, defaults, filters, kindLabel) {
     const defaultMap = new Map(
       defaults.map((entry) => [normalizeNameKey(entry.name), deepClone(entry)]),
@@ -466,6 +472,71 @@
       attackType: 'normal',
     }),
   ];
+
+  const STRATIFIED_ATTACKER_ARCHETYPES = [
+    'MAUL_CSTAFF',
+    'BOMBS_RIFT_MAXHP',
+    'CORE_VOID_ATTACKER',
+  ];
+  const STRATIFIED_HP_BUCKETS = [500, 595, 700, 865];
+  const STRATIFIED_STYLES = ['dodge-heavy', 'balanced', 'accuracy-heavy'];
+
+  function makeStratifiedStats(hp, style) {
+    // Existing repo presets imply hp + 5 * (dodge + accuracy) = 1005.
+    const statBudget = (1005 - Number(hp)) / 5;
+    const total = Math.round(statBudget);
+    const extra = Math.max(0, total - 28);
+    let dodgeShare = 0.5;
+
+    if (style === 'dodge-heavy') dodgeShare = 0.75;
+    else if (style === 'accuracy-heavy') dodgeShare = 0.25;
+
+    let dodge = 14 + Math.round(extra * dodgeShare);
+    let accuracy = total - dodge;
+
+    if (dodge < 14) {
+      dodge = 14;
+      accuracy = total - dodge;
+    }
+    if (accuracy < 14) {
+      accuracy = 14;
+      dodge = total - accuracy;
+    }
+
+    return { hp: Number(hp), dodge, accuracy };
+  }
+
+  function makeStratifiedAttackers() {
+    const archetypeMap = new Map(
+      DEFAULT_ATTACKERS.map((entry) => [entry.name, entry]),
+    );
+    const out = [];
+
+    for (const archetypeName of STRATIFIED_ATTACKER_ARCHETYPES) {
+      const archetype = archetypeMap.get(archetypeName);
+      if (!archetype) continue;
+
+      for (const hp of STRATIFIED_HP_BUCKETS) {
+        for (const style of STRATIFIED_STYLES) {
+          const next = cloneBuildWithStats(archetype, makeStratifiedStats(hp, style));
+          next.name = `${archetypeName} HP${hp} ${style}`;
+          out.push(next);
+        }
+      }
+    }
+
+    return out;
+  }
+
+  function makeStratifiedConfig(overrides = {}) {
+    return {
+      attackers: makeStratifiedAttackers(),
+      defenders: deepClone(DEFAULT_DEFENDERS),
+      repeats: 3,
+      trialsText: '10,000 times',
+      ...deepClone(overrides),
+    };
+  }
 
   const DEFAULT_DEFENDERS = [
     makeBuild('SG1 Split Bombs T2', {
@@ -910,7 +981,12 @@
     version: VERSION,
     DEFAULT_ATTACKERS: deepClone(DEFAULT_ATTACKERS),
     DEFAULT_DEFENDERS: deepClone(DEFAULT_DEFENDERS),
+    STRATIFIED_ATTACKER_ARCHETYPES: STRATIFIED_ATTACKER_ARCHETYPES.slice(),
+    STRATIFIED_HP_BUCKETS: STRATIFIED_HP_BUCKETS.slice(),
+    STRATIFIED_STYLES: STRATIFIED_STYLES.slice(),
     buildToPageImport,
+    makeStratifiedAttackers,
+    makeStratifiedConfig,
     parseResultsText,
     installNetworkHooks,
     runMatrix,
