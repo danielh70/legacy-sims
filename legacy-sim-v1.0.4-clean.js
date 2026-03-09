@@ -21,41 +21,41 @@ const path = require('path');
 // You can also override the file at runtime with LEGACY_DEFENDER_FILE.
 const USER_CONFIG = {
   attacker: {
-    mode: 'custom', // env | preset | custom
-    preset: 'MAUL_CSTAFF',
+    mode: "custom", // env | preset | custom
+    preset: "MAUL_CSTAFF",
 
     // Custom attacker build template (only used when mode='custom').
     // Tip: copy one of the ATTACKER_PRESETS below and paste it here to start.
     custom: {
-      stats: { level: 80, hp: 765, speed: 60, dodge: 34, accuracy: 14 },
+      stats: { level: 80, hp: 595, speed: 60, dodge: 68, accuracy: 14 },
       armor: {
-        name: 'Dark Legion Armor',
-        crystal: 'Abyss Crystal',
+        name: "SG1 Armor",
+        crystal: "Abyss Crystal",
         upgrades: [],
       },
 
       weapon1: {
-        name: 'Crystal Maul',
-        crystal: 'Perfect Fire Crystal',
+        name: "Crystal Maul",
+        crystal: "Perfect Fire Crystal",
         upgrades: [],
       },
-      weapon2: { name: 'Core Staff', crystal: 'Amulet Crystal', upgrades: [] },
+      weapon2: { name: "Core Staff", crystal: "Amulet Crystal", upgrades: [] },
 
       misc1: {
-        name: 'Projector Bots',
-        crystal: 'Perfect Pink Crystal',
+        name: "Bio Spinal Enhancer",
+        crystal: "Perfect Pink Crystal",
         upgrades: [],
       },
       misc2: {
-        name: 'Bio Spinal Enhancer',
-        crystal: 'Perfect Pink Crystal',
+        name: "Bio Spinal Enhancer",
+        crystal: "Perfect Pink Crystal",
         upgrades: [],
       },
     },
   },
 
   defenders: {
-    file: './legacy-defenders.js',
+    file: "./legacy-defenders.js",
   },
 };
 // === END USER CONFIG =========================================================

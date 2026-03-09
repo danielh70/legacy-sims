@@ -60,7 +60,7 @@
 // =====================
 const fs = require("fs");
 const os = require("os");
-const VERSION = "v1.4.0";
+const VERSION = "v1.4.1";
 const {
   Worker,
   isMainThread,
@@ -90,7 +90,7 @@ const SETTINGS = {
   // Historical single-HP default.
   LOCKED_HP: 595,
 
-  WORKERS_DEFAULT_CAP: 12,
+  WORKERS_DEFAULT_CAP: 4,
 };
 
 // =====================
@@ -103,9 +103,9 @@ const PLAN_SWEEP_CONFIG = {
   singleHp: SETTINGS.LOCKED_HP,
 
   hpSweep: {
-    min: 500,
+    min: 400,
     max: 700,
-    step: 25,
+    step: 100,
     includeSingleHp: false,
   },
 
@@ -136,7 +136,7 @@ const PLAN_SWEEP_CONFIG = {
 // POOLS
 // =====================
 const POOLS = {
-  armors: ["SG1 Armor", "Dark Legion Armor"],
+  armors: ["SG1 Armor", "Dark Legion Armor", "Hellforged Armor"],
   weapons: [
     "Crystal Maul",
     "Core Staff",
@@ -149,8 +149,6 @@ const POOLS = {
     "Double Barrel Sniper Rifle",
     "Q15 Gun",
     "Bio Gun Mk4",
-    "Reaper Axe",
-    "Alien Staff",
   ],
   miscs: [
     "Bio Spinal Enhancer",
@@ -476,6 +474,23 @@ function buildRunProgressLine({
   }  bestAvg=${bestAvg !== null && bestAvg !== undefined ? fmtPctTone(bestAvg) : "—"}`;
 }
 
+function buildFinalizationProgressLine({
+  phase,
+  done,
+  total,
+  elapsedSec,
+  etaSec,
+  hp,
+  note,
+}) {
+  const frac = total > 0 ? done / total : 0;
+  const hpTag = hp !== null && hp !== undefined ? `  hp=${hp}` : "";
+  const noteText = note ? `  ${note}` : "";
+  return `${statusTag("FINAL", "magenta")} ${progressBar(frac)} ${fmtPct(frac * 100, 1)}  phase=${phase}  done=${done}/${total}  elapsed=${formatDuration(
+    elapsedSec,
+  )}  eta=${etaSec !== null && etaSec !== undefined ? formatDuration(etaSec) : "—"}${hpTag}${noteText}`;
+}
+
 function printCompactRunHeader({
   defenderCount,
   hiddenPreset,
@@ -690,8 +705,6 @@ function shortCrystal(c) {
       return "B";
     case "Cabrusion Crystal":
       return "C";
-    case "Berserker Crystal":
-      return "Z";
     default:
       return "?";
   }
@@ -699,7 +712,6 @@ function shortCrystal(c) {
 
 const CRYSTAL_SORT_ORDER = [
   "Amulet Crystal",
-  "Berserker Crystal",
   "Perfect Pink Crystal",
   "Perfect Orange Crystal",
   "Perfect Green Crystal",
@@ -1887,7 +1899,7 @@ function allowedCrystalsForArmor(itemName) {
 }
 function allowedCrystalsForWeapon(itemName) {
   if (LOCK_ONLY_AMULET.has(itemName)) return ["Amulet Crystal"];
-  return ["Amulet Crystal", "Perfect Fire Crystal", "Berserker Crystal"];
+  return ["Amulet Crystal", "Perfect Fire Crystal"];
 }
 function upgradeSlotsForWeapon(itemName) {
   const idef = ItemDefs[itemName];
@@ -2252,11 +2264,7 @@ function getEffectiveCrystalPct(itemName, crystalName, slotTag = 0) {
 
   const crystalPctRaw = cdef.pct || {};
   const idef = ItemDefs[itemName];
-  if (
-    !idef ||
-    idef.type !== "Misc" ||
-    !MISC_NO_CRYSTAL_SKILL.has(itemName)
-  ) {
+  if (!idef || idef.type !== "Misc" || !MISC_NO_CRYSTAL_SKILL.has(itemName)) {
     return crystalPctRaw;
   }
 
@@ -2385,7 +2393,13 @@ function normalizeSelectedWeaponUpgrades(itemName, upgrade1, upgrade2) {
   return kept;
 }
 
-function computeVariant(itemName, crystalName, upgrade1, upgrade2, slotTag = 0) {
+function computeVariant(
+  itemName,
+  crystalName,
+  upgrade1,
+  upgrade2,
+  slotTag = 0,
+) {
   const idef = ItemDefs[itemName];
   if (!idef) throw new Error(`Unknown item "${itemName}"`);
 
@@ -2575,11 +2589,11 @@ function applyMixedCrystalPctToStat(
     let v = base;
     for (const crystalName of crystalNamesExpanded) {
       const pct = pctLookup
-        ? (pctLookup(crystalName)[statName] || 0)
-        : ((CrystalDefs[crystalName] &&
+        ? pctLookup(crystalName)[statName] || 0
+        : (CrystalDefs[crystalName] &&
             CrystalDefs[crystalName].pct &&
             CrystalDefs[crystalName].pct[statName]) ||
-            0);
+          0;
       if (!pct) continue;
       v += roundStat(v * pct, roundMode);
     }
@@ -2589,11 +2603,11 @@ function applyMixedCrystalPctToStat(
   let pctSum = 0;
   for (const crystalName of crystalNamesExpanded) {
     pctSum += pctLookup
-      ? (pctLookup(crystalName)[statName] || 0)
-      : ((CrystalDefs[crystalName] &&
+      ? pctLookup(crystalName)[statName] || 0
+      : (CrystalDefs[crystalName] &&
           CrystalDefs[crystalName].pct &&
           CrystalDefs[crystalName].pct[statName]) ||
-          0);
+        0;
   }
   return pctSum ? base + roundStat(base * pctSum, roundMode) : base;
 }
@@ -2612,11 +2626,11 @@ function applyMixedCrystalPctToWeaponDmg(
     let v = base;
     for (const crystalName of crystalNamesExpanded) {
       const pct = pctLookup
-        ? (pctLookup(crystalName).damage || 0)
-        : ((CrystalDefs[crystalName] &&
+        ? pctLookup(crystalName).damage || 0
+        : (CrystalDefs[crystalName] &&
             CrystalDefs[crystalName].pct &&
             CrystalDefs[crystalName].pct.damage) ||
-            0);
+          0;
       if (!pct) continue;
       v += roundWeaponDmg(v * pct, roundMode);
     }
@@ -2626,11 +2640,11 @@ function applyMixedCrystalPctToWeaponDmg(
   let pctSum = 0;
   for (const crystalName of crystalNamesExpanded) {
     pctSum += pctLookup
-      ? (pctLookup(crystalName).damage || 0)
-      : ((CrystalDefs[crystalName] &&
+      ? pctLookup(crystalName).damage || 0
+      : (CrystalDefs[crystalName] &&
           CrystalDefs[crystalName].pct &&
           CrystalDefs[crystalName].pct.damage) ||
-          0);
+        0;
   }
   return pctSum ? base + roundWeaponDmg(base * pctSum, roundMode) : base;
 }
@@ -3337,7 +3351,13 @@ function rebuildMiscVariantForSlot(v, slotTag) {
       slotTag,
     );
   }
-  return computeVariant(v.itemName, v.crystalName, v.upgrade1, v.upgrade2, slotTag);
+  return computeVariant(
+    v.itemName,
+    v.crystalName,
+    v.upgrade1,
+    v.upgrade2,
+    slotTag,
+  );
 }
 // =====================
 // BUILD / COMPILE DEFENDERS
@@ -3488,12 +3508,7 @@ function compileDefender(def, variantCacheLocal) {
   const w2Prj = w2V.addPrj * (w2SkillIdx === 2 ? w2Mult : 1);
 
   const gun =
-    BASE.gunSkill +
-    armorV.addGun +
-    w1Gun +
-    w2Gun +
-    m1Eff.addGun +
-    m2Eff.addGun;
+    BASE.gunSkill + armorV.addGun + w1Gun + w2Gun + m1Eff.addGun + m2Eff.addGun;
   const mel =
     BASE.meleeSkill +
     armorV.addMel +
@@ -5680,6 +5695,111 @@ function printResults({
     );
   }
 
+  const archetypes = [
+    "Gun+Gun",
+    "Gun+Melee",
+    "Gun+Proj",
+    "Melee+Melee",
+    "Melee+Proj",
+    "Proj+Proj",
+  ];
+
+  const hpKeys = Object.keys(globalByHp)
+    .map((x) => parseInt(x, 10))
+    .sort((a, b) => a - b);
+
+  let estimatedConfirmTasks = 0;
+  let estimatedRefineTasks = 0;
+  for (const hp of hpKeys) {
+    const hpKey = String(hp);
+    const catTop = globalCatalogTopByHp[hpKey] || [];
+    const catTypes = globalCatalogBestTypeByHp[hpKey] || {};
+    const uniqueSpecs = new Set();
+
+    for (const e of catTop) {
+      const key = specKey(e.spec);
+      uniqueSpecs.add(key);
+      estimatedConfirmTasks++;
+    }
+
+    for (const t of archetypes) {
+      const e = catTypes[t];
+      if (!e) continue;
+      const key = specKey(e.spec);
+      if (uniqueSpecs.has(key)) continue;
+      uniqueSpecs.add(key);
+      estimatedConfirmTasks++;
+    }
+
+    if (mixedCrystalRefine) estimatedRefineTasks += uniqueSpecs.size;
+  }
+
+  const finalProgress = {
+    startMs: nowMs(),
+    totalUnits: Math.max(1, 1 + estimatedConfirmTasks + estimatedRefineTasks),
+    doneUnits: 0,
+    lastCheckpointPct: -1,
+    lastPhase: "",
+  };
+
+  function renderFinalizationProgress({
+    phase,
+    hp = null,
+    note = "",
+    force = false,
+  }) {
+    if (TERM_UI.progress === "off") return;
+    const elapsedSec = (nowMs() - finalProgress.startMs) / 1000;
+    const frac =
+      finalProgress.totalUnits > 0
+        ? finalProgress.doneUnits / finalProgress.totalUnits
+        : 1;
+    const etaSec = frac > 0 && frac < 1 ? (elapsedSec / frac) * (1 - frac) : 0;
+    const line = buildFinalizationProgressLine({
+      phase,
+      done: finalProgress.doneUnits,
+      total: finalProgress.totalUnits,
+      elapsedSec,
+      etaSec,
+      hp,
+      note,
+    });
+
+    if (TERM_UI.progress === "single") {
+      writeLiveLine(line);
+      return;
+    }
+
+    const pct = Math.floor(frac * 100);
+    const checkpoint = Math.floor(pct / REPORT_CFG.checkpointStepPct);
+    const shouldPrint =
+      force ||
+      TERM_UI.progress === "lines" ||
+      phase !== finalProgress.lastPhase ||
+      checkpoint > finalProgress.lastCheckpointPct;
+
+    if (shouldPrint) {
+      clearLiveLine();
+      console.log(line);
+      finalProgress.lastCheckpointPct = checkpoint;
+      finalProgress.lastPhase = phase;
+    }
+  }
+
+  function advanceFinalization(phase, hp = null, note = "", force = false) {
+    finalProgress.doneUnits = Math.min(
+      finalProgress.totalUnits,
+      finalProgress.doneUnits + 1,
+    );
+    renderFinalizationProgress({ phase, hp, note, force });
+  }
+
+  renderFinalizationProgress({
+    phase: "compile defenders",
+    note: `defs=${defenderBuilds.length}`,
+    force: true,
+  });
+
   const compiledDefendersOnce = (() => {
     const localCache = new Map();
     function getV(itemName, crystalName, u1 = "", u2 = "") {
@@ -5695,8 +5815,64 @@ function printResults({
     prefillVariantsFromDefenders(defenderBuilds, getV);
     return defenderBuilds.map((d) => compileDefender(d, localCache));
   })();
+  advanceFinalization(
+    "compile defenders",
+    null,
+    `defs=${compiledDefendersOnce.length}`,
+    true,
+  );
+
   const mixedRefineEvalCache = new Map();
   const mixedRefineResultCache = new Map();
+  const catalogConfirmCache = new Map();
+
+  function confirmCatalogSpec(spec, hp = null, note = "") {
+    const key = specKey(spec);
+    let hit = catalogConfirmCache.get(key);
+    if (!hit) {
+      hit = confirmSpecAgainstDefenders({
+        spec,
+        trialsConfirm: catalogConfirmTrials,
+        maxTurns: SETTINGS.MAX_TURNS,
+        rngMode,
+        rngSeed,
+        defenders: compiledDefendersOnce,
+      });
+      catalogConfirmCache.set(key, hit);
+      mixedRefineEvalCache.set(`${catalogConfirmTrials}|${key}`, hit);
+      advanceFinalization(
+        "catalog confirm",
+        hp,
+        note || compactBuildLabel(buildLabelFromSpec(spec), 64),
+      );
+    }
+    return hit;
+  }
+
+  function getMixedRefinedEntry(baseEntry, hp = null) {
+    const key = specKey(baseEntry.spec);
+    let hit = mixedRefineResultCache.get(key);
+    if (!hit) {
+      hit = refineSpecMixedCrystals({
+        baseEntry,
+        trialsSearch: mixedCrystalSearchTrials,
+        trialsConfirm: catalogConfirmTrials,
+        maxTurns: SETTINGS.MAX_TURNS,
+        rngMode,
+        rngSeed,
+        defenders: compiledDefendersOnce,
+        passes: mixedCrystalPasses,
+        sharedEvalCache: mixedRefineEvalCache,
+      });
+      mixedRefineResultCache.set(key, hit);
+      advanceFinalization(
+        "mixed refine",
+        hp,
+        compactBuildLabel(hit.label || baseEntry.label, 64),
+      );
+    }
+    return hit;
+  }
   const exportPayload = {
     meta: {
       version: VERSION,
@@ -5721,30 +5897,6 @@ function printResults({
       refineSummary: [],
     },
   };
-
-  function getMixedRefinedEntry(baseEntry) {
-    const key = specKey(baseEntry.spec);
-    let hit = mixedRefineResultCache.get(key);
-    if (!hit) {
-      hit = refineSpecMixedCrystals({
-        baseEntry,
-        trialsSearch: mixedCrystalSearchTrials,
-        trialsConfirm: catalogConfirmTrials,
-        maxTurns: SETTINGS.MAX_TURNS,
-        rngMode,
-        rngSeed,
-        defenders: compiledDefendersOnce,
-        passes: mixedCrystalPasses,
-        sharedEvalCache: mixedRefineEvalCache,
-      });
-      mixedRefineResultCache.set(key, hit);
-    }
-    return hit;
-  }
-
-  const hpKeys = Object.keys(globalByHp)
-    .map((x) => parseInt(x, 10))
-    .sort((a, b) => a - b);
 
   const hpReports = [];
 
@@ -5783,27 +5935,12 @@ function printResults({
     const confirmedTop = catTop
       .map((e) => ({
         ...e,
-        ...confirmSpecAgainstDefenders({
-          spec: e.spec,
-          trialsConfirm: catalogConfirmTrials,
-          maxTurns: SETTINGS.MAX_TURNS,
-          rngMode,
-          rngSeed,
-          defenders: compiledDefendersOnce,
-        }),
+        ...confirmCatalogSpec(e.spec, hp, compactBuildLabel(e.label, 64)),
       }))
       .sort((a, b) => b.worstWin - a.worstWin || b.avgWin - a.avgWin);
 
     hpExport.catalogTop = confirmedTop;
 
-    const archetypes = [
-      "Gun+Gun",
-      "Gun+Melee",
-      "Gun+Proj",
-      "Melee+Melee",
-      "Melee+Proj",
-      "Proj+Proj",
-    ];
     const confirmedCatalogByKey = new Map();
     for (const e of confirmedTop) {
       const key = specKey(e.spec);
@@ -5814,14 +5951,11 @@ function printResults({
       if (!e) continue;
       const key = specKey(e.spec);
       if (confirmedCatalogByKey.has(key)) continue;
-      const conf = confirmSpecAgainstDefenders({
-        spec: e.spec,
-        trialsConfirm: catalogConfirmTrials,
-        maxTurns: SETTINGS.MAX_TURNS,
-        rngMode,
-        rngSeed,
-        defenders: compiledDefendersOnce,
-      });
+      const conf = confirmCatalogSpec(
+        e.spec,
+        hp,
+        compactBuildLabel(e.label, 64),
+      );
       confirmedCatalogByKey.set(key, { ...e, ...conf });
     }
 
@@ -5844,13 +5978,13 @@ function printResults({
     let refinedTypes = [];
     if (mixedCrystalRefine && confirmedTop.length) {
       refinedTop = dedupeRefinedEntries(
-        confirmedTop.map((e) => ({ ...e, ...getMixedRefinedEntry(e) })),
+        confirmedTop.map((e) => ({ ...e, ...getMixedRefinedEntry(e, hp) })),
       );
       hpExport.mixedCatalogTop = refinedTop;
     }
     if (mixedCrystalRefine && confirmedTypes.length) {
       refinedTypes = confirmedTypes
-        .map((e) => ({ type: e.type, ...e, ...getMixedRefinedEntry(e) }))
+        .map((e) => ({ type: e.type, ...e, ...getMixedRefinedEntry(e, hp) }))
         .sort((a, b) => b.worstWin - a.worstWin || b.avgWin - a.avgWin);
       hpExport.mixedCatalogByType = refinedTypes;
     }
@@ -5959,6 +6093,14 @@ function printResults({
       )
       .slice(0, REPORT_CFG.refineChangesTopN);
   }
+
+  finalProgress.doneUnits = finalProgress.totalUnits;
+  renderFinalizationProgress({
+    phase: "render tables",
+    note: `hp=${hpReports.length}`,
+    force: true,
+  });
+  flushLiveLine();
 
   if (hpWinners.length > 1) {
     console.log(section("HP WINNERS", "cyan"));
