@@ -2097,16 +2097,29 @@ function _envInt(name, dflt) {
     }
   }
 
-  const vsRaw = _envStr("LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE", "123");
-  if (vsRaw.toLowerCase() !== "off") {
-    const mx = parseInt(vsRaw, 10);
+  const vsMinRaw = _envStr("LEGACY_VOID_SWORD_BASE_MIN_OVERRIDE", "");
+  const vsMaxRaw = _envStr("LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE", "120");
+  if (ItemDefs["Void Sword"] && ItemDefs["Void Sword"].baseWeaponDamage) {
+    if (vsMinRaw.toLowerCase() !== "off") {
+      const mn = parseInt(vsMinRaw, 10);
+      if (Number.isFinite(mn) && mn > 0) {
+        ItemDefs["Void Sword"].baseWeaponDamage.min = mn;
+      }
+    }
+    if (vsMaxRaw.toLowerCase() !== "off") {
+      const mx = parseInt(vsMaxRaw, 10);
+      if (Number.isFinite(mx) && mx > 0) {
+        ItemDefs["Void Sword"].baseWeaponDamage.max = mx;
+      }
+    }
     if (
-      Number.isFinite(mx) &&
-      mx > 0 &&
-      ItemDefs["Void Sword"] &&
-      ItemDefs["Void Sword"].baseWeaponDamage
+      ItemDefs["Void Sword"].baseWeaponDamage.min >
+      ItemDefs["Void Sword"].baseWeaponDamage.max
     ) {
-      ItemDefs["Void Sword"].baseWeaponDamage.max = mx;
+      const t = ItemDefs["Void Sword"].baseWeaponDamage.min;
+      ItemDefs["Void Sword"].baseWeaponDamage.min =
+        ItemDefs["Void Sword"].baseWeaponDamage.max;
+      ItemDefs["Void Sword"].baseWeaponDamage.max = t;
     }
   }
 })();
@@ -2166,36 +2179,120 @@ const VARIANT_CFG = (() => {
   };
 })();
 
-// Optional: calibration-style "misc has NO crystal" skill scaling.
-// Brute-force normally always uses crystals, so this only matters if you add a blank/none crystal option.
 const MISC_NO_CRYSTAL_SKILL = new Set(
   _envStr("LEGACY_MISC_NO_CRYSTAL_SKILL", "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean),
 );
-const MISC_NO_CRYSTAL_SKILL_TYPE_MULTS = (() => {
-  const raw = _envStr("LEGACY_MISC_NO_CRYSTAL_SKILL_TYPES", "").trim();
+function parseSkillTypeMultipliers(str) {
   const out = new Map();
-  if (!raw) return out;
-  for (const chunk of raw.split(",")) {
-    const s = chunk.trim();
-    if (!s) continue;
-    const [k, v] = s.split("=").map((x) => x.trim());
-    const mult = v === undefined ? 1.0 : Number(v);
-    if (!k) continue;
-    out.set(k.toLowerCase(), Number.isFinite(mult) ? mult : 1.0);
+  const raw0 = String(str || "")
+    .trim()
+    .toLowerCase();
+  if (!raw0 || raw0 === "none") return out;
+
+  for (const tok0 of raw0.split(",")) {
+    const tok = tok0.trim();
+    if (!tok) continue;
+
+    const parts = tok.split(/[:=]/);
+    const key = (parts[0] || "").trim();
+    if (!key) continue;
+
+    if (key !== "gun" && key !== "melee" && key !== "proj" && key !== "def") {
+      throw new Error(
+        `Unknown skill type in LEGACY_MISC_NO_CRYSTAL_SKILL_TYPES: "${key}" (allowed: gun, melee, proj, def)`,
+      );
+    }
+
+    let mult = 0;
+    if (parts.length > 1 && (parts[1] || "").trim() !== "") {
+      const n = Number((parts[1] || "").trim());
+      if (!Number.isFinite(n) || n < 0) {
+        throw new Error(
+          `Bad multiplier for "${key}" in LEGACY_MISC_NO_CRYSTAL_SKILL_TYPES: "${parts[1]}" (expected number >= 0)`,
+        );
+      }
+      mult = n;
+    }
+    out.set(key, mult);
   }
   return out;
-})();
-const MISC_NO_CRYSTAL_SKILL_SLOT1_MULT = (() => {
-  const v = Number(_envStr("LEGACY_MISC_NO_CRYSTAL_SLOT1_MULT", "1"));
-  return Number.isFinite(v) ? v : 1.0;
-})();
-const MISC_NO_CRYSTAL_SKILL_SLOT2_MULT = (() => {
-  const v = Number(_envStr("LEGACY_MISC_NO_CRYSTAL_SLOT2_MULT", "1"));
-  return Number.isFinite(v) ? v : 1.0;
-})();
+}
+const MISC_NO_CRYSTAL_SKILL_TYPES_RAW = _envStr(
+  "LEGACY_MISC_NO_CRYSTAL_SKILL_TYPES",
+  "gun,melee,proj",
+);
+const MISC_NO_CRYSTAL_SKILL_TYPE_MULTS = parseSkillTypeMultipliers(
+  MISC_NO_CRYSTAL_SKILL_TYPES_RAW,
+);
+const MISC_NO_CRYSTAL_SKILL_SLOT2_TYPES_RAW = _envStr(
+  "LEGACY_MISC_NO_CRYSTAL_SKILL_SLOT2_TYPES",
+  "",
+);
+const MISC_NO_CRYSTAL_SKILL_SLOT2_TYPE_MULTS = parseSkillTypeMultipliers(
+  MISC_NO_CRYSTAL_SKILL_SLOT2_TYPES_RAW,
+);
+const MISC_NO_CRYSTAL_SKILL_ZERO_DEF = _envBool(
+  "LEGACY_MISC_NO_CRYSTAL_SKILL_ZERO_DEF",
+  false,
+);
+if (MISC_NO_CRYSTAL_SKILL_ZERO_DEF)
+  MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.set("def", 0);
+
+function getEffectiveCrystalPct(itemName, crystalName, slotTag = 0) {
+  const cdef = CrystalDefs[crystalName];
+  if (!cdef) throw new Error(`Unknown crystal "${crystalName}"`);
+
+  const crystalPctRaw = cdef.pct || {};
+  const idef = ItemDefs[itemName];
+  if (
+    !idef ||
+    idef.type !== "Misc" ||
+    !MISC_NO_CRYSTAL_SKILL.has(itemName)
+  ) {
+    return crystalPctRaw;
+  }
+
+  const crystalPct = { ...crystalPctRaw };
+
+  if (MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.size) {
+    const mg = MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.get("gun");
+    if (mg !== undefined) crystalPct.gunSkill = (crystalPct.gunSkill || 0) * mg;
+
+    const mm = MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.get("melee");
+    if (mm !== undefined)
+      crystalPct.meleeSkill = (crystalPct.meleeSkill || 0) * mm;
+
+    const mp = MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.get("proj");
+    if (mp !== undefined)
+      crystalPct.projSkill = (crystalPct.projSkill || 0) * mp;
+
+    const md = MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.get("def");
+    if (md !== undefined) crystalPct.defSkill = (crystalPct.defSkill || 0) * md;
+  }
+
+  if (slotTag === 2 && MISC_NO_CRYSTAL_SKILL_SLOT2_TYPE_MULTS.size) {
+    const mg2 = MISC_NO_CRYSTAL_SKILL_SLOT2_TYPE_MULTS.get("gun");
+    if (mg2 !== undefined)
+      crystalPct.gunSkill = (crystalPct.gunSkill || 0) * mg2;
+
+    const mm2 = MISC_NO_CRYSTAL_SKILL_SLOT2_TYPE_MULTS.get("melee");
+    if (mm2 !== undefined)
+      crystalPct.meleeSkill = (crystalPct.meleeSkill || 0) * mm2;
+
+    const mp2 = MISC_NO_CRYSTAL_SKILL_SLOT2_TYPE_MULTS.get("proj");
+    if (mp2 !== undefined)
+      crystalPct.projSkill = (crystalPct.projSkill || 0) * mp2;
+
+    const md2 = MISC_NO_CRYSTAL_SKILL_SLOT2_TYPE_MULTS.get("def");
+    if (md2 !== undefined)
+      crystalPct.defSkill = (crystalPct.defSkill || 0) * md2;
+  }
+
+  return crystalPct;
+}
 
 // ---- rounding + stacking helpers (matches legacy-sim-latest.js) ----
 function roundStat(v, mode) {
@@ -2259,7 +2356,31 @@ function applyCrystalPctToWeaponDmg(
   return base + roundWeaponDmg(base * pct * nCrystals, roundMode);
 }
 
-function computeVariant(itemName, crystalName, upgrade1, upgrade2) {
+function normalizeSelectedWeaponUpgrades(itemName, upgrade1, upgrade2) {
+  const idef = ItemDefs[itemName];
+  const raw = [upgrade1, upgrade2]
+    .map((u) => (u == null ? "" : String(u).trim()))
+    .filter((u) => u.length > 0 && u !== "None");
+  if (!raw.length) return [];
+  if (!idef || !idef.upgradeSlots || !idef.upgradeSlots.length) return [];
+
+  const kept = [];
+  const taken = new Array(idef.upgradeSlots.length).fill(false);
+  for (const upName of raw) {
+    if (!UpgradeDefs[upName]) continue;
+    for (let si = 0; si < idef.upgradeSlots.length; si++) {
+      const slot = idef.upgradeSlots[si];
+      if (!taken[si] && Array.isArray(slot) && slot.includes(upName)) {
+        taken[si] = true;
+        kept.push(upName);
+        break;
+      }
+    }
+  }
+  return kept;
+}
+
+function computeVariant(itemName, crystalName, upgrade1, upgrade2, slotTag = 0) {
   const idef = ItemDefs[itemName];
   if (!idef) throw new Error(`Unknown item "${itemName}"`);
 
@@ -2267,13 +2388,13 @@ function computeVariant(itemName, crystalName, upgrade1, upgrade2) {
   const isWeapon = idef.type === "Weapon";
   const isMisc = idef.type === "Misc";
 
-  const cdef = CrystalDefs[crystalName];
-  if (!cdef) throw new Error(`Unknown crystal "${crystalName}"`);
-  const crystalPct = cdef.pct || {};
+  const crystalPct = getEffectiveCrystalPct(itemName, crystalName, slotTag);
 
-  const upgrades = [upgrade1, upgrade2]
-    .map((u) => (u == null ? "" : String(u).trim()))
-    .filter((u) => u.length > 0);
+  const upgrades = normalizeSelectedWeaponUpgrades(
+    itemName,
+    upgrade1,
+    upgrade2,
+  );
 
   // Base item flat stats (bonuses from the item itself).
   const fs = idef.flatStats || {};
@@ -2338,9 +2459,7 @@ function computeVariant(itemName, crystalName, upgrade1, upgrade2) {
 
   // Apply upgrades (once each, multiplicative on the current outStats / wDmg).
   for (const upName of upgrades) {
-    if (!upName) continue;
     const udef = UpgradeDefs[upName];
-    if (!udef) throw new Error(`Unknown upgrade "${upName}"`);
     const upPct = udef.pct || {};
 
     for (const sk of Object.keys(outStats)) {
@@ -2358,36 +2477,15 @@ function computeVariant(itemName, crystalName, upgrade1, upgrade2) {
     }
   }
 
-  // Optional "misc has NO crystal" scaling (only if the crystal is explicitly blank/none).
-  const noCrystal = !crystalName || crystalName.toLowerCase() === "none";
-  const isMiscSkillScaled =
-    isMisc && noCrystal && MISC_NO_CRYSTAL_SKILL.has(itemName);
-
-  const getMultForSkill = (skillName, slotTag) => {
-    const k = String(skillName || "").toLowerCase();
-    let mult = MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.get(k) ?? 1.0;
-    if (slotTag === 1) mult *= MISC_NO_CRYSTAL_SKILL_SLOT1_MULT;
-    if (slotTag === 2) mult *= MISC_NO_CRYSTAL_SKILL_SLOT2_MULT;
-    return mult;
-  };
-
   const addSpeed = outStats.speed;
   const addAcc = outStats.accuracy;
   const addDod = outStats.dodge;
   const addArmStat = outStats.armor;
 
-  const addGun = isMiscSkillScaled
-    ? Math.ceil(outStats.gunSkill * getMultForSkill("gun", 0))
-    : outStats.gunSkill;
-  const addMel = isMiscSkillScaled
-    ? Math.ceil(outStats.meleeSkill * getMultForSkill("melee", 0))
-    : outStats.meleeSkill;
-  const addPrj = isMiscSkillScaled
-    ? Math.ceil(outStats.projSkill * getMultForSkill("proj", 0))
-    : outStats.projSkill;
-  const addDef = isMiscSkillScaled
-    ? Math.ceil(outStats.defSkill * getMultForSkill("def", 0))
-    : outStats.defSkill;
+  const addGun = outStats.gunSkill;
+  const addMel = outStats.meleeSkill;
+  const addPrj = outStats.projSkill;
+  const addDef = outStats.defSkill;
 
   const upTag = upgrades.length
     ? `{${upgrades.map(shortUpgrade).join("+")}}`
@@ -2428,8 +2526,8 @@ function computeVariant(itemName, crystalName, upgrade1, upgrade2) {
   return {
     itemName,
     crystalName,
-    upgrade1: upgrade1 || "",
-    upgrade2: upgrade2 || "",
+    upgrade1: upgrades[0] || "",
+    upgrade2: upgrades[1] || "",
     tag,
     addSpeed,
     addAcc,
@@ -2463,6 +2561,7 @@ function applyMixedCrystalPctToStat(
   statName,
   roundMode,
   stackMode,
+  pctLookup = null,
 ) {
   const m = normalizeCrystalStackMode(stackMode);
   if (!crystalNamesExpanded.length) return base;
@@ -2470,11 +2569,12 @@ function applyMixedCrystalPctToStat(
   if (m === "iter4") {
     let v = base;
     for (const crystalName of crystalNamesExpanded) {
-      const pct =
-        (CrystalDefs[crystalName] &&
-          CrystalDefs[crystalName].pct &&
-          CrystalDefs[crystalName].pct[statName]) ||
-        0;
+      const pct = pctLookup
+        ? (pctLookup(crystalName)[statName] || 0)
+        : ((CrystalDefs[crystalName] &&
+            CrystalDefs[crystalName].pct &&
+            CrystalDefs[crystalName].pct[statName]) ||
+            0);
       if (!pct) continue;
       v += roundStat(v * pct, roundMode);
     }
@@ -2483,11 +2583,12 @@ function applyMixedCrystalPctToStat(
 
   let pctSum = 0;
   for (const crystalName of crystalNamesExpanded) {
-    pctSum +=
-      (CrystalDefs[crystalName] &&
-        CrystalDefs[crystalName].pct &&
-        CrystalDefs[crystalName].pct[statName]) ||
-      0;
+    pctSum += pctLookup
+      ? (pctLookup(crystalName)[statName] || 0)
+      : ((CrystalDefs[crystalName] &&
+          CrystalDefs[crystalName].pct &&
+          CrystalDefs[crystalName].pct[statName]) ||
+          0);
   }
   return pctSum ? base + roundStat(base * pctSum, roundMode) : base;
 }
@@ -2497,6 +2598,7 @@ function applyMixedCrystalPctToWeaponDmg(
   crystalNamesExpanded,
   roundMode,
   stackMode,
+  pctLookup = null,
 ) {
   const m = normalizeCrystalStackMode(stackMode);
   if (!crystalNamesExpanded.length) return base;
@@ -2504,11 +2606,12 @@ function applyMixedCrystalPctToWeaponDmg(
   if (m === "iter4") {
     let v = base;
     for (const crystalName of crystalNamesExpanded) {
-      const pct =
-        (CrystalDefs[crystalName] &&
-          CrystalDefs[crystalName].pct &&
-          CrystalDefs[crystalName].pct.damage) ||
-        0;
+      const pct = pctLookup
+        ? (pctLookup(crystalName).damage || 0)
+        : ((CrystalDefs[crystalName] &&
+            CrystalDefs[crystalName].pct &&
+            CrystalDefs[crystalName].pct.damage) ||
+            0);
       if (!pct) continue;
       v += roundWeaponDmg(v * pct, roundMode);
     }
@@ -2517,11 +2620,12 @@ function applyMixedCrystalPctToWeaponDmg(
 
   let pctSum = 0;
   for (const crystalName of crystalNamesExpanded) {
-    pctSum +=
-      (CrystalDefs[crystalName] &&
-        CrystalDefs[crystalName].pct &&
-        CrystalDefs[crystalName].pct.damage) ||
-      0;
+    pctSum += pctLookup
+      ? (pctLookup(crystalName).damage || 0)
+      : ((CrystalDefs[crystalName] &&
+          CrystalDefs[crystalName].pct &&
+          CrystalDefs[crystalName].pct.damage) ||
+          0);
   }
   return pctSum ? base + roundWeaponDmg(base * pctSum, roundMode) : base;
 }
@@ -2531,9 +2635,10 @@ function computeVariantFromCrystalSpec(
   crystalSpec,
   upgrade1,
   upgrade2,
+  slotTag = 0,
 ) {
   if (typeof crystalSpec === "string")
-    return computeVariant(itemName, crystalSpec, upgrade1, upgrade2);
+    return computeVariant(itemName, crystalSpec, upgrade1, upgrade2, slotTag);
 
   const idef = ItemDefs[itemName];
   if (!idef) throw new Error(`Unknown item "${itemName}"`);
@@ -2549,9 +2654,13 @@ function computeVariantFromCrystalSpec(
       crystalNamesExpanded.push(crystalName);
   }
 
-  const upgrades = [upgrade1, upgrade2]
-    .map((u) => (u == null ? "" : String(u).trim()))
-    .filter((u) => u.length > 0);
+  const upgrades = normalizeSelectedWeaponUpgrades(
+    itemName,
+    upgrade1,
+    upgrade2,
+  );
+  const crystalPctLookup = (crystalName) =>
+    getEffectiveCrystalPct(itemName, crystalName, slotTag);
 
   const fs = idef.flatStats || {};
   let outStats = {
@@ -2582,6 +2691,7 @@ function computeVariantFromCrystalSpec(
       sk,
       roundMode,
       stackMode,
+      crystalPctLookup,
     );
   }
 
@@ -2591,19 +2701,19 @@ function computeVariantFromCrystalSpec(
       crystalNamesExpanded,
       VARIANT_CFG.weaponDmgRound,
       VARIANT_CFG.crystalStackDmg,
+      crystalPctLookup,
     );
     wDmg.max = applyMixedCrystalPctToWeaponDmg(
       wDmg.max,
       crystalNamesExpanded,
       VARIANT_CFG.weaponDmgRound,
       VARIANT_CFG.crystalStackDmg,
+      crystalPctLookup,
     );
   }
 
   for (const upName of upgrades) {
-    if (!upName) continue;
     const udef = UpgradeDefs[upName];
-    if (!udef) throw new Error(`Unknown upgrade "${upName}"`);
     const upPct = udef.pct || {};
 
     for (const sk of Object.keys(outStats)) {
@@ -2663,8 +2773,8 @@ function computeVariantFromCrystalSpec(
     itemName,
     crystalName: crystalSpecShort(counts),
     crystalMix: counts,
-    upgrade1: upgrade1 || "",
-    upgrade2: upgrade2 || "",
+    upgrade1: upgrades[0] || "",
+    upgrade2: upgrades[1] || "",
     tag,
     addSpeed,
     addAcc,
@@ -3195,6 +3305,35 @@ function applyHiddenRoleBonuses(c, role) {
 
   // Unknown preset -> ignore
 }
+
+function applyCompiledTacticsMinMax(w) {
+  if (!w) return w;
+  if (TACTICS_MODE === "minmax" || TACTICS_MODE === "both") {
+    return { ...w, min: w.min + TACTICS_VAL, max: w.max + TACTICS_VAL };
+  }
+  return w;
+}
+
+function rebuildMiscVariantForSlot(v, slotTag) {
+  if (
+    !v ||
+    slotTag !== 2 ||
+    !MISC_NO_CRYSTAL_SKILL_SLOT2_TYPE_MULTS.size ||
+    !MISC_NO_CRYSTAL_SKILL.has(v.itemName)
+  ) {
+    return v;
+  }
+  if (v.crystalMix) {
+    return computeVariantFromCrystalSpec(
+      v.itemName,
+      v.crystalMix,
+      v.upgrade1,
+      v.upgrade2,
+      slotTag,
+    );
+  }
+  return computeVariant(v.itemName, v.crystalName, v.upgrade1, v.upgrade2, slotTag);
+}
 // =====================
 // BUILD / COMPILE DEFENDERS
 // =====================
@@ -3296,6 +3435,8 @@ function compileDefender(def, variantCacheLocal) {
   const m2V = variantCacheLocal.get(variantKey(m2Name, m2Cr, "", ""));
   if (!armorV || !w1V || !w2V || !m1V || !m2V)
     throw new Error(`Missing variant cache entries for defender ${def.name}`);
+  const m1Eff = m1V;
+  const m2Eff = rebuildMiscVariantForSlot(m2V, 2);
 
   const baseSpeed = Math.floor(Number(st.speed));
   const baseAcc = Math.floor(Number(st.accuracy));
@@ -3308,12 +3449,22 @@ function compileDefender(def, variantCacheLocal) {
     armorV.addSpeed +
     w1V.addSpeed +
     w2V.addSpeed +
-    m1V.addSpeed +
-    m2V.addSpeed;
+    m1Eff.addSpeed +
+    m2Eff.addSpeed;
   const acc =
-    baseAcc + armorV.addAcc + w1V.addAcc + w2V.addAcc + m1V.addAcc + m2V.addAcc;
+    baseAcc +
+    armorV.addAcc +
+    w1V.addAcc +
+    w2V.addAcc +
+    m1Eff.addAcc +
+    m2Eff.addAcc;
   const dodge =
-    baseDod + armorV.addDod + w1V.addDod + w2V.addDod + m1V.addDod + m2V.addDod;
+    baseDod +
+    armorV.addDod +
+    w1V.addDod +
+    w2V.addDod +
+    m1Eff.addDod +
+    m2Eff.addDod;
 
   const w1SkillIdx = w1V.weapon ? w1V.weapon.skill : null;
   const w2SkillIdx = w2V.weapon ? w2V.weapon.skill : null;
@@ -3332,19 +3483,34 @@ function compileDefender(def, variantCacheLocal) {
   const w2Prj = w2V.addPrj * (w2SkillIdx === 2 ? w2Mult : 1);
 
   const gun =
-    BASE.gunSkill + armorV.addGun + w1Gun + w2Gun + m1V.addGun + m2V.addGun;
+    BASE.gunSkill +
+    armorV.addGun +
+    w1Gun +
+    w2Gun +
+    m1Eff.addGun +
+    m2Eff.addGun;
   const mel =
-    BASE.meleeSkill + armorV.addMel + w1Mel + w2Mel + m1V.addMel + m2V.addMel;
+    BASE.meleeSkill +
+    armorV.addMel +
+    w1Mel +
+    w2Mel +
+    m1Eff.addMel +
+    m2Eff.addMel;
   const prj =
-    BASE.projSkill + armorV.addPrj + w1Prj + w2Prj + m1V.addPrj + m2V.addPrj;
+    BASE.projSkill +
+    armorV.addPrj +
+    w1Prj +
+    w2Prj +
+    m1Eff.addPrj +
+    m2Eff.addPrj;
 
   const defSk =
     BASE.defSkill +
     armorV.addDef +
     w1V.addDef +
     w2V.addDef +
-    m1V.addDef +
-    m2V.addDef;
+    m1Eff.addDef +
+    m2Eff.addDef;
 
   const armor = BASE.armor + armorV.addArmStat;
   const armorFactor = armorFactorForArmorValue(level, armor, ARMOR_K);
@@ -3362,8 +3528,8 @@ function compileDefender(def, variantCacheLocal) {
     mel: Math.floor(mel),
     prj: Math.floor(prj),
     defSk: Math.floor(defSk),
-    w1: w1V.weapon,
-    w2: w2V.weapon,
+    w1: applyCompiledTacticsMinMax(w1V.weapon),
+    w2: applyCompiledTacticsMinMax(w2V.weapon),
     baseDmg: BASE.baseDamagePerHit,
   };
   applyHiddenRoleBonuses(c, "D");
@@ -3375,22 +3541,24 @@ function compileDefender(def, variantCacheLocal) {
 // =====================
 function compileAttacker(plan, av, w1v, w2v, m1v, m2v) {
   const level = BASE.level;
+  const m1Eff = m1v;
+  const m2Eff = rebuildMiscVariantForSlot(m2v, 2);
 
   const speed =
     BASE.speed +
     av.addSpeed +
     w1v.addSpeed +
     w2v.addSpeed +
-    m1v.addSpeed +
-    m2v.addSpeed;
+    m1Eff.addSpeed +
+    m2Eff.addSpeed;
 
   const acc =
     BASE.accuracy +
     av.addAcc +
     w1v.addAcc +
     w2v.addAcc +
-    m1v.addAcc +
-    m2v.addAcc +
+    m1Eff.addAcc +
+    m2Eff.addAcc +
     plan.extraAcc;
 
   const dodge =
@@ -3398,8 +3566,8 @@ function compileAttacker(plan, av, w1v, w2v, m1v, m2v) {
     av.addDod +
     w1v.addDod +
     w2v.addDod +
-    m1v.addDod +
-    m2v.addDod +
+    m1Eff.addDod +
+    m2Eff.addDod +
     plan.extraDodge;
 
   const w1SkillIdx = w1v.weapon ? w1v.weapon.skill : null;
@@ -3418,19 +3586,19 @@ function compileAttacker(plan, av, w1v, w2v, m1v, m2v) {
   const w2Prj = w2v.addPrj * (w2SkillIdx === 2 ? w2Mult : 1);
 
   const gun =
-    BASE.gunSkill + av.addGun + w1Gun + w2Gun + m1v.addGun + m2v.addGun;
+    BASE.gunSkill + av.addGun + w1Gun + w2Gun + m1Eff.addGun + m2Eff.addGun;
   const mel =
-    BASE.meleeSkill + av.addMel + w1Mel + w2Mel + m1v.addMel + m2v.addMel;
+    BASE.meleeSkill + av.addMel + w1Mel + w2Mel + m1Eff.addMel + m2Eff.addMel;
   const prj =
-    BASE.projSkill + av.addPrj + w1Prj + w2Prj + m1v.addPrj + m2v.addPrj;
+    BASE.projSkill + av.addPrj + w1Prj + w2Prj + m1Eff.addPrj + m2Eff.addPrj;
 
   const defSk =
     BASE.defSkill +
     av.addDef +
     w1v.addDef +
     w2v.addDef +
-    m1v.addDef +
-    m2v.addDef;
+    m1Eff.addDef +
+    m2Eff.addDef;
 
   const armor = BASE.armor + av.addArmStat;
   const armorFactor = armorFactorForArmorValue(level, armor, ARMOR_K);
@@ -3447,8 +3615,8 @@ function compileAttacker(plan, av, w1v, w2v, m1v, m2v) {
     mel: Math.floor(mel),
     prj: Math.floor(prj),
     defSk: Math.floor(defSk),
-    w1: w1v.weapon,
-    w2: w2v.weapon,
+    w1: applyCompiledTacticsMinMax(w1v.weapon),
+    w2: applyCompiledTacticsMinMax(w2v.weapon),
     baseDmg: BASE.baseDamagePerHit,
   };
   applyHiddenRoleBonuses(c, "A");
