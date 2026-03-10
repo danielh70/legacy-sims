@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-"use strict";
+'use strict';
 
 /**
  * =====================
@@ -58,15 +58,10 @@
 // =====================
 // IMPORTS
 // =====================
-const fs = require("fs");
-const os = require("os");
-const VERSION = "v1.4.4";
-const {
-  Worker,
-  isMainThread,
-  parentPort,
-  workerData,
-} = require("worker_threads");
+const fs = require('fs');
+const os = require('os');
+const VERSION = 'v1.4.4';
+const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
 
 // =====================
 // SETTINGS
@@ -76,9 +71,9 @@ const SETTINGS = {
   HP_MAX: 865,
   MAX_TURNS: 200,
 
-  TRIALS_CONFIRM_DEFAULT: 20000,
-  TRIALS_SCREEN_DEFAULT: 1200,
-  TRIALS_GATE_DEFAULT: 300,
+  TRIALS_CONFIRM_DEFAULT: 30000,
+  TRIALS_SCREEN_DEFAULT: 2000,
+  TRIALS_GATE_DEFAULT: 500,
   GATEKEEPERS_DEFAULT: 4,
 
   SCREEN_BAIL_MARGIN_DEFAULT: 6.0,
@@ -88,9 +83,9 @@ const SETTINGS = {
   PROGRESS_EVERY_MS: 2000,
 
   // Historical single-HP default.
-  LOCKED_HP: 595,
+  LOCKED_HP: 650,
 
-  WORKERS_DEFAULT_CAP: 12,
+  WORKERS_DEFAULT_CAP: 4,
 };
 
 // =====================
@@ -99,7 +94,7 @@ const SETTINGS = {
 const PLAN_SWEEP_CONFIG = {
   // 'single' = only use singleHp below
   // 'sweep'  = use hpSweep.min..max in hpSweep.step increments
-  hpMode: "sweep",
+  hpMode: 'single',
   singleHp: SETTINGS.LOCKED_HP,
 
   hpSweep: {
@@ -111,7 +106,7 @@ const PLAN_SWEEP_CONFIG = {
 
   // 'dodge_only'      = old behavior (all free points into dodge)
   // 'acc_dodge_sweep' = sweep accuracy allocations and put the rest into dodge
-  allocationMode: "acc_dodge_sweep",
+  allocationMode: 'dodge_only',
   allocation: {
     accStep: 10,
     customAccValues: [], // e.g. [15, 25] to force extra checkpoints when valid for a given HP
@@ -124,7 +119,7 @@ const PLAN_SWEEP_CONFIG = {
   // results are clearly worse for consecutive steps.
   safeAccuracyBail: {
     enabled: true,
-    metric: "screen_or_confirm", // 'screen_or_confirm' | 'confirm_only'
+    metric: 'screen_or_confirm', // 'screen_or_confirm' | 'confirm_only'
     minEvaluatedPlans: 3,
     minAccAheadOfBest: 20,
     worseByPct: 2.5,
@@ -136,33 +131,33 @@ const PLAN_SWEEP_CONFIG = {
 // POOLS
 // =====================
 const POOLS = {
-  armors: ["SG1 Armor", "Dark Legion Armor"],
+  armors: ['SG1 Armor', 'Dark Legion Armor'],
   weapons: [
-    "Crystal Maul",
-    "Core Staff",
-    "Void Axe",
-    "Scythe T2",
-    "Void Sword",
+    'Crystal Maul',
+    'Core Staff',
+    'Void Axe',
+    'Scythe T2',
+    'Void Sword',
     // "Ritual Dagger IV",
     // "Warlords Katana",
-    "Fortified Void Bow",
-    "Split Crystal Bombs T2",
-    "Rift Gun",
-    "Double Barrel Sniper Rifle",
-    "Q15 Gun",
-    "Bio Gun Mk4",
+    'Fortified Void Bow',
+    'Split Crystal Bombs T2',
+    'Rift Gun',
+    'Double Barrel Sniper Rifle',
+    'Q15 Gun',
+    'Bio Gun Mk4',
     // "Gun Blade Mk4",
-    "Reaper Axe",
-    "Alien Staff",
+    'Reaper Axe',
+    'Alien Staff',
   ],
   miscs: [
-    "Bio Spinal Enhancer",
-    "Scout Drones",
-    "Droid Drone",
-    "Orphic Amulet",
-    "Projector Bots",
-    "Recon Drones",
-    "Nerve Gauntlet",
+    'Bio Spinal Enhancer',
+    'Scout Drones',
+    'Droid Drone',
+    'Orphic Amulet',
+    'Projector Bots',
+    'Recon Drones',
+    'Nerve Gauntlet',
   ],
 };
 
@@ -194,27 +189,27 @@ function nowMs() {
 }
 function padRight(s, n) {
   s = String(s);
-  return s.length >= n ? s : s + " ".repeat(n - s.length);
+  return s.length >= n ? s : s + ' '.repeat(n - s.length);
 }
 function fmtSigned(x) {
   const n = Number(x || 0);
-  return `${n >= 0 ? "+" : ""}${n.toFixed(2)}`;
+  return `${n >= 0 ? '+' : ''}${n.toFixed(2)}`;
 }
 function classifyRefineOutcome(deltaWorst, deltaAvg, eps = 0.05) {
   const dw = Number(deltaWorst || 0);
   const da = Number(deltaAvg || 0);
-  if (Math.abs(dw) <= eps && Math.abs(da) <= eps) return "same";
-  if (dw > eps && da > eps) return "better both";
-  if (dw > eps && da >= -eps) return "improved floor";
-  if (da > eps && dw >= -eps) return "improved avg";
-  if (dw < -eps && da < -eps) return "worse both";
-  if (dw < -eps && da <= eps) return "worse floor";
-  if (da < -eps && dw <= eps) return "worse avg";
-  return "tradeoff";
+  if (Math.abs(dw) <= eps && Math.abs(da) <= eps) return 'same';
+  if (dw > eps && da > eps) return 'better both';
+  if (dw > eps && da >= -eps) return 'improved floor';
+  if (da > eps && dw >= -eps) return 'improved avg';
+  if (dw < -eps && da < -eps) return 'worse both';
+  if (dw < -eps && da <= eps) return 'worse floor';
+  if (da < -eps && dw <= eps) return 'worse avg';
+  return 'tradeoff';
 }
 function parseCsvList(s) {
-  return String(s || "")
-    .split(",")
+  return String(s || '')
+    .split(',')
     .map((x) => x.trim())
     .filter(Boolean);
 }
@@ -231,70 +226,66 @@ function parsePoolsFromEnv() {
 }
 
 function detectColorSupport() {
-  const override = String(process.env.LEGACY_COLORS || "")
+  const override = String(process.env.LEGACY_COLORS || '')
     .trim()
     .toLowerCase();
-  if (override === "always") return true;
-  if (override === "never") return false;
-  if (typeof process.stdout?.isTTY === "boolean" && !process.stdout.isTTY)
-    return false;
-  if ("NO_COLOR" in process.env) return false;
-  if (String(process.env.TERM || "").toLowerCase() === "dumb") return false;
+  if (override === 'always') return true;
+  if (override === 'never') return false;
+  if (typeof process.stdout?.isTTY === 'boolean' && !process.stdout.isTTY) return false;
+  if ('NO_COLOR' in process.env) return false;
+  if (String(process.env.TERM || '').toLowerCase() === 'dumb') return false;
   return true;
 }
 
 const TERM_UI = {
   colors: detectColorSupport(),
   mode: (() => {
-    const raw = String(process.env.LEGACY_OUTPUT || "")
+    const raw = String(process.env.LEGACY_OUTPUT || '')
       .trim()
       .toLowerCase();
-    if (["pretty", "compact", "plain"].includes(raw)) return raw;
-    return process.stdout?.isTTY ? "pretty" : "plain";
+    if (['pretty', 'compact', 'plain'].includes(raw)) return raw;
+    return process.stdout?.isTTY ? 'pretty' : 'plain';
   })(),
   detail: (() => {
-    const raw = String(
-      process.env.LEGACY_REPORT || process.env.LEGACY_DETAIL || "",
-    )
+    const raw = String(process.env.LEGACY_REPORT || process.env.LEGACY_DETAIL || '')
       .trim()
       .toLowerCase();
-    if (["quiet", "compact", "verbose"].includes(raw)) return raw;
-    const legacyVerbose = String(process.env.LEGACY_VERBOSE || "")
+    if (['quiet', 'compact', 'verbose'].includes(raw)) return raw;
+    const legacyVerbose = String(process.env.LEGACY_VERBOSE || '')
       .trim()
       .toLowerCase();
-    if (["1", "true", "yes", "on"].includes(legacyVerbose)) return "verbose";
-    return "compact";
+    if (['1', 'true', 'yes', 'on'].includes(legacyVerbose)) return 'verbose';
+    return 'compact';
   })(),
   progress: (() => {
-    const raw = String(process.env.LEGACY_PROGRESS || "")
+    const raw = String(process.env.LEGACY_PROGRESS || '')
       .trim()
       .toLowerCase();
-    if (["single", "checkpoints", "lines", "off"].includes(raw)) return raw;
-    return process.stdout?.isTTY &&
-      String(process.env.TERM || "").toLowerCase() !== "dumb"
-      ? "single"
-      : "checkpoints";
+    if (['single', 'checkpoints', 'lines', 'off'].includes(raw)) return raw;
+    return process.stdout?.isTTY && String(process.env.TERM || '').toLowerCase() !== 'dumb'
+      ? 'single'
+      : 'checkpoints';
   })(),
   sanity: (() => {
-    const raw = String(process.env.LEGACY_SANITY || "")
+    const raw = String(process.env.LEGACY_SANITY || '')
       .trim()
       .toLowerCase();
-    if (["auto", "always", "never"].includes(raw)) return raw;
-    return "auto";
+    if (['auto', 'always', 'never'].includes(raw)) return raw;
+    return 'auto';
   })(),
 };
 
 const REPORT_CFG = {
   finalistsTopN: (() => {
-    const n = parseInt(process.env.LEGACY_SHOW_TOP || "", 10);
+    const n = parseInt(process.env.LEGACY_SHOW_TOP || '', 10);
     return Number.isFinite(n) && n > 0 ? n : 5;
   })(),
   refineChangesTopN: (() => {
-    const n = parseInt(process.env.LEGACY_SHOW_REFINE_TOP || "", 10);
+    const n = parseInt(process.env.LEGACY_SHOW_REFINE_TOP || '', 10);
     return Number.isFinite(n) && n > 0 ? n : 6;
   })(),
   checkpointStepPct: (() => {
-    const n = parseInt(process.env.LEGACY_PROGRESS_CHECKPOINT || "", 10);
+    const n = parseInt(process.env.LEGACY_PROGRESS_CHECKPOINT || '', 10);
     return Number.isFinite(n) && n > 0 ? n : 10;
   })(),
 };
@@ -305,33 +296,33 @@ function ansi(code, s) {
 }
 
 const C = {
-  bold: (s) => ansi("1", s),
-  dim: (s) => ansi("2", s),
-  red: (s) => ansi("31", s),
-  green: (s) => ansi("32", s),
-  yellow: (s) => ansi("33", s),
-  blue: (s) => ansi("34", s),
-  magenta: (s) => ansi("35", s),
-  cyan: (s) => ansi("36", s),
-  gray: (s) => ansi("90", s),
+  bold: (s) => ansi('1', s),
+  dim: (s) => ansi('2', s),
+  red: (s) => ansi('31', s),
+  green: (s) => ansi('32', s),
+  yellow: (s) => ansi('33', s),
+  blue: (s) => ansi('34', s),
+  magenta: (s) => ansi('35', s),
+  cyan: (s) => ansi('36', s),
+  gray: (s) => ansi('90', s),
 };
 
 function toneText(tone, s) {
-  if (tone === "green") return C.green(s);
-  if (tone === "yellow") return C.yellow(s);
-  if (tone === "red") return C.red(s);
-  if (tone === "magenta") return C.magenta(s);
-  if (tone === "blue") return C.blue(s);
-  if (tone === "dim") return C.dim(s);
-  if (tone === "bold") return C.bold(s);
+  if (tone === 'green') return C.green(s);
+  if (tone === 'yellow') return C.yellow(s);
+  if (tone === 'red') return C.red(s);
+  if (tone === 'magenta') return C.magenta(s);
+  if (tone === 'blue') return C.blue(s);
+  if (tone === 'dim') return C.dim(s);
+  if (tone === 'bold') return C.bold(s);
   return C.cyan(s);
 }
 
-function statusTag(label, tone = "cyan") {
+function statusTag(label, tone = 'cyan') {
   return toneText(tone, `[${label}]`);
 }
 
-function section(title, tone = "cyan") {
+function section(title, tone = 'cyan') {
   return `
 ${toneText(tone, `=== ${title} ===`)}`;
 }
@@ -341,26 +332,26 @@ function kv(label, value) {
 }
 
 function stripAnsi(s) {
-  return String(s ?? "").replace(/\[[0-9;]*m/g, "");
+  return String(s ?? '').replace(/\[[0-9;]*m/g, '');
 }
 
-function padAnsi(s, width, align = "left") {
-  s = String(s ?? "");
+function padAnsi(s, width, align = 'left') {
+  s = String(s ?? '');
   const len = stripAnsi(s).length;
   const pad = Math.max(0, width - len);
-  return align === "right" ? " ".repeat(pad) + s : s + " ".repeat(pad);
+  return align === 'right' ? ' '.repeat(pad) + s : s + ' '.repeat(pad);
 }
 
 function pctTone(n) {
-  if (!Number.isFinite(n)) return "dim";
-  if (n >= 80) return "green";
-  if (n >= 70) return "cyan";
-  if (n >= 60) return "yellow";
-  return "red";
+  if (!Number.isFinite(n)) return 'dim';
+  if (n >= 80) return 'green';
+  if (n >= 70) return 'cyan';
+  if (n >= 60) return 'yellow';
+  return 'red';
 }
 
 function fmtPct(n, digits = 2) {
-  return Number.isFinite(n) ? `${n.toFixed(digits)}%` : "—";
+  return Number.isFinite(n) ? `${n.toFixed(digits)}%` : '—';
 }
 
 function fmtPctTone(n, digits = 2) {
@@ -368,18 +359,18 @@ function fmtPctTone(n, digits = 2) {
 }
 
 function fmtDelta(n, digits = 2) {
-  if (!Number.isFinite(n)) return C.dim("—");
-  const s = `${n >= 0 ? "+" : ""}${n.toFixed(digits)}`;
-  const tone = n > 0.05 ? "green" : n < -0.05 ? "red" : "dim";
+  if (!Number.isFinite(n)) return C.dim('—');
+  const s = `${n >= 0 ? '+' : ''}${n.toFixed(digits)}`;
+  const tone = n > 0.05 ? 'green' : n < -0.05 ? 'red' : 'dim';
   return toneText(tone, s);
 }
 
 function progressBar(frac, width = 22) {
   const f = clamp(Number(frac) || 0, 0, 1);
   const filled = Math.round(f * width);
-  const raw = `[${"#".repeat(filled)}${"-".repeat(Math.max(0, width - filled))}]`;
+  const raw = `[${'#'.repeat(filled)}${'-'.repeat(Math.max(0, width - filled))}]`;
   if (!TERM_UI.colors) return raw;
-  const bar = `${C.green("█".repeat(filled))}${C.gray("░".repeat(Math.max(0, width - filled)))}`;
+  const bar = `${C.green('█'.repeat(filled))}${C.gray('░'.repeat(Math.max(0, width - filled)))}`;
   return `[${bar}]`;
 }
 
@@ -387,19 +378,15 @@ function renderTable(headers, rows, aligns = []) {
   const safeRows = rows || [];
   const widths = headers.map((h, i) => {
     let w = stripAnsi(h).length;
-    for (const row of safeRows) w = Math.max(w, stripAnsi(row[i] ?? "").length);
+    for (const row of safeRows) w = Math.max(w, stripAnsi(row[i] ?? '').length);
     return w;
   });
-  const head = headers
-    .map((h, i) => padAnsi(C.bold(h), widths[i], aligns[i] || "left"))
-    .join("  ");
-  const sep = widths.map((w) => toneText("dim", "─".repeat(w))).join("  ");
+  const head = headers.map((h, i) => padAnsi(C.bold(h), widths[i], aligns[i] || 'left')).join('  ');
+  const sep = widths.map((w) => toneText('dim', '─'.repeat(w))).join('  ');
   const body = safeRows.map((row) =>
-    row
-      .map((cell, i) => padAnsi(cell ?? "", widths[i], aligns[i] || "left"))
-      .join("  "),
+    row.map((cell, i) => padAnsi(cell ?? '', widths[i], aligns[i] || 'left')).join('  '),
   );
-  return [head, sep, ...body].join("\n");
+  return [head, sep, ...body].join('\n');
 }
 
 function printTable(headers, rows, aligns = []) {
@@ -408,12 +395,12 @@ function printTable(headers, rows, aligns = []) {
 }
 
 function uiWantsVerbose() {
-  return TERM_UI.detail === "verbose";
+  return TERM_UI.detail === 'verbose';
 }
 
 function formatDuration(sec) {
   const s = Number(sec);
-  if (!Number.isFinite(s) || s < 0) return "—";
+  if (!Number.isFinite(s) || s < 0) return '—';
   if (s < 60) return `${s.toFixed(1)}s`;
   const hours = Math.floor(s / 3600);
   const mins = Math.floor((s % 3600) / 60);
@@ -423,7 +410,7 @@ function formatDuration(sec) {
 }
 
 function shortenMiddle(text, maxLen = 96) {
-  const s = String(text ?? "");
+  const s = String(text ?? '');
   if (s.length <= maxLen) return s;
   if (maxLen <= 7) return `${s.slice(0, Math.max(1, maxLen - 1))}…`;
   const keep = maxLen - 1;
@@ -439,62 +426,45 @@ function compactBuildLabel(label, maxLen = 88) {
 let LIVE_LINE_ACTIVE = false;
 
 function clearLiveLine() {
-  if (TERM_UI.progress !== "single" || !process.stdout?.isTTY) return;
-  if (typeof process.stdout.clearLine === "function") {
+  if (TERM_UI.progress !== 'single' || !process.stdout?.isTTY) return;
+  if (typeof process.stdout.clearLine === 'function') {
     process.stdout.clearLine(0);
-    if (typeof process.stdout.cursorTo === "function")
-      process.stdout.cursorTo(0);
+    if (typeof process.stdout.cursorTo === 'function') process.stdout.cursorTo(0);
   } else {
-    process.stdout.write("\r\u001b[2K");
+    process.stdout.write('\r\u001b[2K');
   }
   LIVE_LINE_ACTIVE = false;
 }
 
 function writeLiveLine(text) {
   clearLiveLine();
-  process.stdout.write(String(text ?? ""));
+  process.stdout.write(String(text ?? ''));
   LIVE_LINE_ACTIVE = true;
 }
 
 function flushLiveLine() {
-  if (TERM_UI.progress !== "single" || !process.stdout?.isTTY) return;
+  if (TERM_UI.progress !== 'single' || !process.stdout?.isTTY) return;
   if (!LIVE_LINE_ACTIVE) return;
-  process.stdout.write("\n");
+  process.stdout.write('\n');
   LIVE_LINE_ACTIVE = false;
 }
 
-function buildRunProgressLine({
-  done,
-  total,
-  elapsedSec,
-  etaSec,
-  floorPct,
-  bestWorst,
-  bestAvg,
-}) {
+function buildRunProgressLine({ done, total, elapsedSec, etaSec, floorPct, bestWorst, bestAvg }) {
   const frac = total > 0 ? done / total : 0;
-  return `${statusTag("RUN", "cyan")} ${fmtPct(frac * 100, 1)}  tested=${done}/${total}  elapsed=${formatDuration(
+  return `${statusTag('RUN', 'cyan')} ${fmtPct(frac * 100, 1)}  tested=${done}/${total}  elapsed=${formatDuration(
     elapsedSec,
-  )}  eta=${etaSec !== null && etaSec !== undefined ? formatDuration(etaSec) : "—"}  floor=${floorPct !== null && floorPct !== undefined ? fmtPct(floorPct) : "—"}  bestWorst=${
-    bestWorst !== null && bestWorst !== undefined ? fmtPctTone(bestWorst) : "—"
-  }  bestAvg=${bestAvg !== null && bestAvg !== undefined ? fmtPctTone(bestAvg) : "—"}`;
+  )}  eta=${etaSec !== null && etaSec !== undefined ? formatDuration(etaSec) : '—'}  floor=${floorPct !== null && floorPct !== undefined ? fmtPct(floorPct) : '—'}  bestWorst=${
+    bestWorst !== null && bestWorst !== undefined ? fmtPctTone(bestWorst) : '—'
+  }  bestAvg=${bestAvg !== null && bestAvg !== undefined ? fmtPctTone(bestAvg) : '—'}`;
 }
 
-function buildFinalizationProgressLine({
-  phase,
-  done,
-  total,
-  elapsedSec,
-  etaSec,
-  hp,
-  note,
-}) {
+function buildFinalizationProgressLine({ phase, done, total, elapsedSec, etaSec, hp, note }) {
   const frac = total > 0 ? done / total : 0;
-  const hpTag = hp !== null && hp !== undefined ? `  hp=${hp}` : "";
-  const noteText = note ? `  ${note}` : "";
-  return `${statusTag("FINAL", "magenta")} ${progressBar(frac)} ${fmtPct(frac * 100, 1)}  phase=${phase}  done=${done}/${total}  elapsed=${formatDuration(
+  const hpTag = hp !== null && hp !== undefined ? `  hp=${hp}` : '';
+  const noteText = note ? `  ${note}` : '';
+  return `${statusTag('FINAL', 'magenta')} ${progressBar(frac)} ${fmtPct(frac * 100, 1)}  phase=${phase}  done=${done}/${total}  elapsed=${formatDuration(
     elapsedSec,
-  )}  eta=${etaSec !== null && etaSec !== undefined ? formatDuration(etaSec) : "—"}${hpTag}${noteText}`;
+  )}  eta=${etaSec !== null && etaSec !== undefined ? formatDuration(etaSec) : '—'}${hpTag}${noteText}`;
 }
 
 function printCompactRunHeader({
@@ -526,21 +496,21 @@ function printCompactRunHeader({
   mixedCrystalPasses,
   exportJsonPath,
 }) {
-  console.log(section(`LEGACY BRUTE FORCE ${VERSION}`, "cyan"));
+  console.log(section(`LEGACY BRUTE FORCE ${VERSION}`, 'cyan'));
   console.log(
-    `${kv("run", `defs=${defenderCount} hidden=${hiddenPreset} workers=${workers} (${logical}/${physicalGuess})`)} ${kv("ui", `${TERM_UI.detail}/${TERM_UI.progress} colors=${TERM_UI.colors ? "ON" : "OFF"}`)}`,
+    `${kv('run', `defs=${defenderCount} hidden=${hiddenPreset} workers=${workers} (${logical}/${physicalGuess})`)} ${kv('ui', `${TERM_UI.detail}/${TERM_UI.progress} colors=${TERM_UI.colors ? 'ON' : 'OFF'}`)}`,
   );
   console.log(
-    `${kv("search", `${useSuperset ? "SUPERSET" : "EFFECTIVE"} gear=${useSuperset ? totalGearCandidatesSuperset : totalGearCandidatesEffective} plans=${totalPlans} buckets=${buckets}`)} ${kv("plan", `hpMode=${hpMode} alloc=${allocationMode}`)}`,
+    `${kv('search', `${useSuperset ? 'SUPERSET' : 'EFFECTIVE'} gear=${useSuperset ? totalGearCandidatesSuperset : totalGearCandidatesEffective} plans=${totalPlans} buckets=${buckets}`)} ${kv('plan', `hpMode=${hpMode} alloc=${allocationMode}`)}`,
   );
   console.log(
-    `${kv("trials", `gate=${trialsGate} screen=${trialsScreen} confirm=${trialsConfirm}`)} ${kv("gate", `N=${gatekeepers} bail=${screenBailMarginEffective.toFixed(2)}%`)} ${kv("catalog", `top=${catalogTopN} margin=${catalogMargin.toFixed(1)}% confirm=${catalogConfirmTrials}`)}`,
+    `${kv('trials', `gate=${trialsGate} screen=${trialsScreen} confirm=${trialsConfirm}`)} ${kv('gate', `N=${gatekeepers} bail=${screenBailMarginEffective.toFixed(2)}%`)} ${kv('catalog', `top=${catalogTopN} margin=${catalogMargin.toFixed(1)}% confirm=${catalogConfirmTrials}`)}`,
   );
   console.log(
-    `${kv("rng", `${rngMode === "fast" ? "fast(sfc32)" : "Math.random"}/${deterministic ? "det" : "live"}`)} ${kv("warm", `HP=${locked.hp} A${locked.extraAcc} D${locked.extraDodge} free=${locked.freePoints}`)} ${kv("refine", `${mixedCrystalRefine ? "ON" : "OFF"} ${mixedCrystalSearchTrials}x${mixedCrystalPasses}`)}`,
+    `${kv('rng', `${rngMode === 'fast' ? 'fast(sfc32)' : 'Math.random'}/${deterministic ? 'det' : 'live'}`)} ${kv('warm', `HP=${locked.hp} A${locked.extraAcc} D${locked.extraDodge} free=${locked.freePoints}`)} ${kv('refine', `${mixedCrystalRefine ? 'ON' : 'OFF'} ${mixedCrystalSearchTrials}x${mixedCrystalPasses}`)}`,
   );
-  if (exportJsonPath) console.log(`${kv("json", exportJsonPath)}`);
-  console.log("");
+  if (exportJsonPath) console.log(`${kv('json', exportJsonPath)}`);
+  console.log('');
 }
 
 function printVerboseRunHeader({
@@ -575,79 +545,75 @@ function printVerboseRunHeader({
   exportJsonPath,
   totalCandidates,
 }) {
-  console.log(section(`LEGACY BRUTE FORCE ${VERSION}`, "cyan"));
+  console.log(section(`LEGACY BRUTE FORCE ${VERSION}`, 'cyan'));
   console.log(
-    `${kv("defenders", defenderCount)} ${kv("hidden", hiddenPreset)} ${kv("ui", `mode=${TERM_UI.mode} detail=${TERM_UI.detail} progress=${TERM_UI.progress} colors=${TERM_UI.colors ? "ON" : "OFF"}`)}`,
+    `${kv('defenders', defenderCount)} ${kv('hidden', hiddenPreset)} ${kv('ui', `mode=${TERM_UI.mode} detail=${TERM_UI.detail} progress=${TERM_UI.progress} colors=${TERM_UI.colors ? 'ON' : 'OFF'}`)}`,
   );
   console.log(
-    `${kv("trials", `gate=${trialsGate} screen=${trialsScreen} confirm=${trialsConfirm}`)} ${kv("workers", `${workers} (logical=${logical}, guess=${physicalGuess})`)}`,
+    `${kv('trials', `gate=${trialsGate} screen=${trialsScreen} confirm=${trialsConfirm}`)} ${kv('workers', `${workers} (logical=${logical}, guess=${physicalGuess})`)}`,
   );
   console.log(
-    `${kv("rng", `${rngMode === "fast" ? "fast(sfc32)" : "Math.random"} | deterministic=${deterministic ? "ON" : "OFF"}`)} ${kv("baseDmg", `+${BASE.baseDamagePerHit}`)}`,
+    `${kv('rng', `${rngMode === 'fast' ? 'fast(sfc32)' : 'Math.random'} | deterministic=${deterministic ? 'ON' : 'OFF'}`)} ${kv('baseDmg', `+${BASE.baseDamagePerHit}`)}`,
   );
   console.log(
-    `${kv("crystals", `slots=${VARIANT_CFG.crystalSlots} stats=${normalizeCrystalStackMode(VARIANT_CFG.crystalStackStats)}/${VARIANT_CFG.statRound} dmg=${normalizeCrystalStackMode(VARIANT_CFG.crystalStackDmg)}/${VARIANT_CFG.weaponDmgRound} armor=${normalizeCrystalStackMode(VARIANT_CFG.armorStatStack)}/${VARIANT_CFG.armorStatRound}`)}`,
+    `${kv('crystals', `slots=${VARIANT_CFG.crystalSlots} stats=${normalizeCrystalStackMode(VARIANT_CFG.crystalStackStats)}/${VARIANT_CFG.statRound} dmg=${normalizeCrystalStackMode(VARIANT_CFG.crystalStackDmg)}/${VARIANT_CFG.weaponDmgRound} armor=${normalizeCrystalStackMode(VARIANT_CFG.armorStatStack)}/${VARIANT_CFG.armorStatRound}`)}`,
   );
   console.log(
-    `${kv("mixed bonus", "ON")} ${kv("locked amulet", LOCK_ONLY_AMULET.size ? Array.from(LOCK_ONLY_AMULET).join(", ") : "(none)")}`,
+    `${kv('mixed bonus', 'ON')} ${kv('locked amulet', LOCK_ONLY_AMULET.size ? Array.from(LOCK_ONLY_AMULET).join(', ') : '(none)')}`,
   );
 
   if (useSuperset) {
     console.log(
-      `${kv("search mode", "SUPERSET (compat)")} ${kv("gear candidates", `${totalGearCandidatesSuperset}`)} ${kv("plan slots", `${totalCandidates}`)}`,
+      `${kv('search mode', 'SUPERSET (compat)')} ${kv('gear candidates', `${totalGearCandidatesSuperset}`)} ${kv('plan slots', `${totalCandidates}`)}`,
     );
   } else {
     console.log(
-      `${kv("search mode", "EFFECTIVE (optimized)")} ${kv("gear candidates", `${totalGearCandidatesEffective}`)} ${kv("superset size", `${totalGearCandidatesSuperset}`)}`,
+      `${kv('search mode', 'EFFECTIVE (optimized)')} ${kv('gear candidates', `${totalGearCandidatesEffective}`)} ${kv('superset size', `${totalGearCandidatesSuperset}`)}`,
     );
   }
 
   console.log(
-    `${kv("plan sweep", `hpMode=${hpMode} allocation=${allocationMode} buckets=${buckets} totalPlans=${totalPlans}`)}`,
+    `${kv('plan sweep', `hpMode=${hpMode} allocation=${allocationMode} buckets=${buckets} totalPlans=${totalPlans}`)}`,
   );
   console.log(
-    `${kv("warm start", `HP=${locked.hp} extraAcc=${locked.extraAcc} extraDodge=${locked.extraDodge} freePoints=${locked.freePoints}`)}`,
+    `${kv('warm start', `HP=${locked.hp} extraAcc=${locked.extraAcc} extraDodge=${locked.extraDodge} freePoints=${locked.freePoints}`)}`,
   );
   console.log(
-    `${kv("gatekeepers", `N=${gatekeepers} gateTrials=${trialsGate} bail=${screenBailMarginEffective.toFixed(2)}% (raw=${bailMargin.toFixed(2)} catalog=${catalogMargin.toFixed(2)} align=${alignBailToCatalog ? "ON" : "OFF"})`)}`,
+    `${kv('gatekeepers', `N=${gatekeepers} gateTrials=${trialsGate} bail=${screenBailMarginEffective.toFixed(2)}% (raw=${bailMargin.toFixed(2)} catalog=${catalogMargin.toFixed(2)} align=${alignBailToCatalog ? 'ON' : 'OFF'})`)}`,
   );
   console.log(
-    `${kv("catalog", `topN=${catalogTopN} marginBelowFloor=${catalogMargin.toFixed(1)}% confirmTrials=${catalogConfirmTrials}`)}`,
+    `${kv('catalog', `topN=${catalogTopN} marginBelowFloor=${catalogMargin.toFixed(1)}% confirmTrials=${catalogConfirmTrials}`)}`,
   );
   console.log(
-    `${kv("mixed refine", `${mixedCrystalRefine ? "ON" : "OFF"} searchTrials=${mixedCrystalSearchTrials} passes=${mixedCrystalPasses}`)}`,
+    `${kv('mixed refine', `${mixedCrystalRefine ? 'ON' : 'OFF'} searchTrials=${mixedCrystalSearchTrials} passes=${mixedCrystalPasses}`)}`,
   );
-  if (exportJsonPath) console.log(`${kv("json export", exportJsonPath)}`);
-  console.log("");
+  if (exportJsonPath) console.log(`${kv('json export', exportJsonPath)}`);
+  console.log('');
 }
 
 function statsSummaryLine(stats) {
-  if (!stats) return "—";
+  if (!stats) return '—';
   return `Acc=${stats.acc} Dod=${stats.dodge} Gun=${stats.gun} Prj=${stats.prj} Mel=${stats.mel} Def=${stats.defSk} Arm=${stats.armor} Spd=${stats.speed}`;
 }
 
 function outcomeLabelForSource(kind) {
   switch (kind) {
-    case "refined":
-      return "mixed-crystal refine";
-    case "catalog":
-      return "catalog full confirm";
+    case 'refined':
+      return 'mixed-crystal refine';
+    case 'catalog':
+      return 'catalog full confirm';
     default:
-      return "kept finalist";
+      return 'kept finalist';
   }
 }
 
 function refineNote(entry) {
-  if (
-    !entry ||
-    !Number.isFinite(entry.baseWorstWin) ||
-    !Number.isFinite(entry.baseAvgWin)
-  )
-    return "";
+  if (!entry || !Number.isFinite(entry.baseWorstWin) || !Number.isFinite(entry.baseAvgWin))
+    return '';
   const dw = entry.worstWin - entry.baseWorstWin;
   const da = entry.avgWin - entry.baseAvgWin;
   const note = classifyRefineOutcome(dw, da);
-  if (note === "same") return "checked, no material change";
+  if (note === 'same') return 'checked, no material change';
   return `${note} (ΔMin ${fmtSigned(dw)} / ΔAvg ${fmtSigned(da)})`;
 }
 
@@ -655,88 +621,79 @@ function printWinnerCard(title, entry, options = {}) {
   if (!entry) return;
   const stats = entry.stats || {};
   const lines = [
-    [
-      "MinWR / AvgWR",
-      `${fmtPctTone(entry.worstWin)} / ${fmtPctTone(entry.avgWin)}`,
-    ],
-    ["Worst Matchup", C.bold(entry.worstName || "—")],
-    ["Archetype", entry.type || entry.wpTag || "—"],
+    ['MinWR / AvgWR', `${fmtPctTone(entry.worstWin)} / ${fmtPctTone(entry.avgWin)}`],
+    ['Worst Matchup', C.bold(entry.worstName || '—')],
+    ['Archetype', entry.type || entry.wpTag || '—'],
   ];
-  if (options.source) lines.push(["Source", options.source]);
-  if (Number.isFinite(options.hp)) lines.push(["HP", String(options.hp)]);
-  lines.push(["Build", entry.label || "—"]);
-  lines.push(["Stats", statsSummaryLine(stats)]);
+  if (options.source) lines.push(['Source', options.source]);
+  if (Number.isFinite(options.hp)) lines.push(['HP', String(options.hp)]);
+  lines.push(['Build', entry.label || '—']);
+  lines.push(['Stats', statsSummaryLine(stats)]);
   if (stats && (stats.extraAcc != null || stats.extraDodge != null)) {
-    lines.push(["Alloc", `A${stats.extraAcc ?? 0} D${stats.extraDodge ?? 0}`]);
+    lines.push(['Alloc', `A${stats.extraAcc ?? 0} D${stats.extraDodge ?? 0}`]);
   }
-  if (options.refine) lines.push(["Refine", options.refine]);
+  if (options.refine) lines.push(['Refine', options.refine]);
 
-  console.log(`${statusTag("BEST", "green")} ${C.bold(title)}`);
+  console.log(`${statusTag('BEST', 'green')} ${C.bold(title)}`);
   for (const [label, value] of lines) {
-    const rendered = label === "Build" ? C.bold(value) : value;
+    const rendered = label === 'Build' ? C.bold(value) : value;
     console.log(`  ${padAnsi(C.dim(label), 13)} ${rendered}`);
   }
-  console.log("");
+  console.log('');
 }
 
 function maybeWriteJson(pathLike, payload) {
   if (!pathLike) return;
   try {
     fs.writeFileSync(pathLike, JSON.stringify(payload, null, 2));
-    console.log(
-      `${statusTag("SAVE", "green")} wrote JSON summary -> ${pathLike}`,
-    );
+    console.log(`${statusTag('SAVE', 'green')} wrote JSON summary -> ${pathLike}`);
   } catch (err) {
     console.warn(
-      `${statusTag("SAVE", "red")} failed to write JSON summary -> ${pathLike}: ${err && err.message ? err.message : err}`,
+      `${statusTag('SAVE', 'red')} failed to write JSON summary -> ${pathLike}: ${err && err.message ? err.message : err}`,
     );
   }
 }
 
 function shortCrystal(c) {
   switch (c) {
-    case "Amulet Crystal":
-      return "A";
-    case "Perfect Pink Crystal":
-      return "P";
-    case "Perfect Orange Crystal":
-      return "O";
-    case "Perfect Green Crystal":
-      return "G";
-    case "Perfect Yellow Crystal":
-      return "Y";
-    case "Perfect Fire Crystal":
-      return "F";
-    case "Abyss Crystal":
-      return "B";
-    case "Cabrusion Crystal":
-      return "C";
-    case "Berserker Crystal":
-      return "Z";
+    case 'Amulet Crystal':
+      return 'A';
+    case 'Perfect Pink Crystal':
+      return 'P';
+    case 'Perfect Orange Crystal':
+      return 'O';
+    case 'Perfect Green Crystal':
+      return 'G';
+    case 'Perfect Yellow Crystal':
+      return 'Y';
+    case 'Perfect Fire Crystal':
+      return 'F';
+    case 'Abyss Crystal':
+      return 'B';
+    case 'Cabrusion Crystal':
+      return 'C';
+    // case "Berserker Crystal":
+    //   return "Z";
     default:
-      return "?";
+      return '?';
   }
 }
 
 const CRYSTAL_SORT_ORDER = [
-  "Amulet Crystal",
-  "Perfect Pink Crystal",
-  "Perfect Orange Crystal",
-  "Perfect Green Crystal",
-  "Perfect Yellow Crystal",
-  "Perfect Fire Crystal",
-  "Abyss Crystal",
-  "Cabrusion Crystal",
-  "Berserker Crystal",
+  'Amulet Crystal',
+  'Perfect Pink Crystal',
+  'Perfect Orange Crystal',
+  'Perfect Green Crystal',
+  'Perfect Yellow Crystal',
+  'Perfect Fire Crystal',
+  'Abyss Crystal',
+  'Cabrusion Crystal',
+  'Berserker Crystal',
 ];
-const CRYSTAL_SORT_RANK = new Map(
-  CRYSTAL_SORT_ORDER.map((name, idx) => [name, idx]),
-);
+const CRYSTAL_SORT_RANK = new Map(CRYSTAL_SORT_ORDER.map((name, idx) => [name, idx]));
 
 function crystalSortNames(names) {
-  return Array.from(
-    new Set((Array.isArray(names) ? names : []).filter(Boolean)),
-  ).sort((a, b) => {
+  return Array.from(new Set((Array.isArray(names) ? names : []).filter(Boolean))).sort((a, b) => {
     const ra = CRYSTAL_SORT_RANK.has(a) ? CRYSTAL_SORT_RANK.get(a) : 999;
     const rb = CRYSTAL_SORT_RANK.has(b) ? CRYSTAL_SORT_RANK.get(b) : 999;
     if (ra !== rb) return ra - rb;
@@ -745,50 +702,41 @@ function crystalSortNames(names) {
 }
 
 function partCrystalSpec(part) {
-  if (!part) return "";
+  if (!part) return '';
   if (part.crystalMix) return part.crystalMix;
   if (part.crystalCounts) return part.crystalCounts;
   if (part.crystals) return part.crystals;
-  return part.crystal || part.crystalName || "";
+  return part.crystal || part.crystalName || '';
 }
 
-function normalizeCrystalCounts(
-  crystalSpec,
-  totalSlots = VARIANT_CFG.crystalSlots,
-) {
-  if (typeof crystalSpec === "string") {
+function normalizeCrystalCounts(crystalSpec, totalSlots = VARIANT_CFG.crystalSlots) {
+  if (typeof crystalSpec === 'string') {
     const name = crystalSpec.trim();
-    if (!name) throw new Error("Missing crystal spec");
+    if (!name) throw new Error('Missing crystal spec');
     return { [name]: totalSlots };
   }
 
   const out = Object.create(null);
   if (Array.isArray(crystalSpec)) {
     for (const raw of crystalSpec) {
-      const name = String(raw || "").trim();
+      const name = String(raw || '').trim();
       if (!name) continue;
       out[name] = (out[name] || 0) + 1;
     }
-  } else if (crystalSpec && typeof crystalSpec === "object") {
+  } else if (crystalSpec && typeof crystalSpec === 'object') {
     const src =
-      crystalSpec.counts && typeof crystalSpec.counts === "object"
+      crystalSpec.counts && typeof crystalSpec.counts === 'object'
         ? crystalSpec.counts
         : crystalSpec;
     for (const [k, v] of Object.entries(src)) {
-      if (
-        k === "counts" ||
-        k === "crystal" ||
-        k === "crystalName" ||
-        k === "crystals"
-      )
-        continue;
+      if (k === 'counts' || k === 'crystal' || k === 'crystalName' || k === 'crystals') continue;
       const n = Math.floor(Number(v));
       if (!Number.isFinite(n) || n <= 0) continue;
       out[k] = (out[k] || 0) + n;
     }
     if (
       !Object.keys(out).length &&
-      typeof crystalSpec.crystal === "string" &&
+      typeof crystalSpec.crystal === 'string' &&
       crystalSpec.crystal
     ) {
       return normalizeCrystalCounts(crystalSpec.crystal, totalSlots);
@@ -797,35 +745,28 @@ function normalizeCrystalCounts(
       return normalizeCrystalCounts(crystalSpec.crystals, totalSlots);
     }
   } else {
-    throw new Error("Missing crystal spec");
+    throw new Error('Missing crystal spec');
   }
 
   const total = Object.values(out).reduce((a, b) => a + b, 0);
   if (total !== totalSlots) {
-    throw new Error(
-      `Crystal spec must use exactly ${totalSlots} slots (got ${total})`,
-    );
+    throw new Error(`Crystal spec must use exactly ${totalSlots} slots (got ${total})`);
   }
-  return Object.fromEntries(
-    crystalSortNames(Object.keys(out)).map((name) => [name, out[name]]),
-  );
+  return Object.fromEntries(crystalSortNames(Object.keys(out)).map((name) => [name, out[name]]));
 }
 
 function crystalSpecKey(crystalSpec, totalSlots = VARIANT_CFG.crystalSlots) {
   const counts = normalizeCrystalCounts(crystalSpec, totalSlots);
   return crystalSortNames(Object.keys(counts))
     .map((name) => `${name}:${counts[name]}`)
-    .join(",");
+    .join(',');
 }
 
 function crystalSpecShort(crystalSpec, totalSlots = VARIANT_CFG.crystalSlots) {
   const counts = normalizeCrystalCounts(crystalSpec, totalSlots);
   return crystalSortNames(Object.keys(counts))
-    .map(
-      (name) =>
-        `${shortCrystal(name)}${counts[name] === 1 ? "" : counts[name]}`,
-    )
-    .join("+");
+    .map((name) => `${shortCrystal(name)}${counts[name] === 1 ? '' : counts[name]}`)
+    .join('+');
 }
 
 function cloneSpec(spec) {
@@ -834,28 +775,20 @@ function cloneSpec(spec) {
 
 function specKey(spec) {
   const plan = spec.plan || {};
-  const parts = [
-    spec.armor,
-    spec.weapon1,
-    spec.weapon2,
-    spec.misc1,
-    spec.misc2,
-  ].map((part) => {
-    const u1 = part && part.u1 ? part.u1 : "";
-    const u2 = part && part.u2 ? part.u2 : "";
+  const parts = [spec.armor, spec.weapon1, spec.weapon2, spec.misc1, spec.misc2].map((part) => {
+    const u1 = part && part.u1 ? part.u1 : '';
+    const u2 = part && part.u2 ? part.u2 : '';
     return `${part.item}|${crystalSpecKey(partCrystalSpec(part))}|${u1}|${u2}`;
   });
-  return `HP${plan.hp}|A${plan.extraAcc}|D${plan.extraDodge}|${parts.join("|")}`;
+  return `HP${plan.hp}|A${plan.extraAcc}|D${plan.extraDodge}|${parts.join('|')}`;
 }
 
 function formatWeaponShortFromSpecPart(part) {
-  const u1 = shortUpgrade(part.u1 || "");
-  const u2 = shortUpgrade(part.u2 || "");
-  const u = [u1, u2].filter(Boolean).join("+");
+  const u1 = shortUpgrade(part.u1 || '');
+  const u2 = shortUpgrade(part.u2 || '');
+  const u = [u1, u2].filter(Boolean).join('+');
   const mix = crystalSpecShort(partCrystalSpec(part));
-  return u
-    ? `${shortItem(part.item)}[${mix}]{${u}}`
-    : `${shortItem(part.item)}[${mix}]`;
+  return u ? `${shortItem(part.item)}[${mix}]{${u}}` : `${shortItem(part.item)}[${mix}]`;
 }
 
 function buildLabelFromSpec(spec) {
@@ -872,7 +805,7 @@ function buildPartMiscMeta(itemName) {
   const idef = ItemDefs[itemName] || {};
   const fs = idef.flatStats || {};
   return {
-    isBio: itemName === "Bio Spinal Enhancer",
+    isBio: itemName === 'Bio Spinal Enhancer',
     hasGun: !!(fs.gunSkill || 0),
     hasMel: !!(fs.meleeSkill || 0),
     hasPrj: !!(fs.projSkill || 0),
@@ -882,42 +815,32 @@ function buildPartMiscMeta(itemName) {
 
 function weaponMaskBitForItem(itemName) {
   const idef = ItemDefs[itemName];
-  if (!idef || idef.type !== "Weapon") return 0;
-  const st = String(idef.skillType || "meleeSkill");
-  if (st === "gunSkill") return 0b001;
-  if (st === "meleeSkill") return 0b010;
-  if (st === "projSkill") return 0b100;
+  if (!idef || idef.type !== 'Weapon') return 0;
+  const st = String(idef.skillType || 'meleeSkill');
+  if (st === 'gunSkill') return 0b001;
+  if (st === 'meleeSkill') return 0b010;
+  if (st === 'projSkill') return 0b100;
   return 0;
 }
 
 function weaponMaskFromSpec(spec) {
-  return (
-    weaponMaskBitForItem(spec.weapon1.item) |
-    weaponMaskBitForItem(spec.weapon2.item)
-  );
+  return weaponMaskBitForItem(spec.weapon1.item) | weaponMaskBitForItem(spec.weapon2.item);
 }
 
 function allowedCrystalsForSpecPart(spec, partKey) {
   const part = spec[partKey];
   if (!part) return [];
-  if (partKey === "armor") return allowedCrystalsForArmor(part.item);
-  if (partKey === "weapon1" || partKey === "weapon2")
-    return allowedCrystalsForWeapon(part.item);
+  if (partKey === 'armor') return allowedCrystalsForArmor(part.item);
+  if (partKey === 'weapon1' || partKey === 'weapon2') return allowedCrystalsForWeapon(part.item);
 
   const meta = buildPartMiscMeta(part.item);
   const weaponMask = weaponMaskFromSpec(spec);
   return allowedCrystalsForMiscSuperset(part.item).filter((crystalName) =>
-    miscVariantAllowedForWeaponMask(
-      { itemName: part.item, crystalName, __misc: meta },
-      weaponMask,
-    ),
+    miscVariantAllowedForWeaponMask({ itemName: part.item, crystalName, __misc: meta }, weaponMask),
   );
 }
 
-function enumerateCrystalCountMixes(
-  allowedCrystals,
-  totalSlots = VARIANT_CFG.crystalSlots,
-) {
+function enumerateCrystalCountMixes(allowedCrystals, totalSlots = VARIANT_CFG.crystalSlots) {
   const crystals = crystalSortNames(allowedCrystals);
   if (!crystals.length) return [];
   const out = [];
@@ -944,64 +867,64 @@ function enumerateCrystalCountMixes(
 }
 
 function shortUpgrade(u) {
-  if (!u || u === "None") return "";
+  if (!u || u === 'None') return '';
   return u
-    .replace("Faster Reload 4", "FR4")
-    .replace("Enhanced Scope 4", "ES4")
-    .replace("Faster Ammo 4", "FA4")
-    .replace("Tracer Rounds 4", "TR4")
-    .replace("Sharpened Blade 1", "SB1")
-    .replace("Faster Reload 1", "FR1")
-    .replace("Magnetic Blade 1", "MB1")
-    .replace("Faster Ammo 1", "FA1")
-    .replace("Magnetic Blade 3", "MB3")
-    .replace("Stronger Guard 3", "SG3")
-    .replace("Sharpened Blade 3", "SB3")
-    .replace("Extra Grip 3", "EG3")
-    .replace("Magnetic Blade 2", "MB2")
-    .replace("Enhanced Poison 2", "EP2")
-    .replace("Sharpened Blade 2", "SB2")
-    .replace("Extra Grip 2", "EG2")
-    .replace("Laser Sight", "LS")
-    .replace("Poisoned Tip", "PT");
+    .replace('Faster Reload 4', 'FR4')
+    .replace('Enhanced Scope 4', 'ES4')
+    .replace('Faster Ammo 4', 'FA4')
+    .replace('Tracer Rounds 4', 'TR4')
+    .replace('Sharpened Blade 1', 'SB1')
+    .replace('Faster Reload 1', 'FR1')
+    .replace('Magnetic Blade 1', 'MB1')
+    .replace('Faster Ammo 1', 'FA1')
+    .replace('Magnetic Blade 3', 'MB3')
+    .replace('Stronger Guard 3', 'SG3')
+    .replace('Sharpened Blade 3', 'SB3')
+    .replace('Extra Grip 3', 'EG3')
+    .replace('Magnetic Blade 2', 'MB2')
+    .replace('Enhanced Poison 2', 'EP2')
+    .replace('Sharpened Blade 2', 'SB2')
+    .replace('Extra Grip 2', 'EG2')
+    .replace('Laser Sight', 'LS')
+    .replace('Poisoned Tip', 'PT');
 }
 
 function shortItem(name) {
   return name
-    .replace("Dark Legion Armor", "DLArm")
-    .replace("SG1 Armor", "SG1")
-    .replace("Hellforged Armor", "HF")
-    .replace("Crystal Maul", "CM")
-    .replace("Core Staff", "CS")
-    .replace("Void Axe", "VA")
-    .replace("Scythe T2", "Scy")
-    .replace("Void Sword", "VS")
-    .replace("Ritual Dagger IV", "RD4")
-    .replace("Warlords Katana", "WK")
-    .replace("Fortified Void Bow", "FVBow")
-    .replace("Split Crystal Bombs T2", "Bombs")
-    .replace("Void Bow", "VBow")
-    .replace("Rift Gun", "Rift")
-    .replace("Double Barrel Sniper Rifle", "DBSR")
-    .replace("Q15 Gun", "Q15")
-    .replace("Bio Gun Mk4", "Mk4")
-    .replace("Gun Blade Mk4", "GB4")
-    .replace("Reaper Axe", "RA")
-    .replace("Alien Staff", "AS")
-    .replace("Bio Spinal Enhancer", "Bio")
-    .replace("Scout Drones", "Scout")
-    .replace("Droid Drone", "Droid")
-    .replace("Orphic Amulet", "Orphic")
-    .replace("Projector Bots", "ProjBot")
-    .replace("Recon Drones", "Recon")
-    .replace("Nerve Gauntlet", "Nerve");
+    .replace('Dark Legion Armor', 'DLArm')
+    .replace('SG1 Armor', 'SG1')
+    .replace('Hellforged Armor', 'HF')
+    .replace('Crystal Maul', 'CM')
+    .replace('Core Staff', 'CS')
+    .replace('Void Axe', 'VA')
+    .replace('Scythe T2', 'Scy')
+    .replace('Void Sword', 'VS')
+    .replace('Ritual Dagger IV', 'RD4')
+    .replace('Warlords Katana', 'WK')
+    .replace('Fortified Void Bow', 'FVBow')
+    .replace('Split Crystal Bombs T2', 'Bombs')
+    .replace('Void Bow', 'VBow')
+    .replace('Rift Gun', 'Rift')
+    .replace('Double Barrel Sniper Rifle', 'DBSR')
+    .replace('Q15 Gun', 'Q15')
+    .replace('Bio Gun Mk4', 'Mk4')
+    .replace('Gun Blade Mk4', 'GB4')
+    .replace('Reaper Axe', 'RA')
+    .replace('Alien Staff', 'AS')
+    .replace('Bio Spinal Enhancer', 'Bio')
+    .replace('Scout Drones', 'Scout')
+    .replace('Droid Drone', 'Droid')
+    .replace('Orphic Amulet', 'Orphic')
+    .replace('Projector Bots', 'ProjBot')
+    .replace('Recon Drones', 'Recon')
+    .replace('Nerve Gauntlet', 'Nerve');
 }
 
 // =====================
 // WEAPON ARCHETYPE TAGGING (for reporting)
 // =====================
 function skillLabel(skillCode) {
-  return skillCode === 0 ? "Gun" : skillCode === 1 ? "Melee" : "Proj";
+  return skillCode === 0 ? 'Gun' : skillCode === 1 ? 'Melee' : 'Proj';
 }
 function weaponPairTagFromSkills(s1, s2) {
   const a = skillLabel(s1);
@@ -1044,7 +967,7 @@ function floorTryRaise(sharedI32, pct) {
 // RNG
 // =====================
 function makeRng(mode, seedA, seedB, seedC, seedD) {
-  if (mode !== "fast") return Math.random;
+  if (mode !== 'fast') return Math.random;
 
   // sfc32
   let a = seedA >>> 0,
@@ -1095,113 +1018,89 @@ let RNG = Math.random;
 // ---------------------
 function _envStr(name, def) {
   const v = process.env[name];
-  return v === undefined || v === null || v === "" ? def : String(v);
+  return v === undefined || v === null || v === '' ? def : String(v);
 }
 function _envNum(name, def) {
   const v = Number(_envStr(name, def));
   return Number.isFinite(v) ? v : Number(def);
 }
 function _envBool(name, def) {
-  const v = _envStr(name, def ? "1" : "0")
+  const v = _envStr(name, def ? '1' : '0')
     .trim()
     .toLowerCase();
-  return !(v === "0" || v === "false" || v === "off" || v === "no");
+  return !(v === '0' || v === 'false' || v === 'off' || v === 'no');
 }
 
 function normalizeRollMode(m) {
-  m = String(m || "float")
+  m = String(m || 'float')
     .trim()
     .toLowerCase();
-  if (m === "int") return "int";
-  if (m === "float") return "float";
-  if (
-    m === "int_u" ||
-    m === "int_uniform" ||
-    m === "uniform_int" ||
-    m === "intcf"
-  )
-    return "int_uniform";
-  if (
-    m === "int_excl" ||
-    m === "int_exclusive" ||
-    m === "int_exclmax" ||
-    m === "int_x"
-  )
-    return "int_excl";
-  return "float";
+  if (m === 'int') return 'int';
+  if (m === 'float') return 'float';
+  if (m === 'int_u' || m === 'int_uniform' || m === 'uniform_int' || m === 'intcf')
+    return 'int_uniform';
+  if (m === 'int_excl' || m === 'int_exclusive' || m === 'int_exclmax' || m === 'int_x')
+    return 'int_excl';
+  return 'float';
 }
 function normalizeQround(m) {
-  m = String(m || "none")
+  m = String(m || 'none')
     .trim()
     .toLowerCase();
-  if (m === "none" || m === "off" || m === "0") return "none";
-  if (m === "floor") return "floor";
-  if (m === "ceil" || m === "ceiling") return "ceil";
-  if (m === "round") return "round";
-  return "none";
+  if (m === 'none' || m === 'off' || m === '0') return 'none';
+  if (m === 'floor') return 'floor';
+  if (m === 'ceil' || m === 'ceiling') return 'ceil';
+  if (m === 'round') return 'round';
+  return 'none';
 }
 function applyQuarterRound(x, qround) {
-  if (qround === "floor") return Math.floor(x);
-  if (qround === "ceil") return Math.ceil(x);
-  if (qround === "round") return Math.round(x);
+  if (qround === 'floor') return Math.floor(x);
+  if (qround === 'ceil') return Math.ceil(x);
+  if (qround === 'round') return Math.round(x);
   return x;
 }
 
 // default: random speed ties (matches legacy-sim-v1.0.4 direction)
-const SPEED_TIE_MODE = _envStr("LEGACY_SPEED_TIE_MODE", "random")
-  .trim()
-  .toLowerCase();
+const SPEED_TIE_MODE = _envStr('LEGACY_SPEED_TIE_MODE', 'random').trim().toLowerCase();
 
 // calibrated defaults (normalized once up-front for speed)
-const HIT_ROLL_MODE = normalizeRollMode(_envStr("LEGACY_HIT_ROLL_MODE", "int"));
-const HIT_GE = _envBool("LEGACY_HIT_GE", true);
-const HIT_QROUND = normalizeQround(_envStr("LEGACY_HIT_QROUND", "round"));
+const HIT_ROLL_MODE = normalizeRollMode(_envStr('LEGACY_HIT_ROLL_MODE', 'int'));
+const HIT_GE = _envBool('LEGACY_HIT_GE', true);
+const HIT_QROUND = normalizeQround(_envStr('LEGACY_HIT_QROUND', 'round'));
 
-const SKILL_ROLL_MODE = normalizeRollMode(
-  _envStr("LEGACY_SKILL_ROLL_MODE", "int"),
-);
-const SKILL_GE = _envBool("LEGACY_SKILL_GE", true);
-const SKILL_QROUND = normalizeQround(_envStr("LEGACY_SKILL_QROUND", "round"));
+const SKILL_ROLL_MODE = normalizeRollMode(_envStr('LEGACY_SKILL_ROLL_MODE', 'int'));
+const SKILL_GE = _envBool('LEGACY_SKILL_GE', true);
+const SKILL_QROUND = normalizeQround(_envStr('LEGACY_SKILL_QROUND', 'round'));
 
-const DMG_ROLL = String(_envStr("LEGACY_DMG_ROLL", "int")).trim().toLowerCase();
+const DMG_ROLL = String(_envStr('LEGACY_DMG_ROLL', 'int')).trim().toLowerCase();
 
-const ARMOR_K = _envNum("LEGACY_ARMOR_K", 8);
-const ARMOR_APPLY = _envStr("LEGACY_ARMOR_APPLY", "per_weapon")
-  .trim()
-  .toLowerCase();
-const ARMOR_ROUND = _envStr("LEGACY_ARMOR_ROUND", "ceil").trim().toLowerCase();
+const ARMOR_K = _envNum('LEGACY_ARMOR_K', 8);
+const ARMOR_APPLY = _envStr('LEGACY_ARMOR_APPLY', 'per_weapon').trim().toLowerCase();
+const ARMOR_ROUND = _envStr('LEGACY_ARMOR_ROUND', 'ceil').trim().toLowerCase();
 
-const PROJ_DEF_MULT = _envNum("LEGACY_PROJ_DEF_MULT", 1);
+const PROJ_DEF_MULT = _envNum('LEGACY_PROJ_DEF_MULT', 1);
 
 // main-calib compatibility: whether the 2nd weapon is skipped if the 1st weapon kills the target
-const ACTION_STOP_ON_KILL = _envBool("LEGACY_ACTION_STOP_ON_KILL", false);
+const ACTION_STOP_ON_KILL = _envBool('LEGACY_ACTION_STOP_ON_KILL', false);
 
 // main-calib compatibility: shared hit roll once per action (forces both weapons to use same hit result)
-const SHARED_HIT = _envBool("LEGACY_SHARED_HIT", false);
+const SHARED_HIT = _envBool('LEGACY_SHARED_HIT', false);
 
 // main-calib compatibility: shared skill roll caching
 //   none | same_type | gun_same_type
-const SHARED_SKILL_MODE = _envStr("LEGACY_SHARED_SKILL", "none")
-  .trim()
-  .toLowerCase();
+const SHARED_SKILL_MODE = _envStr('LEGACY_SHARED_SKILL', 'none').trim().toLowerCase();
 
 // tactics/base damage bonus support (matches legacy_simulator.canonical semantics)
 //   LEGACY_TACTICS_MODE: none | base | both
 //   LEGACY_TACTICS_VAL: numeric (default 5)
 //   LEGACY_DMG_BONUS_MODE: per_action | per_weapon | split_equipped
 //   LEGACY_DMG_BONUS_STAGE: pre_armor | post_armor
-const TACTICS_MODE = _envStr("LEGACY_TACTICS_MODE", "none")
-  .trim()
-  .toLowerCase();
-const TACTICS_VAL = _envNum("LEGACY_TACTICS_VAL", 5);
-const DMG_BONUS_MODE = _envStr("LEGACY_DMG_BONUS_MODE", "per_action")
-  .trim()
-  .toLowerCase();
-const DMG_BONUS_STAGE = _envStr("LEGACY_DMG_BONUS_STAGE", "pre_armor")
-  .trim()
-  .toLowerCase();
+const TACTICS_MODE = _envStr('LEGACY_TACTICS_MODE', 'none').trim().toLowerCase();
+const TACTICS_VAL = _envNum('LEGACY_TACTICS_VAL', 5);
+const DMG_BONUS_MODE = _envStr('LEGACY_DMG_BONUS_MODE', 'per_action').trim().toLowerCase();
+const DMG_BONUS_STAGE = _envStr('LEGACY_DMG_BONUS_STAGE', 'pre_armor').trim().toLowerCase();
 
-const TACTICS_BASE_ENABLED = TACTICS_MODE === "base" || TACTICS_MODE === "both";
+const TACTICS_BASE_ENABLED = TACTICS_MODE === 'base' || TACTICS_MODE === 'both';
 const TACTICS_BASE_VAL = TACTICS_BASE_ENABLED ? TACTICS_VAL : 0;
 
 // ---------------------
@@ -1238,7 +1137,7 @@ function intRange(min, max, mode) {
   const lo = Math.ceil(min);
   const hi = Math.floor(max);
   if (hi < lo) return { lo, hi: lo };
-  if (mode === "int_excl") return { lo, hi: Math.max(lo, hi - 1) };
+  if (mode === 'int_excl') return { lo, hi: Math.max(lo, hi - 1) };
   return { lo, hi };
 }
 
@@ -1252,24 +1151,24 @@ function rollVs(off, def, rollMode, ge, qround) {
   let dMin = def / 4;
   const dMax = def;
 
-  if (qround !== "none") {
+  if (qround !== 'none') {
     aMin = applyQuarterRound(aMin, qround);
     dMin = applyQuarterRound(dMin, qround);
   }
 
   let a, b;
-  if (rollMode === "float") {
+  if (rollMode === 'float') {
     a = randFloat(aMin, aMax);
     b = randFloat(dMin, dMax);
-  } else if (rollMode === "int") {
+  } else if (rollMode === 'int') {
     a = randLegacyInt(aMin, aMax);
     b = randLegacyInt(dMin, dMax);
-  } else if (rollMode === "int_uniform") {
+  } else if (rollMode === 'int_uniform') {
     a = randIntInclusive(aMin, aMax);
     b = randIntInclusive(dMin, dMax);
-  } else if (rollMode === "int_excl") {
-    const rA = intRange(aMin, aMax, "int_excl");
-    const rB = intRange(dMin, dMax, "int_excl");
+  } else if (rollMode === 'int_excl') {
+    const rA = intRange(aMin, aMax, 'int_excl');
+    const rB = intRange(dMin, dMax, 'int_excl');
     a = randIntInclusive(rA.lo, rA.hi);
     b = randIntInclusive(rB.lo, rB.hi);
   } else {
@@ -1290,7 +1189,7 @@ function skillValue(att, skillCode) {
 }
 
 function rollDamage(min, max, dmgRollMode) {
-  if (dmgRollMode === "int") return randLegacyInt(min, max);
+  if (dmgRollMode === 'int') return randLegacyInt(min, max);
   return Math.round(randFloat(min, max));
 }
 
@@ -1302,9 +1201,9 @@ function armorFactorForArmorValue(level, armor, armorK) {
 
 function applyArmorAndRound(raw, armorFactor, armorRound) {
   const x = raw * armorFactor;
-  if (armorRound === "none") return x;
-  if (armorRound === "floor") return Math.floor(x);
-  if (armorRound === "ceil") return Math.ceil(x);
+  if (armorRound === 'none') return x;
+  if (armorRound === 'floor') return Math.floor(x);
+  if (armorRound === 'ceil') return Math.ceil(x);
   return Math.round(x);
 }
 
@@ -1353,13 +1252,7 @@ function attemptWeaponFast(att, def, w, pre, out) {
     }
     skillOk = pre.sharedSkillCachedVal;
   } else {
-    skillOk = rollVs(
-      atkSkill,
-      defSkill,
-      SKILL_ROLL_MODE,
-      SKILL_GE,
-      SKILL_QROUND,
-    );
+    skillOk = rollVs(atkSkill, defSkill, SKILL_ROLL_MODE, SKILL_GE, SKILL_QROUND);
   }
   if (!skillOk) return;
 
@@ -1368,20 +1261,17 @@ function attemptWeaponFast(att, def, w, pre, out) {
   if (raw <= 0) return;
 
   // tactics/base bonus (per-weapon variants)
-  if (TACTICS_BASE_VAL > 0 && DMG_BONUS_MODE !== "per_action") {
-    if (DMG_BONUS_MODE === "per_weapon") {
+  if (TACTICS_BASE_VAL > 0 && DMG_BONUS_MODE !== 'per_action') {
+    if (DMG_BONUS_MODE === 'per_weapon') {
       raw += TACTICS_BASE_VAL;
-    } else if (DMG_BONUS_MODE === "split_equipped") {
-      if (String(w.name).includes("Split Crystal Bombs"))
-        raw += TACTICS_BASE_VAL;
+    } else if (DMG_BONUS_MODE === 'split_equipped') {
+      if (String(w.name).includes('Split Crystal Bombs')) raw += TACTICS_BASE_VAL;
     }
   }
 
   // ARMOR application
   const val =
-    ARMOR_APPLY === "per_weapon"
-      ? applyArmorAndRound(raw, def.armorFactor, ARMOR_ROUND)
-      : raw;
+    ARMOR_APPLY === 'per_weapon' ? applyArmorAndRound(raw, def.armorFactor, ARMOR_ROUND) : raw;
 
   out[0] = val > 0 ? val : 0;
   out[1] = 1; // raw>0 (hit+skill succeeded)
@@ -1401,16 +1291,10 @@ function doActionFast(att, def, targetHp0) {
   _PRE_ACTION.sharedSkillCached = false;
   _PRE_ACTION.sharedSkillCachedVal = false;
 
-  if (
-    SHARED_SKILL_MODE !== "none" &&
-    att.w1 &&
-    att.w2 &&
-    att.w1.skill === att.w2.skill
-  ) {
+  if (SHARED_SKILL_MODE !== 'none' && att.w1 && att.w2 && att.w1.skill === att.w2.skill) {
     const sc = att.w1.skill;
     const allow =
-      SHARED_SKILL_MODE === "same_type" ||
-      (SHARED_SKILL_MODE === "gun_same_type" && sc === 0);
+      SHARED_SKILL_MODE === 'same_type' || (SHARED_SKILL_MODE === 'gun_same_type' && sc === 0);
     if (allow) {
       _PRE_ACTION.sharedSkillOn = true;
       _PRE_ACTION.sharedSkillSkillCode = sc;
@@ -1427,7 +1311,7 @@ function doActionFast(att, def, targetHp0) {
   if (
     ACTION_STOP_ON_KILL &&
     targetHp0 > 0 &&
-    ARMOR_APPLY === "per_weapon" &&
+    ARMOR_APPLY === 'per_weapon' &&
     TACTICS_BASE_VAL === 0 &&
     _TW1[0] >= targetHp0
   ) {
@@ -1441,11 +1325,11 @@ function doActionFast(att, def, targetHp0) {
   }
 
   // combine damage
-  if (ARMOR_APPLY === "per_weapon") {
+  if (ARMOR_APPLY === 'per_weapon') {
     let actionDmg = _TW1[0] + _TW2[0];
 
     // per-action tactics bonus (post-weapon, pre-cap)
-    if (TACTICS_BASE_VAL > 0 && DMG_BONUS_MODE === "per_action") {
+    if (TACTICS_BASE_VAL > 0 && DMG_BONUS_MODE === 'per_action') {
       const any = _TW1[1] > 0 || _TW2[1] > 0;
       if (any) actionDmg += TACTICS_BASE_VAL;
     }
@@ -1457,21 +1341,13 @@ function doActionFast(att, def, targetHp0) {
   let sumRaw = _TW1[0] + _TW2[0];
   if (sumRaw <= 0) return 0;
 
-  if (
-    TACTICS_BASE_VAL > 0 &&
-    DMG_BONUS_MODE === "per_action" &&
-    DMG_BONUS_STAGE === "pre_armor"
-  ) {
+  if (TACTICS_BASE_VAL > 0 && DMG_BONUS_MODE === 'per_action' && DMG_BONUS_STAGE === 'pre_armor') {
     sumRaw += TACTICS_BASE_VAL;
   }
 
   let actionDmg = applyArmorAndRound(sumRaw, def.armorFactor, ARMOR_ROUND);
 
-  if (
-    TACTICS_BASE_VAL > 0 &&
-    DMG_BONUS_MODE === "per_action" &&
-    DMG_BONUS_STAGE === "post_armor"
-  ) {
+  if (TACTICS_BASE_VAL > 0 && DMG_BONUS_MODE === 'per_action' && DMG_BONUS_STAGE === 'post_armor') {
     // match canonical: only add if there was any raw damage pre-armor
     if (_TW1[0] + _TW2[0] > 0) actionDmg += TACTICS_BASE_VAL;
   }
@@ -1486,7 +1362,7 @@ function fightOnceCalibFast(p1, p2, MAX_TURNS) {
   let p1First;
   if (p1.speed > p2.speed) p1First = true;
   else if (p1.speed < p2.speed) p1First = false;
-  else p1First = SPEED_TIE_MODE === "random" ? RNG() < 0.5 : true;
+  else p1First = SPEED_TIE_MODE === 'random' ? RNG() < 0.5 : true;
 
   const first = p1First ? p1 : p2;
   const second = p1First ? p2 : p1;
@@ -1550,20 +1426,20 @@ let ItemDefs = null;
 
 function loadSharedDefs() {
   const errors = [];
-  for (const defsPath of ["./legacy-defs.js", "./legacy-defs-v1.0.0.js"]) {
+  for (const defsPath of ['./legacy-defs.js', './legacy-defs-v1.0.0.js']) {
     try {
       const defs = require(defsPath);
       const extCrystal = defs && (defs.CrystalDefs || defs.crystalDefs);
       const extUpgrade = defs && (defs.UpgradeDefs || defs.upgradeDefs);
       const extItem = defs && (defs.ItemDefs || defs.itemDefs);
-      if (!extCrystal || typeof extCrystal !== "object") {
-        throw new Error("missing CrystalDefs export");
+      if (!extCrystal || typeof extCrystal !== 'object') {
+        throw new Error('missing CrystalDefs export');
       }
-      if (!extUpgrade || typeof extUpgrade !== "object") {
-        throw new Error("missing UpgradeDefs export");
+      if (!extUpgrade || typeof extUpgrade !== 'object') {
+        throw new Error('missing UpgradeDefs export');
       }
-      if (!extItem || typeof extItem !== "object") {
-        throw new Error("missing ItemDefs export");
+      if (!extItem || typeof extItem !== 'object') {
+        throw new Error('missing ItemDefs export');
       }
       CrystalDefs = extCrystal;
       UpgradeDefs = extUpgrade;
@@ -1574,9 +1450,7 @@ function loadSharedDefs() {
     }
   }
 
-  throw new Error(
-    `Unable to load shared defs file. Tried: ${errors.join(" | ")}`,
-  );
+  throw new Error(`Unable to load shared defs file. Tried: ${errors.join(' | ')}`);
 }
 
 const LOADED_DEFS_PATH = loadSharedDefs();
@@ -1586,19 +1460,19 @@ const LOADED_DEFS_PATH = loadSharedDefs();
 // =====================
 let DEFENDER_PAYLOADS;
 (function loadDefenderPayloads() {
-  const path = require("path");
+  const path = require('path');
 
   // Allow explicit override (relative or absolute):
   //   LEGACY_DEFENDERS_FILE=./legacy_defenders.js
-  const override = String(process.env.LEGACY_DEFENDERS_FILE || "").trim();
+  const override = String(process.env.LEGACY_DEFENDERS_FILE || '').trim();
   const candidates = override
     ? [override]
     : [
-        "./legacy-defenders-v1.0.0.js",
-        "./legacy-defenders-latest.js",
+        './legacy-defenders-v1.0.0.js',
+        './legacy-defenders-latest.js',
         // Fallbacks for older repos / alternate filenames:
-        "./legacy_defenders.js",
-        "./legacy-defenders.js",
+        './legacy_defenders.js',
+        './legacy-defenders.js',
       ];
 
   for (const p of candidates) {
@@ -1606,7 +1480,7 @@ let DEFENDER_PAYLOADS;
       const mod = require(path.resolve(__dirname, p));
       // Support either `module.exports = payloads` or `{ DEFENDER_PAYLOADS }`
       DEFENDER_PAYLOADS = (mod && mod.DEFENDER_PAYLOADS) || mod;
-      if (DEFENDER_PAYLOADS && typeof DEFENDER_PAYLOADS === "object") return;
+      if (DEFENDER_PAYLOADS && typeof DEFENDER_PAYLOADS === 'object') return;
     } catch (_) {
       // keep trying
     }
@@ -1614,34 +1488,34 @@ let DEFENDER_PAYLOADS;
   throw new Error(
     `Could not load defender payloads. Tried: ${candidates
       .map((s) => JSON.stringify(s))
-      .join(", ")} (set LEGACY_DEFENDERS_FILE to override)`,
+      .join(', ')} (set LEGACY_DEFENDERS_FILE to override)`,
   );
 })();
 
 const DEFENDER_PRIORITY = [
   // Priority order for gatekeepers (Stage 0).
   // NOTE: aliases are accepted; we'll canonicalize and de-dupe at runtime.
-  "DL Gun Build 3",
-  "SG1 Split Bombs T2",
-  "DL Gun Build 4",
-  "DL Gun Build 2",
-  "DL Gun Build 7",
-  "Core/Void Build 1",
-  "T2 Scythe Build",
-  "HF Core/Void",
+  'DL Gun Build 3',
+  'SG1 Split Bombs T2',
+  'DL Gun Build 4',
+  'DL Gun Build 2',
+  'DL Gun Build 7',
+  'Core/Void Build 1',
+  'T2 Scythe Build',
+  'HF Core/Void',
 ];
 
 // Defender-name aliases (backwards compat).
 // We canonicalize names for selection so aliases don't inflate defender count
 // (e.g. "SG1 Split bombs" vs "SG1 Split Bombs T2").
 const DEFENDER_ALIAS_TO_CANON = new Map([
-  ["SG1 Split Bombs T2", "SG1 Split Bombs T2"],
-  ["Dual Bow Build", "Dual Bow Build 1"],
-  ["Bow/rift build", "Rift Bow Build 1"],
+  ['SG1 Split Bombs T2', 'SG1 Split Bombs T2'],
+  ['Dual Bow Build', 'Dual Bow Build 1'],
+  ['Bow/rift build', 'Rift Bow Build 1'],
 ]);
 
 function resolveDefenderKey(raw) {
-  const name = String(raw || "").trim();
+  const name = String(raw || '').trim();
   if (!name) return null;
 
   // Prefer canonical name when the input is a known alias *and* the canonical exists.
@@ -1689,18 +1563,18 @@ function priorityFirstAll(mode) {
   };
 
   for (const name of DEFENDER_PRIORITY) push(name);
-  if (mode === "priority") return out;
+  if (mode === 'priority') return out;
 
   for (const name of all) push(name);
   return out;
 }
 
 function DEFENDER_NAMES() {
-  const raw = String(process.env.LEGACY_DEFENDERS || "").trim();
+  const raw = String(process.env.LEGACY_DEFENDERS || '').trim();
   const mode = raw.toLowerCase();
 
-  if (!raw || mode === "all") return priorityFirstAll("all");
-  if (mode === "priority") return priorityFirstAll("priority");
+  if (!raw || mode === 'all') return priorityFirstAll('all');
+  if (mode === 'priority') return priorityFirstAll('priority');
 
   const items = parseCsvList(raw);
   const out = [];
@@ -1725,31 +1599,21 @@ for (const rawName of DEFENDER_NAMES()) {
   const key = resolveDefenderKey(rawName) || rawName;
   const payload = DEFENDER_PAYLOADS[key];
   if (!payload) {
-    console.warn(
-      `WARN: defender "${rawName}" resolved to "${key}" but payload missing; skipping`,
-    );
+    console.warn(`WARN: defender "${rawName}" resolved to "${key}" but payload missing; skipping`);
     continue;
   }
   defenderBuilds.push({ name: key, payload });
 }
 
 if (!defenderBuilds.length) {
-  throw new Error(
-    "No defenders selected. Check LEGACY_DEFENDERS or your defenders file.",
-  );
+  throw new Error('No defenders selected. Check LEGACY_DEFENDERS or your defenders file.');
 }
 // =====================
 // LOCK_ONLY_AMULET (weapons-only)
 // =====================
 function parseLockOnlyAmuletFromEnv() {
-  const raw = String(process.env.LEGACY_LOCK_ONLY_AMULET || "").trim();
-  if (!raw)
-    return new Set([
-      "Core Staff",
-      "Rift Gun",
-      "Split Crystal Bombs T2",
-      "Void Axe",
-    ]);
+  const raw = String(process.env.LEGACY_LOCK_ONLY_AMULET || '').trim();
+  if (!raw) return new Set(['Core Staff', 'Rift Gun', 'Split Crystal Bombs T2', 'Void Axe']);
   return new Set(parseCsvList(raw));
 }
 const LOCK_ONLY_AMULET = parseLockOnlyAmuletFromEnv();
@@ -1758,16 +1622,14 @@ const LOCK_ONLY_AMULET = parseLockOnlyAmuletFromEnv();
 // CRYSTAL CONSTRAINTS
 // =====================
 function allowedCrystalsForArmor(itemName) {
-  if (itemName === "Dark Legion Armor") return ["Abyss Crystal"];
-  if (itemName === "SG1 Armor")
-    return ["Perfect Pink Crystal", "Abyss Crystal"];
-  if (itemName === "Hellforged Armor")
-    return ["Cabrusion Crystal", "Abyss Crystal"];
-  return ["Abyss Crystal"];
+  if (itemName === 'Dark Legion Armor') return ['Abyss Crystal'];
+  if (itemName === 'SG1 Armor') return ['Perfect Pink Crystal', 'Abyss Crystal'];
+  if (itemName === 'Hellforged Armor') return ['Cabrusion Crystal', 'Abyss Crystal'];
+  return ['Abyss Crystal'];
 }
 function allowedCrystalsForWeapon(itemName) {
-  if (LOCK_ONLY_AMULET.has(itemName)) return ["Amulet Crystal"];
-  return ["Amulet Crystal", "Perfect Fire Crystal", "Berserker Crystal"];
+  if (LOCK_ONLY_AMULET.has(itemName)) return ['Amulet Crystal'];
+  return ['Amulet Crystal', 'Perfect Fire Crystal'];
 }
 function upgradeSlotsForWeapon(itemName) {
   const idef = ItemDefs[itemName];
@@ -1778,7 +1640,7 @@ function allowedCrystalsForMiscSuperset(itemName) {
   const idef = ItemDefs[itemName];
   const flat = (idef && idef.flatStats) || {};
 
-  const isBio = itemName === "Bio Spinal Enhancer";
+  const isBio = itemName === 'Bio Spinal Enhancer';
   const hasDef = (flat.defSkill || 0) > 0;
   const hasGun = (flat.gunSkill || 0) > 0;
   const hasMel = (flat.meleeSkill || 0) > 0;
@@ -1787,36 +1649,34 @@ function allowedCrystalsForMiscSuperset(itemName) {
   const out = [];
 
   if (!isBio) {
-    const amuletRelevant =
-      (flat.accuracy || 0) > 0 || hasGun || hasMel || hasPrj || hasDef;
-    if (amuletRelevant) out.push("Amulet Crystal");
+    const amuletRelevant = (flat.accuracy || 0) > 0 || hasGun || hasMel || hasPrj || hasDef;
+    if (amuletRelevant) out.push('Amulet Crystal');
   }
 
-  if (hasDef) out.push("Perfect Pink Crystal");
-  if (hasGun) out.push("Perfect Green Crystal");
-  if (hasMel) out.push("Perfect Orange Crystal");
-  if (hasPrj) out.push("Perfect Yellow Crystal");
+  if (hasDef) out.push('Perfect Pink Crystal');
+  if (hasGun) out.push('Perfect Green Crystal');
+  if (hasMel) out.push('Perfect Orange Crystal');
+  if (hasPrj) out.push('Perfect Yellow Crystal');
 
-  if (isBio) return out.filter((c) => c !== "Amulet Crystal");
+  if (isBio) return out.filter((c) => c !== 'Amulet Crystal');
   return Array.from(new Set(out));
 }
 function miscVariantAllowedForWeaponMask(mv, weaponMask) {
-  const isBio = mv.itemName === "Bio Spinal Enhancer";
+  const isBio = mv.itemName === 'Bio Spinal Enhancer';
 
-  if (mv.crystalName === "Amulet Crystal") return !isBio;
+  if (mv.crystalName === 'Amulet Crystal') return !isBio;
 
-  if (mv.crystalName === "Perfect Pink Crystal")
-    return !!mv.__misc && !!mv.__misc.hasDef;
+  if (mv.crystalName === 'Perfect Pink Crystal') return !!mv.__misc && !!mv.__misc.hasDef;
 
-  if (mv.crystalName === "Perfect Green Crystal") {
+  if (mv.crystalName === 'Perfect Green Crystal') {
     if (isBio) return (weaponMask & 0b001) !== 0;
     return !!mv.__misc && !!mv.__misc.hasGun && (weaponMask & 0b001) !== 0;
   }
-  if (mv.crystalName === "Perfect Orange Crystal") {
+  if (mv.crystalName === 'Perfect Orange Crystal') {
     if (isBio) return (weaponMask & 0b010) !== 0;
     return !!mv.__misc && !!mv.__misc.hasMel && (weaponMask & 0b010) !== 0;
   }
-  if (mv.crystalName === "Perfect Yellow Crystal") {
+  if (mv.crystalName === 'Perfect Yellow Crystal') {
     if (isBio) return (weaponMask & 0b100) !== 0;
     return !!mv.__misc && !!mv.__misc.hasPrj && (weaponMask & 0b100) !== 0;
   }
@@ -1828,22 +1688,22 @@ function miscVariantAllowedForWeaponMask(mv, weaponMask) {
 // WARM-START SEED BUILD
 // =====================
 const WARM_START_BUILD = {
-  armor: { item: "Dark Legion Armor", crystal: "Abyss Crystal" },
-  weapon1: { item: "Crystal Maul", crystal: "Amulet Crystal", upgrades: [] },
-  weapon2: { item: "Core Staff", crystal: "Amulet Crystal", upgrades: [] },
-  misc1: { item: "Bio Spinal Enhancer", crystal: "Perfect Pink Crystal" },
-  misc2: { item: "Bio Spinal Enhancer", crystal: "Perfect Pink Crystal" },
+  armor: { item: 'Dark Legion Armor', crystal: 'Abyss Crystal' },
+  weapon1: { item: 'Crystal Maul', crystal: 'Amulet Crystal', upgrades: [] },
+  weapon2: { item: 'Core Staff', crystal: 'Amulet Crystal', upgrades: [] },
+  misc1: { item: 'Bio Spinal Enhancer', crystal: 'Perfect Pink Crystal' },
+  misc2: { item: 'Bio Spinal Enhancer', crystal: 'Perfect Pink Crystal' },
 };
 
 function warmStartEnabled() {
-  const raw = String(process.env.LEGACY_WARM_START ?? "")
+  const raw = String(process.env.LEGACY_WARM_START ?? '')
     .trim()
     .toLowerCase();
   if (!raw) return false;
-  return !(raw === "0" || raw === "false" || raw === "off" || raw === "no");
+  return !(raw === '0' || raw === 'false' || raw === 'off' || raw === 'no');
 }
 function parseWarmStartTrials(defaultTrialsConfirm) {
-  const raw = String(process.env.LEGACY_WARM_START_TRIALS ?? "").trim();
+  const raw = String(process.env.LEGACY_WARM_START_TRIALS ?? '').trim();
   if (!raw) return defaultTrialsConfirm;
   const n = parseInt(raw, 10);
   return Number.isFinite(n) && n > 0 ? n : defaultTrialsConfirm;
@@ -1853,39 +1713,32 @@ function parseWarmStartTrials(defaultTrialsConfirm) {
 // WATCH BUILD
 // =====================
 const WATCH_BUILD = {
-  armor: { item: "Dark Legion Armor", crystal: "Abyss Crystal" },
-  weapon1: { item: "Core Staff", crystal: "Amulet Crystal" },
-  weapon2: { item: "Split Crystal Bombs T2", crystal: "Amulet Crystal" },
-  misc1: { item: "Scout Drones", crystal: "Amulet Crystal" },
-  misc2: { item: "Scout Drones", crystal: "Amulet Crystal" },
+  armor: { item: 'Dark Legion Armor', crystal: 'Abyss Crystal' },
+  weapon1: { item: 'Core Staff', crystal: 'Amulet Crystal' },
+  weapon2: { item: 'Split Crystal Bombs T2', crystal: 'Amulet Crystal' },
+  misc1: { item: 'Scout Drones', crystal: 'Amulet Crystal' },
+  misc2: { item: 'Scout Drones', crystal: 'Amulet Crystal' },
 };
 
 function checkWatchBuildReachable(pools) {
   const reasons = [];
   function inPool(kind, item) {
-    const arr =
-      kind === "armor"
-        ? pools.armors
-        : kind === "weapon"
-          ? pools.weapons
-          : pools.miscs;
+    const arr = kind === 'armor' ? pools.armors : kind === 'weapon' ? pools.weapons : pools.miscs;
     return arr.includes(item);
   }
 
-  if (!inPool("armor", WATCH_BUILD.armor.item))
+  if (!inPool('armor', WATCH_BUILD.armor.item))
     reasons.push(`Armor "${WATCH_BUILD.armor.item}" is not in pool`);
-  if (!inPool("weapon", WATCH_BUILD.weapon1.item))
+  if (!inPool('weapon', WATCH_BUILD.weapon1.item))
     reasons.push(`Weapon "${WATCH_BUILD.weapon1.item}" is not in pool`);
-  if (!inPool("weapon", WATCH_BUILD.weapon2.item))
+  if (!inPool('weapon', WATCH_BUILD.weapon2.item))
     reasons.push(`Weapon "${WATCH_BUILD.weapon2.item}" is not in pool`);
-  if (!inPool("misc", WATCH_BUILD.misc1.item))
+  if (!inPool('misc', WATCH_BUILD.misc1.item))
     reasons.push(`Misc "${WATCH_BUILD.misc1.item}" is not in pool`);
-  if (!inPool("misc", WATCH_BUILD.misc2.item))
+  if (!inPool('misc', WATCH_BUILD.misc2.item))
     reasons.push(`Misc "${WATCH_BUILD.misc2.item}" is not in pool`);
 
-  const aOk = allowedCrystalsForArmor(WATCH_BUILD.armor.item).includes(
-    WATCH_BUILD.armor.crystal,
-  );
+  const aOk = allowedCrystalsForArmor(WATCH_BUILD.armor.item).includes(WATCH_BUILD.armor.crystal);
   if (!aOk)
     reasons.push(
       `Armor "${WATCH_BUILD.armor.item}" does not allow crystal "${WATCH_BUILD.armor.crystal}"`,
@@ -1927,18 +1780,14 @@ function checkWatchBuildReachable(pools) {
 }
 
 function isWatchBuildCandidate(av, w1v, w2v, m1v, m2v) {
-  if (
-    av.itemName !== WATCH_BUILD.armor.item ||
-    av.crystalName !== WATCH_BUILD.armor.crystal
-  )
+  if (av.itemName !== WATCH_BUILD.armor.item || av.crystalName !== WATCH_BUILD.armor.crystal)
     return false;
 
   const wA = `${w1v.itemName}|${w1v.crystalName}`;
   const wB = `${w2v.itemName}|${w2v.crystalName}`;
   const wantW1 = `${WATCH_BUILD.weapon1.item}|${WATCH_BUILD.weapon1.crystal}`;
   const wantW2 = `${WATCH_BUILD.weapon2.item}|${WATCH_BUILD.weapon2.crystal}`;
-  const weaponsOk =
-    (wA === wantW1 && wB === wantW2) || (wA === wantW2 && wB === wantW1);
+  const weaponsOk = (wA === wantW1 && wB === wantW2) || (wA === wantW2 && wB === wantW1);
   if (!weaponsOk) return false;
 
   const mA = `${m1v.itemName}|${m1v.crystalName}`;
@@ -1958,97 +1807,74 @@ function isWatchBuildCandidate(av, w1v, w2v, m1v, m2v) {
 
 function _envStr(name, dflt) {
   const v = process.env[name];
-  return v === undefined || v === null || String(v).trim() === ""
-    ? dflt
-    : String(v).trim();
+  return v === undefined || v === null || String(v).trim() === '' ? dflt : String(v).trim();
 }
 function _envInt(name, dflt) {
-  const v = parseInt(_envStr(name, ""), 10);
+  const v = parseInt(_envStr(name, ''), 10);
   return Number.isFinite(v) ? v : dflt;
 }
 
 // ---- default calibration overrides (match legacy-sim-latest defaults) ----
 (function applyCalibOverrides() {
-  const hfRaw = _envStr("LEGACY_HF_ARMOR_BASE_OVERRIDE", "125");
-  if (hfRaw.toLowerCase() !== "off") {
+  const hfRaw = _envStr('LEGACY_HF_ARMOR_BASE_OVERRIDE', '125');
+  if (hfRaw.toLowerCase() !== 'off') {
     const hf = parseInt(hfRaw, 10);
     if (
       Number.isFinite(hf) &&
       hf > 0 &&
-      ItemDefs["Hellforged Armor"] &&
-      ItemDefs["Hellforged Armor"].flatStats
+      ItemDefs['Hellforged Armor'] &&
+      ItemDefs['Hellforged Armor'].flatStats
     ) {
-      ItemDefs["Hellforged Armor"].flatStats.armor = hf;
+      ItemDefs['Hellforged Armor'].flatStats.armor = hf;
     }
   }
 
-  const vsMinRaw = _envStr("LEGACY_VOID_SWORD_BASE_MIN_OVERRIDE", "");
-  const vsMaxRaw = _envStr("LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE", "120");
-  if (ItemDefs["Void Sword"] && ItemDefs["Void Sword"].baseWeaponDamage) {
-    if (vsMinRaw.toLowerCase() !== "off") {
+  const vsMinRaw = _envStr('LEGACY_VOID_SWORD_BASE_MIN_OVERRIDE', '');
+  const vsMaxRaw = _envStr('LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE', '120');
+  if (ItemDefs['Void Sword'] && ItemDefs['Void Sword'].baseWeaponDamage) {
+    if (vsMinRaw.toLowerCase() !== 'off') {
       const mn = parseInt(vsMinRaw, 10);
       if (Number.isFinite(mn) && mn > 0) {
-        ItemDefs["Void Sword"].baseWeaponDamage.min = mn;
+        ItemDefs['Void Sword'].baseWeaponDamage.min = mn;
       }
     }
-    if (vsMaxRaw.toLowerCase() !== "off") {
+    if (vsMaxRaw.toLowerCase() !== 'off') {
       const mx = parseInt(vsMaxRaw, 10);
       if (Number.isFinite(mx) && mx > 0) {
-        ItemDefs["Void Sword"].baseWeaponDamage.max = mx;
+        ItemDefs['Void Sword'].baseWeaponDamage.max = mx;
       }
     }
-    if (
-      ItemDefs["Void Sword"].baseWeaponDamage.min >
-      ItemDefs["Void Sword"].baseWeaponDamage.max
-    ) {
-      const t = ItemDefs["Void Sword"].baseWeaponDamage.min;
-      ItemDefs["Void Sword"].baseWeaponDamage.min =
-        ItemDefs["Void Sword"].baseWeaponDamage.max;
-      ItemDefs["Void Sword"].baseWeaponDamage.max = t;
+    if (ItemDefs['Void Sword'].baseWeaponDamage.min > ItemDefs['Void Sword'].baseWeaponDamage.max) {
+      const t = ItemDefs['Void Sword'].baseWeaponDamage.min;
+      ItemDefs['Void Sword'].baseWeaponDamage.min = ItemDefs['Void Sword'].baseWeaponDamage.max;
+      ItemDefs['Void Sword'].baseWeaponDamage.max = t;
     }
   }
 })();
 
 const VARIANT_CFG = (() => {
-  const statRound = _envStr("LEGACY_STAT_ROUND", "ceil").toLowerCase();
-  const weaponDmgRound = _envStr(
-    "LEGACY_WEAPON_DMG_ROUND",
-    "ceil",
-  ).toLowerCase();
-  const crystalStackModeDefault = _envStr(
-    "LEGACY_CRYSTAL_STACK_MODE",
-    "",
-  ).toLowerCase();
+  const statRound = _envStr('LEGACY_STAT_ROUND', 'ceil').toLowerCase();
+  const weaponDmgRound = _envStr('LEGACY_WEAPON_DMG_ROUND', 'ceil').toLowerCase();
+  const crystalStackModeDefault = _envStr('LEGACY_CRYSTAL_STACK_MODE', '').toLowerCase();
   const crystalStackStats = _envStr(
-    "LEGACY_CRYSTAL_STACK_STATS",
-    crystalStackModeDefault || "iter4",
+    'LEGACY_CRYSTAL_STACK_STATS',
+    crystalStackModeDefault || 'iter4',
   ).toLowerCase();
   const crystalStackDmg = _envStr(
-    "LEGACY_CRYSTAL_STACK_DMG",
-    crystalStackModeDefault || "sum4",
+    'LEGACY_CRYSTAL_STACK_DMG',
+    crystalStackModeDefault || 'sum4',
   ).toLowerCase();
-  const crystalSlots = _envInt("LEGACY_CRYSTAL_SLOTS", 4);
+  const crystalSlots = _envInt('LEGACY_CRYSTAL_SLOTS', 4);
 
   // Armor-stat stacking appears to differ from normal stat stacking in-game; default it to sum4.
-  const armorStatStackRaw = _envStr(
-    "LEGACY_ARMORSTAT_STACK",
-    "inherit",
-  ).toLowerCase();
-  const armorStatRoundRaw = _envStr(
-    "LEGACY_ARMORSTAT_ROUND",
-    "inherit",
-  ).toLowerCase();
-  const armorStatSlotsRaw = _envStr(
-    "LEGACY_ARMORSTAT_SLOTS",
-    "inherit",
-  ).toLowerCase();
+  const armorStatStackRaw = _envStr('LEGACY_ARMORSTAT_STACK', 'inherit').toLowerCase();
+  const armorStatRoundRaw = _envStr('LEGACY_ARMORSTAT_ROUND', 'inherit').toLowerCase();
+  const armorStatSlotsRaw = _envStr('LEGACY_ARMORSTAT_SLOTS', 'inherit').toLowerCase();
 
-  const armorStatStack =
-    armorStatStackRaw === "inherit" ? "sum4" : armorStatStackRaw;
-  const armorStatRound =
-    armorStatRoundRaw === "inherit" ? statRound : armorStatRoundRaw;
+  const armorStatStack = armorStatStackRaw === 'inherit' ? 'sum4' : armorStatStackRaw;
+  const armorStatRound = armorStatRoundRaw === 'inherit' ? statRound : armorStatRoundRaw;
   const armorStatSlots =
-    armorStatSlotsRaw === "inherit"
+    armorStatSlotsRaw === 'inherit'
       ? crystalSlots
       : parseInt(armorStatSlotsRaw, 10) || crystalSlots;
 
@@ -2065,35 +1891,35 @@ const VARIANT_CFG = (() => {
 })();
 
 const MISC_NO_CRYSTAL_SKILL = new Set(
-  _envStr("LEGACY_MISC_NO_CRYSTAL_SKILL", "")
-    .split(",")
+  _envStr('LEGACY_MISC_NO_CRYSTAL_SKILL', '')
+    .split(',')
     .map((s) => s.trim())
     .filter(Boolean),
 );
 function parseSkillTypeMultipliers(str) {
   const out = new Map();
-  const raw0 = String(str || "")
+  const raw0 = String(str || '')
     .trim()
     .toLowerCase();
-  if (!raw0 || raw0 === "none") return out;
+  if (!raw0 || raw0 === 'none') return out;
 
-  for (const tok0 of raw0.split(",")) {
+  for (const tok0 of raw0.split(',')) {
     const tok = tok0.trim();
     if (!tok) continue;
 
     const parts = tok.split(/[:=]/);
-    const key = (parts[0] || "").trim();
+    const key = (parts[0] || '').trim();
     if (!key) continue;
 
-    if (key !== "gun" && key !== "melee" && key !== "proj" && key !== "def") {
+    if (key !== 'gun' && key !== 'melee' && key !== 'proj' && key !== 'def') {
       throw new Error(
         `Unknown skill type in LEGACY_MISC_NO_CRYSTAL_SKILL_TYPES: "${key}" (allowed: gun, melee, proj, def)`,
       );
     }
 
     let mult = 0;
-    if (parts.length > 1 && (parts[1] || "").trim() !== "") {
-      const n = Number((parts[1] || "").trim());
+    if (parts.length > 1 && (parts[1] || '').trim() !== '') {
+      const n = Number((parts[1] || '').trim());
       if (!Number.isFinite(n) || n < 0) {
         throw new Error(
           `Bad multiplier for "${key}" in LEGACY_MISC_NO_CRYSTAL_SKILL_TYPES: "${parts[1]}" (expected number >= 0)`,
@@ -2106,25 +1932,19 @@ function parseSkillTypeMultipliers(str) {
   return out;
 }
 const MISC_NO_CRYSTAL_SKILL_TYPES_RAW = _envStr(
-  "LEGACY_MISC_NO_CRYSTAL_SKILL_TYPES",
-  "gun,melee,proj",
+  'LEGACY_MISC_NO_CRYSTAL_SKILL_TYPES',
+  'gun,melee,proj',
 );
-const MISC_NO_CRYSTAL_SKILL_TYPE_MULTS = parseSkillTypeMultipliers(
-  MISC_NO_CRYSTAL_SKILL_TYPES_RAW,
-);
+const MISC_NO_CRYSTAL_SKILL_TYPE_MULTS = parseSkillTypeMultipliers(MISC_NO_CRYSTAL_SKILL_TYPES_RAW);
 const MISC_NO_CRYSTAL_SKILL_SLOT2_TYPES_RAW = _envStr(
-  "LEGACY_MISC_NO_CRYSTAL_SKILL_SLOT2_TYPES",
-  "",
+  'LEGACY_MISC_NO_CRYSTAL_SKILL_SLOT2_TYPES',
+  '',
 );
 const MISC_NO_CRYSTAL_SKILL_SLOT2_TYPE_MULTS = parseSkillTypeMultipliers(
   MISC_NO_CRYSTAL_SKILL_SLOT2_TYPES_RAW,
 );
-const MISC_NO_CRYSTAL_SKILL_ZERO_DEF = _envBool(
-  "LEGACY_MISC_NO_CRYSTAL_SKILL_ZERO_DEF",
-  false,
-);
-if (MISC_NO_CRYSTAL_SKILL_ZERO_DEF)
-  MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.set("def", 0);
+const MISC_NO_CRYSTAL_SKILL_ZERO_DEF = _envBool('LEGACY_MISC_NO_CRYSTAL_SKILL_ZERO_DEF', false);
+if (MISC_NO_CRYSTAL_SKILL_ZERO_DEF) MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.set('def', 0);
 
 function getEffectiveCrystalPct(itemName, crystalName, slotTag = 0) {
   const cdef = CrystalDefs[crystalName];
@@ -2132,44 +1952,38 @@ function getEffectiveCrystalPct(itemName, crystalName, slotTag = 0) {
 
   const crystalPctRaw = cdef.pct || {};
   const idef = ItemDefs[itemName];
-  if (!idef || idef.type !== "Misc" || !MISC_NO_CRYSTAL_SKILL.has(itemName)) {
+  if (!idef || idef.type !== 'Misc' || !MISC_NO_CRYSTAL_SKILL.has(itemName)) {
     return crystalPctRaw;
   }
 
   const crystalPct = { ...crystalPctRaw };
 
   if (MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.size) {
-    const mg = MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.get("gun");
+    const mg = MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.get('gun');
     if (mg !== undefined) crystalPct.gunSkill = (crystalPct.gunSkill || 0) * mg;
 
-    const mm = MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.get("melee");
-    if (mm !== undefined)
-      crystalPct.meleeSkill = (crystalPct.meleeSkill || 0) * mm;
+    const mm = MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.get('melee');
+    if (mm !== undefined) crystalPct.meleeSkill = (crystalPct.meleeSkill || 0) * mm;
 
-    const mp = MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.get("proj");
-    if (mp !== undefined)
-      crystalPct.projSkill = (crystalPct.projSkill || 0) * mp;
+    const mp = MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.get('proj');
+    if (mp !== undefined) crystalPct.projSkill = (crystalPct.projSkill || 0) * mp;
 
-    const md = MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.get("def");
+    const md = MISC_NO_CRYSTAL_SKILL_TYPE_MULTS.get('def');
     if (md !== undefined) crystalPct.defSkill = (crystalPct.defSkill || 0) * md;
   }
 
   if (slotTag === 2 && MISC_NO_CRYSTAL_SKILL_SLOT2_TYPE_MULTS.size) {
-    const mg2 = MISC_NO_CRYSTAL_SKILL_SLOT2_TYPE_MULTS.get("gun");
-    if (mg2 !== undefined)
-      crystalPct.gunSkill = (crystalPct.gunSkill || 0) * mg2;
+    const mg2 = MISC_NO_CRYSTAL_SKILL_SLOT2_TYPE_MULTS.get('gun');
+    if (mg2 !== undefined) crystalPct.gunSkill = (crystalPct.gunSkill || 0) * mg2;
 
-    const mm2 = MISC_NO_CRYSTAL_SKILL_SLOT2_TYPE_MULTS.get("melee");
-    if (mm2 !== undefined)
-      crystalPct.meleeSkill = (crystalPct.meleeSkill || 0) * mm2;
+    const mm2 = MISC_NO_CRYSTAL_SKILL_SLOT2_TYPE_MULTS.get('melee');
+    if (mm2 !== undefined) crystalPct.meleeSkill = (crystalPct.meleeSkill || 0) * mm2;
 
-    const mp2 = MISC_NO_CRYSTAL_SKILL_SLOT2_TYPE_MULTS.get("proj");
-    if (mp2 !== undefined)
-      crystalPct.projSkill = (crystalPct.projSkill || 0) * mp2;
+    const mp2 = MISC_NO_CRYSTAL_SKILL_SLOT2_TYPE_MULTS.get('proj');
+    if (mp2 !== undefined) crystalPct.projSkill = (crystalPct.projSkill || 0) * mp2;
 
-    const md2 = MISC_NO_CRYSTAL_SKILL_SLOT2_TYPE_MULTS.get("def");
-    if (md2 !== undefined)
-      crystalPct.defSkill = (crystalPct.defSkill || 0) * md2;
+    const md2 = MISC_NO_CRYSTAL_SKILL_SLOT2_TYPE_MULTS.get('def');
+    if (md2 !== undefined) crystalPct.defSkill = (crystalPct.defSkill || 0) * md2;
   }
 
   return crystalPct;
@@ -2178,11 +1992,11 @@ function getEffectiveCrystalPct(itemName, crystalName, slotTag = 0) {
 // ---- rounding + stacking helpers (matches legacy-sim-latest.js) ----
 function roundStat(v, mode) {
   switch (mode) {
-    case "ceil":
+    case 'ceil':
       return Math.ceil(v);
-    case "floor":
+    case 'floor':
       return Math.floor(v);
-    case "round":
+    case 'round':
       return Math.round(v);
     default:
       return Math.ceil(v);
@@ -2193,23 +2007,17 @@ function roundWeaponDmg(v, mode) {
   return roundStat(v, mode);
 }
 function normalizeCrystalStackMode(mode) {
-  if (!mode) return "sum4";
+  if (!mode) return 'sum4';
   mode = String(mode).toLowerCase();
-  if (mode === "iter4" || mode === "iter") return "iter4";
-  return "sum4";
+  if (mode === 'iter4' || mode === 'iter') return 'iter4';
+  return 'sum4';
 }
-function applyCrystalPctToStat(
-  base,
-  pctPerCrystal,
-  nCrystals,
-  roundMode,
-  stackMode,
-) {
+function applyCrystalPctToStat(base, pctPerCrystal, nCrystals, roundMode, stackMode) {
   const m = normalizeCrystalStackMode(stackMode);
   const pct = pctPerCrystal || 0;
   if (!pct || !nCrystals) return base;
 
-  if (m === "iter4") {
+  if (m === 'iter4') {
     let v = base;
     for (let i = 0; i < nCrystals; i++) v += roundStat(v * pct, roundMode);
     return v;
@@ -2217,18 +2025,12 @@ function applyCrystalPctToStat(
   // sum4
   return base + roundStat(base * pct * nCrystals, roundMode);
 }
-function applyCrystalPctToWeaponDmg(
-  base,
-  pctPerCrystal,
-  nCrystals,
-  roundMode,
-  stackMode,
-) {
+function applyCrystalPctToWeaponDmg(base, pctPerCrystal, nCrystals, roundMode, stackMode) {
   const m = normalizeCrystalStackMode(stackMode);
   const pct = pctPerCrystal || 0;
   if (!pct || !nCrystals) return base;
 
-  if (m === "iter4") {
+  if (m === 'iter4') {
     let v = base;
     for (let i = 0; i < nCrystals; i++) v += roundWeaponDmg(v * pct, roundMode);
     return v;
@@ -2240,8 +2042,8 @@ function applyCrystalPctToWeaponDmg(
 function normalizeSelectedWeaponUpgrades(itemName, upgrade1, upgrade2) {
   const idef = ItemDefs[itemName];
   const raw = [upgrade1, upgrade2]
-    .map((u) => (u == null ? "" : String(u).trim()))
-    .filter((u) => u.length > 0 && u !== "None");
+    .map((u) => (u == null ? '' : String(u).trim()))
+    .filter((u) => u.length > 0 && u !== 'None');
   if (!raw.length) return [];
   if (!idef || !idef.upgradeSlots || !idef.upgradeSlots.length) return [];
 
@@ -2261,27 +2063,17 @@ function normalizeSelectedWeaponUpgrades(itemName, upgrade1, upgrade2) {
   return kept;
 }
 
-function computeVariant(
-  itemName,
-  crystalName,
-  upgrade1,
-  upgrade2,
-  slotTag = 0,
-) {
+function computeVariant(itemName, crystalName, upgrade1, upgrade2, slotTag = 0) {
   const idef = ItemDefs[itemName];
   if (!idef) throw new Error(`Unknown item "${itemName}"`);
 
-  const isArmor = idef.type === "Armor";
-  const isWeapon = idef.type === "Weapon";
-  const isMisc = idef.type === "Misc";
+  const isArmor = idef.type === 'Armor';
+  const isWeapon = idef.type === 'Weapon';
+  const isMisc = idef.type === 'Misc';
 
   const crystalPct = getEffectiveCrystalPct(itemName, crystalName, slotTag);
 
-  const upgrades = normalizeSelectedWeaponUpgrades(
-    itemName,
-    upgrade1,
-    upgrade2,
-  );
+  const upgrades = normalizeSelectedWeaponUpgrades(itemName, upgrade1, upgrade2);
 
   // Base item flat stats (bonuses from the item itself).
   const fs = idef.flatStats || {};
@@ -2306,21 +2098,11 @@ function computeVariant(
   for (const sk of Object.keys(outStats)) {
     const pct = crystalPct[sk] || 0;
     if (!pct) continue;
-    const isArmorStat = sk === "armor";
-    const stackMode = isArmorStat
-      ? VARIANT_CFG.armorStatStack
-      : VARIANT_CFG.crystalStackStats;
-    const roundMode = isArmorStat
-      ? VARIANT_CFG.armorStatRound
-      : VARIANT_CFG.statRound;
+    const isArmorStat = sk === 'armor';
+    const stackMode = isArmorStat ? VARIANT_CFG.armorStatStack : VARIANT_CFG.crystalStackStats;
+    const roundMode = isArmorStat ? VARIANT_CFG.armorStatRound : VARIANT_CFG.statRound;
     const n = isArmorStat ? nArm : nStats;
-    outStats[sk] = applyCrystalPctToStat(
-      outStats[sk],
-      pct,
-      n,
-      roundMode,
-      stackMode,
-    );
+    outStats[sk] = applyCrystalPctToStat(outStats[sk], pct, n, roundMode, stackMode);
   }
 
   // Apply crystals to weapon damage (uses 'damage' key).
@@ -2374,27 +2156,16 @@ function computeVariant(
   const addPrj = outStats.projSkill;
   const addDef = outStats.defSkill;
 
-  const upTag = upgrades.length
-    ? `{${upgrades.map(shortUpgrade).join("+")}}`
-    : "";
+  const upTag = upgrades.length ? `{${upgrades.map(shortUpgrade).join('+')}}` : '';
   const tag = `${shortCrystal(crystalName)}${upTag}`;
 
   let weapon = null;
   let weaponMaskBit = 0;
   if (isWeapon && wDmg) {
-    const st = String(idef.skillType || "meleeSkill");
-    const skill =
-      st === "gunSkill"
-        ? 0
-        : st === "meleeSkill"
-          ? 1
-          : st === "projSkill"
-            ? 2
-            : null;
+    const st = String(idef.skillType || 'meleeSkill');
+    const skill = st === 'gunSkill' ? 0 : st === 'meleeSkill' ? 1 : st === 'projSkill' ? 2 : null;
     if (skill === null)
-      throw new Error(
-        `Weapon "${itemName}" has unknown skillType="${idef.skillType}"`,
-      );
+      throw new Error(`Weapon "${itemName}" has unknown skillType="${idef.skillType}"`);
 
     weapon = { name: itemName, min: wDmg.min, max: wDmg.max, skill, tag };
     weaponMaskBit = 1 << skill; // gun=1, melee=2, proj=4
@@ -2402,7 +2173,7 @@ function computeVariant(
 
   const miscMeta = isMisc
     ? {
-        isBio: itemName === "Bio Spinal Enhancer",
+        isBio: itemName === 'Bio Spinal Enhancer',
         hasGun: !!(fs.gunSkill || 0),
         hasMel: !!(fs.meleeSkill || 0),
         hasPrj: !!(fs.projSkill || 0),
@@ -2413,8 +2184,8 @@ function computeVariant(
   return {
     itemName,
     crystalName,
-    upgrade1: upgrades[0] || "",
-    upgrade2: upgrades[1] || "",
+    upgrade1: upgrades[0] || '',
+    upgrade2: upgrades[1] || '',
     tag,
     addSpeed,
     addAcc,
@@ -2431,14 +2202,14 @@ function computeVariant(
 }
 
 function variantKey(itemName, crystalName, upgrade1, upgrade2) {
-  const u1 = upgrade1 || "";
-  const u2 = upgrade2 || "";
+  const u1 = upgrade1 || '';
+  const u2 = upgrade2 || '';
   return `${itemName}|${crystalName}|${u1}|${u2}`;
 }
 
 function variantKeyFromCrystalSpec(itemName, crystalSpec, upgrade1, upgrade2) {
-  const u1 = upgrade1 || "";
-  const u2 = upgrade2 || "";
+  const u1 = upgrade1 || '';
+  const u2 = upgrade2 || '';
   return `${itemName}|${crystalSpecKey(crystalSpec)}|${u1}|${u2}`;
 }
 
@@ -2453,7 +2224,7 @@ function applyMixedCrystalPctToStat(
   const m = normalizeCrystalStackMode(stackMode);
   if (!crystalNamesExpanded.length) return base;
 
-  if (m === "iter4") {
+  if (m === 'iter4') {
     let v = base;
     for (const crystalName of crystalNamesExpanded) {
       const pct = pctLookup
@@ -2490,7 +2261,7 @@ function applyMixedCrystalPctToWeaponDmg(
   const m = normalizeCrystalStackMode(stackMode);
   if (!crystalNamesExpanded.length) return base;
 
-  if (m === "iter4") {
+  if (m === 'iter4') {
     let v = base;
     for (const crystalName of crystalNamesExpanded) {
       const pct = pctLookup
@@ -2517,37 +2288,24 @@ function applyMixedCrystalPctToWeaponDmg(
   return pctSum ? base + roundWeaponDmg(base * pctSum, roundMode) : base;
 }
 
-function computeVariantFromCrystalSpec(
-  itemName,
-  crystalSpec,
-  upgrade1,
-  upgrade2,
-  slotTag = 0,
-) {
-  if (typeof crystalSpec === "string")
+function computeVariantFromCrystalSpec(itemName, crystalSpec, upgrade1, upgrade2, slotTag = 0) {
+  if (typeof crystalSpec === 'string')
     return computeVariant(itemName, crystalSpec, upgrade1, upgrade2, slotTag);
 
   const idef = ItemDefs[itemName];
   if (!idef) throw new Error(`Unknown item "${itemName}"`);
 
-  const isWeapon = idef.type === "Weapon";
-  const isMisc = idef.type === "Misc";
+  const isWeapon = idef.type === 'Weapon';
+  const isMisc = idef.type === 'Misc';
   const counts = normalizeCrystalCounts(crystalSpec, VARIANT_CFG.crystalSlots);
   const crystalNamesExpanded = [];
   for (const crystalName of crystalSortNames(Object.keys(counts))) {
-    if (!CrystalDefs[crystalName])
-      throw new Error(`Unknown crystal "${crystalName}"`);
-    for (let i = 0; i < counts[crystalName]; i++)
-      crystalNamesExpanded.push(crystalName);
+    if (!CrystalDefs[crystalName]) throw new Error(`Unknown crystal "${crystalName}"`);
+    for (let i = 0; i < counts[crystalName]; i++) crystalNamesExpanded.push(crystalName);
   }
 
-  const upgrades = normalizeSelectedWeaponUpgrades(
-    itemName,
-    upgrade1,
-    upgrade2,
-  );
-  const crystalPctLookup = (crystalName) =>
-    getEffectiveCrystalPct(itemName, crystalName, slotTag);
+  const upgrades = normalizeSelectedWeaponUpgrades(itemName, upgrade1, upgrade2);
+  const crystalPctLookup = (crystalName) => getEffectiveCrystalPct(itemName, crystalName, slotTag);
 
   const fs = idef.flatStats || {};
   let outStats = {
@@ -2565,13 +2323,9 @@ function computeVariantFromCrystalSpec(
   let wDmg = isWeapon && wBase ? { min: wBase.min, max: wBase.max } : null;
 
   for (const sk of Object.keys(outStats)) {
-    const isArmorStat = sk === "armor";
-    const stackMode = isArmorStat
-      ? VARIANT_CFG.armorStatStack
-      : VARIANT_CFG.crystalStackStats;
-    const roundMode = isArmorStat
-      ? VARIANT_CFG.armorStatRound
-      : VARIANT_CFG.statRound;
+    const isArmorStat = sk === 'armor';
+    const stackMode = isArmorStat ? VARIANT_CFG.armorStatStack : VARIANT_CFG.crystalStackStats;
+    const roundMode = isArmorStat ? VARIANT_CFG.armorStatRound : VARIANT_CFG.statRound;
     outStats[sk] = applyMixedCrystalPctToStat(
       outStats[sk],
       crystalNamesExpanded,
@@ -2628,27 +2382,16 @@ function computeVariantFromCrystalSpec(
   const addPrj = outStats.projSkill;
   const addDef = outStats.defSkill;
 
-  const upTag = upgrades.length
-    ? `{${upgrades.map(shortUpgrade).join("+")}}`
-    : "";
+  const upTag = upgrades.length ? `{${upgrades.map(shortUpgrade).join('+')}}` : '';
   const tag = `${crystalSpecShort(counts)}${upTag}`;
 
   let weapon = null;
   let weaponMaskBit = 0;
   if (isWeapon && wDmg) {
-    const st = String(idef.skillType || "meleeSkill");
-    const skill =
-      st === "gunSkill"
-        ? 0
-        : st === "meleeSkill"
-          ? 1
-          : st === "projSkill"
-            ? 2
-            : null;
+    const st = String(idef.skillType || 'meleeSkill');
+    const skill = st === 'gunSkill' ? 0 : st === 'meleeSkill' ? 1 : st === 'projSkill' ? 2 : null;
     if (skill === null)
-      throw new Error(
-        `Weapon "${itemName}" has unknown skillType="${idef.skillType}"`,
-      );
+      throw new Error(`Weapon "${itemName}" has unknown skillType="${idef.skillType}"`);
 
     weapon = { name: itemName, min: wDmg.min, max: wDmg.max, skill, tag };
     weaponMaskBit = 1 << skill;
@@ -2660,8 +2403,8 @@ function computeVariantFromCrystalSpec(
     itemName,
     crystalName: crystalSpecShort(counts),
     crystalMix: counts,
-    upgrade1: upgrades[0] || "",
-    upgrade2: upgrades[1] || "",
+    upgrade1: upgrades[0] || '',
+    upgrade2: upgrades[1] || '',
     tag,
     addSpeed,
     addAcc,
@@ -2683,10 +2426,10 @@ function buildVariantsForArmors(names) {
   for (const nm of names) {
     const crystals = allowedCrystalsForArmor(nm);
     for (const c of crystals) {
-      const key = variantKey(nm, c, "", "");
+      const key = variantKey(nm, c, '', '');
       let v = cache.get(key);
       if (!v) {
-        v = computeVariant(nm, c, "", "");
+        v = computeVariant(nm, c, '', '');
         cache.set(key, v);
       }
       out.push(v);
@@ -2729,8 +2472,8 @@ function buildVariantsForWeapons(names) {
     const crystals = allowedCrystalsForWeapon(nm);
     for (const c of crystals) {
       for (const ups of iterateWeaponUpgradeCombos(nm)) {
-        const u1 = ups[0] || "";
-        const u2 = ups[1] || "";
+        const u1 = ups[0] || '';
+        const u2 = ups[1] || '';
         const key = variantKey(nm, c, u1, u2);
         let v = cache.get(key);
         if (!v) {
@@ -2750,10 +2493,10 @@ function buildVariantsForMiscsSuperset(names) {
   for (const nm of names) {
     const crystals = allowedCrystalsForMiscSuperset(nm);
     for (const c of crystals) {
-      const key = variantKey(nm, c, "", "");
+      const key = variantKey(nm, c, '', '');
       let v = cache.get(key);
       if (!v) {
-        v = computeVariant(nm, c, "", "");
+        v = computeVariant(nm, c, '', '');
         cache.set(key, v);
       }
       out.push(v);
@@ -2781,14 +2524,7 @@ function buildMiscPairsOrderlessAllDup(miscVariants) {
 // =====================
 // EFFECTIVE-SPACE PRECOMPUTE
 // =====================
-const MASKS = [
-  0b001,
-  0b010,
-  0b100,
-  0b001 | 0b010,
-  0b001 | 0b100,
-  0b010 | 0b100,
-];
+const MASKS = [0b001, 0b010, 0b100, 0b001 | 0b010, 0b001 | 0b100, 0b010 | 0b100];
 
 function buildAllowedMiscTable(miscVariants) {
   const allow = new Array(MASKS.length);
@@ -2840,16 +2576,11 @@ function buildWeaponPairIndicesByMask(weaponVariants, weaponPairs) {
   }
 
   const out = new Array(MASKS.length);
-  for (let mi = 0; mi < MASKS.length; mi++)
-    out[mi] = new Uint32Array(buckets[mi]);
+  for (let mi = 0; mi < MASKS.length; mi++) out[mi] = new Uint32Array(buckets[mi]);
   return out;
 }
 
-function computeEffectiveCounts(
-  armorVariants,
-  weaponPairIndicesByMask,
-  miscPairsAllowedByMask,
-) {
+function computeEffectiveCounts(armorVariants, weaponPairIndicesByMask, miscPairsAllowedByMask) {
   const AV = armorVariants.length;
   let effPerArmor = 0;
   const breakdown = [];
@@ -2900,25 +2631,20 @@ function uniqueSortedNums(xs) {
 
 function buildAccAllocValues(freePoints, cfg) {
   const out = [];
-  const mode = String((cfg && cfg.allocationMode) || "dodge_only")
+  const mode = String((cfg && cfg.allocationMode) || 'dodge_only')
     .trim()
     .toLowerCase();
 
-  if (mode === "dodge_only") return [0];
+  if (mode === 'dodge_only') return [0];
 
   const alloc = (cfg && cfg.allocation) || {};
-  const accStep = Math.max(
-    1,
-    clampInt(alloc.accStep, 1, Math.max(1, freePoints || 1)),
-  );
+  const accStep = Math.max(1, clampInt(alloc.accStep, 1, Math.max(1, freePoints || 1)));
 
   if (alloc.includeFullDodge !== false) out.push(0);
   for (let acc = 0; acc <= freePoints; acc += accStep) out.push(acc);
   if (alloc.includeFullAcc !== false) out.push(freePoints);
 
-  const custom = Array.isArray(alloc.customAccValues)
-    ? alloc.customAccValues
-    : [];
+  const custom = Array.isArray(alloc.customAccValues) ? alloc.customAccValues : [];
   for (const acc of custom) out.push(clampInt(acc, 0, freePoints));
 
   return uniqueSortedNums(out).filter((acc) => acc >= 0 && acc <= freePoints);
@@ -2939,9 +2665,7 @@ function groupPlansByHp(plans) {
   return Array.from(map.entries())
     .map(([hp, arr]) => ({
       hp: Number(hp),
-      plans: arr
-        .slice()
-        .sort((a, b) => a.extraAcc - b.extraAcc || a.extraDodge - b.extraDodge),
+      plans: arr.slice().sort((a, b) => a.extraAcc - b.extraAcc || a.extraDodge - b.extraDodge),
     }))
     .sort((a, b) => a.hp - b.hp);
 }
@@ -2970,23 +2694,22 @@ function pickWarmStartPlan(plans) {
 
 function buildHpPlans() {
   const cfg = PLAN_SWEEP_CONFIG || {};
-  const hpMode = String(cfg.hpMode || "single")
+  const hpMode = String(cfg.hpMode || 'single')
     .trim()
     .toLowerCase();
-  const allocationMode = String(cfg.allocationMode || "dodge_only")
+  const allocationMode = String(cfg.allocationMode || 'dodge_only')
     .trim()
     .toLowerCase();
 
   const hpValues = [];
-  if (hpMode === "sweep") {
+  if (hpMode === 'sweep') {
     const hpSweep = cfg.hpSweep || {};
     const hpMin = clampInt(hpSweep.min, 1, SETTINGS.HP_MAX);
     const hpMax = clampInt(hpSweep.max, hpMin, SETTINGS.HP_MAX);
     const hpStep = Math.max(1, clampInt(hpSweep.step, 1, SETTINGS.HP_MAX));
 
     for (let hp = hpMin; hp <= hpMax; hp += hpStep) hpValues.push(hp);
-    if (hpSweep.includeSingleHp)
-      hpValues.push(clampInt(cfg.singleHp, 1, SETTINGS.HP_MAX));
+    if (hpSweep.includeSingleHp) hpValues.push(clampInt(cfg.singleHp, 1, SETTINGS.HP_MAX));
   } else {
     hpValues.push(clampInt(cfg.singleHp, 1, SETTINGS.HP_MAX));
   }
@@ -3008,9 +2731,7 @@ function buildHpPlans() {
       allocation: cfg.allocation,
     });
     if (!accValues.length) {
-      throw new Error(
-        `No stat allocations were generated for HP ${hp}. Check PLAN_SWEEP_CONFIG.`,
-      );
+      throw new Error(`No stat allocations were generated for HP ${hp}. Check PLAN_SWEEP_CONFIG.`);
     }
 
     for (const extraAcc of accValues) {
@@ -3029,23 +2750,13 @@ function buildHpPlans() {
       accMin: accValues[0],
       accMax: accValues[accValues.length - 1],
       accStep:
-        allocationMode === "dodge_only"
+        allocationMode === 'dodge_only'
           ? 0
-          : Math.max(
-              1,
-              clampInt(
-                cfg.allocation && cfg.allocation.accStep,
-                1,
-                freePoints || 1,
-              ),
-            ),
+          : Math.max(1, clampInt(cfg.allocation && cfg.allocation.accStep, 1, freePoints || 1)),
     });
   }
 
-  plans.sort(
-    (a, b) =>
-      a.hp - b.hp || a.extraAcc - b.extraAcc || a.extraDodge - b.extraDodge,
-  );
+  plans.sort((a, b) => a.hp - b.hp || a.extraAcc - b.extraAcc || a.extraDodge - b.extraDodge);
 
   return {
     plans,
@@ -3060,28 +2771,24 @@ function buildHpPlans() {
 function extractAccuracySweepMetric(score, defendersLen, cfg) {
   if (!cfg || !cfg.enabled || !score) return null;
 
-  if (
-    !score.bailed &&
-    typeof score.worstWin === "number" &&
-    Number.isFinite(score.worstWin)
-  ) {
-    return { value: score.worstWin, source: "confirm" };
+  if (!score.bailed && typeof score.worstWin === 'number' && Number.isFinite(score.worstWin)) {
+    return { value: score.worstWin, source: 'confirm' };
   }
 
   if (
-    String(cfg.metric || "screen_or_confirm")
+    String(cfg.metric || 'screen_or_confirm')
       .trim()
-      .toLowerCase() === "confirm_only"
+      .toLowerCase() === 'confirm_only'
   ) {
     return null;
   }
 
   if (
     score.screenSampled === defendersLen &&
-    typeof score.screenWorstWin === "number" &&
+    typeof score.screenWorstWin === 'number' &&
     Number.isFinite(score.screenWorstWin)
   ) {
-    return { value: score.screenWorstWin, source: "screen" };
+    return { value: score.screenWorstWin, source: 'screen' };
   }
 
   return null;
@@ -3094,11 +2801,11 @@ function createAccuracySweepState(cfg) {
     enabled,
     metricBest: -Infinity,
     bestAcc: 0,
-    bestMetricSource: "",
+    bestMetricSource: '',
     evaluatedPlans: 0,
     worseStreak: 0,
     stop: false,
-    stopReason: "",
+    stopReason: '',
   };
 }
 
@@ -3118,19 +2825,10 @@ function updateAccuracySweepState(state, plan, score, defendersLen) {
     return false;
   }
 
-  const minEvaluatedPlans = Math.max(
-    1,
-    clampInt(state.cfg.minEvaluatedPlans, 1, 999999),
-  );
-  const minAccAheadOfBest = Math.max(
-    0,
-    clampInt(state.cfg.minAccAheadOfBest, 0, 999999),
-  );
+  const minEvaluatedPlans = Math.max(1, clampInt(state.cfg.minEvaluatedPlans, 1, 999999));
+  const minAccAheadOfBest = Math.max(0, clampInt(state.cfg.minAccAheadOfBest, 0, 999999));
   const worseByPct = Math.max(0, Number(state.cfg.worseByPct) || 0);
-  const consecutiveSteps = Math.max(
-    1,
-    clampInt(state.cfg.consecutiveSteps, 1, 999999),
-  );
+  const consecutiveSteps = Math.max(1, clampInt(state.cfg.consecutiveSteps, 1, 999999));
 
   const deficit = state.metricBest - metric.value;
   const accAhead = plan.extraAcc - state.bestAcc;
@@ -3159,19 +2857,18 @@ function updateAccuracySweepState(state, plan, score, defendersLen) {
 // =====================
 // HIDDEN SLOT (parity with legacy-sim)
 // =====================
-const HIDDEN_PRESET = String(process.env.LEGACY_HIDDEN_PRESET || "none")
+const HIDDEN_PRESET = String(process.env.LEGACY_HIDDEN_PRESET || 'none')
   .trim()
   .toLowerCase();
 
 function applyHiddenRoleBonuses(c, role) {
-  if (!HIDDEN_PRESET || HIDDEN_PRESET === "none") return;
+  if (!HIDDEN_PRESET || HIDDEN_PRESET === 'none') return;
 
   const wCount = (c.w1 ? 1 : 0) + (c.w2 ? 1 : 0);
-  const prjCount =
-    (c.w1 && c.w1.skill === 2 ? 1 : 0) + (c.w2 && c.w2.skill === 2 ? 1 : 0);
+  const prjCount = (c.w1 && c.w1.skill === 2 ? 1 : 0) + (c.w2 && c.w2.skill === 2 ? 1 : 0);
 
-  if (HIDDEN_PRESET === "slot3") {
-    if (role === "A") {
+  if (HIDDEN_PRESET === 'slot3') {
+    if (role === 'A') {
       c.defSk += 3 * wCount;
     } else {
       c.acc += 3 * wCount;
@@ -3180,8 +2877,8 @@ function applyHiddenRoleBonuses(c, role) {
     return;
   }
 
-  if (HIDDEN_PRESET === "slot3_prjdef") {
-    if (role === "A") {
+  if (HIDDEN_PRESET === 'slot3_prjdef') {
+    if (role === 'A') {
       c.defSk += 3 * wCount;
     } else {
       c.acc += 3 * prjCount;
@@ -3195,7 +2892,7 @@ function applyHiddenRoleBonuses(c, role) {
 
 function applyCompiledTacticsMinMax(w) {
   if (!w) return w;
-  if (TACTICS_MODE === "minmax" || TACTICS_MODE === "both") {
+  if (TACTICS_MODE === 'minmax' || TACTICS_MODE === 'both') {
     return { ...w, min: w.min + TACTICS_VAL, max: w.max + TACTICS_VAL };
   }
   return w;
@@ -3211,29 +2908,17 @@ function rebuildMiscVariantForSlot(v, slotTag) {
     return v;
   }
   if (v.crystalMix) {
-    return computeVariantFromCrystalSpec(
-      v.itemName,
-      v.crystalMix,
-      v.upgrade1,
-      v.upgrade2,
-      slotTag,
-    );
+    return computeVariantFromCrystalSpec(v.itemName, v.crystalMix, v.upgrade1, v.upgrade2, slotTag);
   }
-  return computeVariant(
-    v.itemName,
-    v.crystalName,
-    v.upgrade1,
-    v.upgrade2,
-    slotTag,
-  );
+  return computeVariant(v.itemName, v.crystalName, v.upgrade1, v.upgrade2, slotTag);
 }
 // =====================
 // BUILD / COMPILE DEFENDERS
 // =====================
 
 function partName(part) {
-  if (!part) return "";
-  return String(part.name || part.item || part.itemName || "").trim();
+  if (!part) return '';
+  return String(part.name || part.item || part.itemName || '').trim();
 }
 
 // Defender payloads historically used `upgrades: [<crystal>, ...]` to mean *crystals*.
@@ -3245,20 +2930,17 @@ function partName(part) {
 //   C) or use explicit upgrade fields:
 //        upgrade1: 'Poisoned Tip', upgrade2: 'Laser Sight'
 function partCrystal(part) {
-  if (!part) return "";
-  if (typeof part.crystal === "string" && part.crystal) return part.crystal;
-  if (typeof part.crystalName === "string" && part.crystalName)
-    return part.crystalName;
-  if (Array.isArray(part.crystals) && part.crystals.length)
-    return part.crystals[0];
-  if (Array.isArray(part.upgrades) && part.upgrades.length)
-    return part.upgrades[0];
-  if (typeof part.upgrades === "string" && part.upgrades) return part.upgrades;
-  return "";
+  if (!part) return '';
+  if (typeof part.crystal === 'string' && part.crystal) return part.crystal;
+  if (typeof part.crystalName === 'string' && part.crystalName) return part.crystalName;
+  if (Array.isArray(part.crystals) && part.crystals.length) return part.crystals[0];
+  if (Array.isArray(part.upgrades) && part.upgrades.length) return part.upgrades[0];
+  if (typeof part.upgrades === 'string' && part.upgrades) return part.upgrades;
+  return '';
 }
 
 function partWeaponUpgrades(part) {
-  if (!part) return ["", ""];
+  if (!part) return ['', ''];
 
   let ups = [];
   if (Array.isArray(part.weaponUpgrades)) {
@@ -3270,15 +2952,13 @@ function partWeaponUpgrades(part) {
     // Legacy-style: treat entries after the crystal as upgrades *only* if they match UpgradeDefs.
     ups = part.upgrades.slice(1).filter((u) => !!UpgradeDefs[u]);
   } else {
-    const u1 = typeof part.upgrade1 === "string" ? part.upgrade1 : "";
-    const u2 = typeof part.upgrade2 === "string" ? part.upgrade2 : "";
+    const u1 = typeof part.upgrade1 === 'string' ? part.upgrade1 : '';
+    const u2 = typeof part.upgrade2 === 'string' ? part.upgrade2 : '';
     ups = [u1, u2].filter(Boolean);
   }
 
-  const u1 =
-    (typeof part.upgrade1 === "string" && part.upgrade1) || ups[0] || "";
-  const u2 =
-    (typeof part.upgrade2 === "string" && part.upgrade2) || ups[1] || "";
+  const u1 = (typeof part.upgrade1 === 'string' && part.upgrade1) || ups[0] || '';
+  const u2 = (typeof part.upgrade2 === 'string' && part.upgrade2) || ups[1] || '';
   return [u1, u2];
 }
 
@@ -3321,11 +3001,11 @@ function compileDefender(def, variantCacheLocal) {
   const [w1u1, w1u2] = partWeaponUpgrades(p.weapon1);
   const [w2u1, w2u2] = partWeaponUpgrades(p.weapon2);
 
-  const armorV = variantCacheLocal.get(variantKey(armorName, armorCr, "", ""));
+  const armorV = variantCacheLocal.get(variantKey(armorName, armorCr, '', ''));
   const w1V = variantCacheLocal.get(variantKey(w1Name, w1Cr, w1u1, w1u2));
   const w2V = variantCacheLocal.get(variantKey(w2Name, w2Cr, w2u1, w2u2));
-  const m1V = variantCacheLocal.get(variantKey(m1Name, m1Cr, "", ""));
-  const m2V = variantCacheLocal.get(variantKey(m2Name, m2Cr, "", ""));
+  const m1V = variantCacheLocal.get(variantKey(m1Name, m1Cr, '', ''));
+  const m2V = variantCacheLocal.get(variantKey(m2Name, m2Cr, '', ''));
   if (!armorV || !w1V || !w2V || !m1V || !m2V)
     throw new Error(`Missing variant cache entries for defender ${def.name}`);
   const m1Eff = m1V;
@@ -3338,33 +3018,13 @@ function compileDefender(def, variantCacheLocal) {
   const level = Math.floor(Number(st.level));
 
   const speed =
-    baseSpeed +
-    armorV.addSpeed +
-    w1V.addSpeed +
-    w2V.addSpeed +
-    m1Eff.addSpeed +
-    m2Eff.addSpeed;
-  const acc =
-    baseAcc +
-    armorV.addAcc +
-    w1V.addAcc +
-    w2V.addAcc +
-    m1Eff.addAcc +
-    m2Eff.addAcc;
-  const dodge =
-    baseDod +
-    armorV.addDod +
-    w1V.addDod +
-    w2V.addDod +
-    m1Eff.addDod +
-    m2Eff.addDod;
+    baseSpeed + armorV.addSpeed + w1V.addSpeed + w2V.addSpeed + m1Eff.addSpeed + m2Eff.addSpeed;
+  const acc = baseAcc + armorV.addAcc + w1V.addAcc + w2V.addAcc + m1Eff.addAcc + m2Eff.addAcc;
+  const dodge = baseDod + armorV.addDod + w1V.addDod + w2V.addDod + m1Eff.addDod + m2Eff.addDod;
 
   const w1SkillIdx = w1V.weapon ? w1V.weapon.skill : null;
   const w2SkillIdx = w2V.weapon ? w2V.weapon.skill : null;
-  const [w1Mult, w2Mult] = mixedWeaponMultsFromWeaponSkill(
-    w1SkillIdx,
-    w2SkillIdx,
-  );
+  const [w1Mult, w2Mult] = mixedWeaponMultsFromWeaponSkill(w1SkillIdx, w2SkillIdx);
 
   // IMPORTANT: mixed bonus applies ONLY to each weapon's OWN offensive skill contribution.
   // (Not to armor/misc skill, not to defSkill, not to speed/acc/dodge.)
@@ -3375,30 +3035,12 @@ function compileDefender(def, variantCacheLocal) {
   const w1Prj = w1V.addPrj * (w1SkillIdx === 2 ? w1Mult : 1);
   const w2Prj = w2V.addPrj * (w2SkillIdx === 2 ? w2Mult : 1);
 
-  const gun =
-    BASE.gunSkill + armorV.addGun + w1Gun + w2Gun + m1Eff.addGun + m2Eff.addGun;
-  const mel =
-    BASE.meleeSkill +
-    armorV.addMel +
-    w1Mel +
-    w2Mel +
-    m1Eff.addMel +
-    m2Eff.addMel;
-  const prj =
-    BASE.projSkill +
-    armorV.addPrj +
-    w1Prj +
-    w2Prj +
-    m1Eff.addPrj +
-    m2Eff.addPrj;
+  const gun = BASE.gunSkill + armorV.addGun + w1Gun + w2Gun + m1Eff.addGun + m2Eff.addGun;
+  const mel = BASE.meleeSkill + armorV.addMel + w1Mel + w2Mel + m1Eff.addMel + m2Eff.addMel;
+  const prj = BASE.projSkill + armorV.addPrj + w1Prj + w2Prj + m1Eff.addPrj + m2Eff.addPrj;
 
   const defSk =
-    BASE.defSkill +
-    armorV.addDef +
-    w1V.addDef +
-    w2V.addDef +
-    m1Eff.addDef +
-    m2Eff.addDef;
+    BASE.defSkill + armorV.addDef + w1V.addDef + w2V.addDef + m1Eff.addDef + m2Eff.addDef;
 
   const armor = BASE.armor + armorV.addArmStat;
   const armorFactor = armorFactorForArmorValue(level, armor, ARMOR_K);
@@ -3420,7 +3062,7 @@ function compileDefender(def, variantCacheLocal) {
     w2: applyCompiledTacticsMinMax(w2V.weapon),
     baseDmg: BASE.baseDamagePerHit,
   };
-  applyHiddenRoleBonuses(c, "D");
+  applyHiddenRoleBonuses(c, 'D');
   return c;
 }
 
@@ -3433,12 +3075,7 @@ function compileAttacker(plan, av, w1v, w2v, m1v, m2v) {
   const m2Eff = rebuildMiscVariantForSlot(m2v, 2);
 
   const speed =
-    BASE.speed +
-    av.addSpeed +
-    w1v.addSpeed +
-    w2v.addSpeed +
-    m1Eff.addSpeed +
-    m2Eff.addSpeed;
+    BASE.speed + av.addSpeed + w1v.addSpeed + w2v.addSpeed + m1Eff.addSpeed + m2Eff.addSpeed;
 
   const acc =
     BASE.accuracy +
@@ -3460,10 +3097,7 @@ function compileAttacker(plan, av, w1v, w2v, m1v, m2v) {
 
   const w1SkillIdx = w1v.weapon ? w1v.weapon.skill : null;
   const w2SkillIdx = w2v.weapon ? w2v.weapon.skill : null;
-  const [w1Mult, w2Mult] = mixedWeaponMultsFromWeaponSkill(
-    w1SkillIdx,
-    w2SkillIdx,
-  );
+  const [w1Mult, w2Mult] = mixedWeaponMultsFromWeaponSkill(w1SkillIdx, w2SkillIdx);
 
   // IMPORTANT: mixed bonus applies ONLY to each weapon's OWN offensive skill contribution.
   const w1Gun = w1v.addGun * (w1SkillIdx === 0 ? w1Mult : 1);
@@ -3473,20 +3107,11 @@ function compileAttacker(plan, av, w1v, w2v, m1v, m2v) {
   const w1Prj = w1v.addPrj * (w1SkillIdx === 2 ? w1Mult : 1);
   const w2Prj = w2v.addPrj * (w2SkillIdx === 2 ? w2Mult : 1);
 
-  const gun =
-    BASE.gunSkill + av.addGun + w1Gun + w2Gun + m1Eff.addGun + m2Eff.addGun;
-  const mel =
-    BASE.meleeSkill + av.addMel + w1Mel + w2Mel + m1Eff.addMel + m2Eff.addMel;
-  const prj =
-    BASE.projSkill + av.addPrj + w1Prj + w2Prj + m1Eff.addPrj + m2Eff.addPrj;
+  const gun = BASE.gunSkill + av.addGun + w1Gun + w2Gun + m1Eff.addGun + m2Eff.addGun;
+  const mel = BASE.meleeSkill + av.addMel + w1Mel + w2Mel + m1Eff.addMel + m2Eff.addMel;
+  const prj = BASE.projSkill + av.addPrj + w1Prj + w2Prj + m1Eff.addPrj + m2Eff.addPrj;
 
-  const defSk =
-    BASE.defSkill +
-    av.addDef +
-    w1v.addDef +
-    w2v.addDef +
-    m1Eff.addDef +
-    m2Eff.addDef;
+  const defSk = BASE.defSkill + av.addDef + w1v.addDef + w2v.addDef + m1Eff.addDef + m2Eff.addDef;
 
   const armor = BASE.armor + av.addArmStat;
   const armorFactor = armorFactorForArmorValue(level, armor, ARMOR_K);
@@ -3507,7 +3132,7 @@ function compileAttacker(plan, av, w1v, w2v, m1v, m2v) {
     w2: applyCompiledTacticsMinMax(w2v.weapon),
     baseDmg: BASE.baseDamagePerHit,
   };
-  applyHiddenRoleBonuses(c, "A");
+  applyHiddenRoleBonuses(c, 'A');
   return c;
 }
 
@@ -3523,7 +3148,7 @@ function pushLeaderboard(lb, entry, keepN) {
 function formatWeaponShort(wv) {
   const u1 = shortUpgrade(wv.upgrade1);
   const u2 = shortUpgrade(wv.upgrade2);
-  const u = [u1, u2].filter(Boolean).join("+");
+  const u = [u1, u2].filter(Boolean).join('+');
   return u
     ? `${shortItem(wv.itemName)}[${shortCrystal(wv.crystalName)}]{${u}}`
     : `${shortItem(wv.itemName)}[${shortCrystal(wv.crystalName)}]`;
@@ -3550,14 +3175,14 @@ function buildSpec(av, w1v, w2v, m1v, m2v, plan) {
     weapon1: {
       item: w1v.itemName,
       crystal: w1v.crystalName,
-      u1: w1v.upgrade1 || "",
-      u2: w1v.upgrade2 || "",
+      u1: w1v.upgrade1 || '',
+      u2: w1v.upgrade2 || '',
     },
     weapon2: {
       item: w2v.itemName,
       crystal: w2v.crystalName,
-      u1: w2v.upgrade1 || "",
-      u2: w2v.upgrade2 || "",
+      u1: w2v.upgrade1 || '',
+      u2: w2v.upgrade2 || '',
     },
     misc1: { item: m1v.itemName, crystal: m1v.crystalName },
     misc2: { item: m2v.itemName, crystal: m2v.crystalName },
@@ -3593,16 +3218,14 @@ function evalCandidateStaged({
   const screenBail = screenBailMargin == null ? gateBail : screenBailMargin;
 
   function setDetRng(i, tag) {
-    const s = mix32(
-      (baseSeed ^ mix32(candidateKey ^ (i * 0x9e3779b9) ^ tag)) | 0,
-    );
-    RNG = makeRng("fast", s, s ^ 0xa341316c, s ^ 0xc8013ea4, s ^ 0xad90777d);
+    const s = mix32((baseSeed ^ mix32(candidateKey ^ (i * 0x9e3779b9) ^ tag)) | 0);
+    RNG = makeRng('fast', s, s ^ 0xa341316c, s ^ 0xc8013ea4, s ^ 0xad90777d);
   }
 
   // Gatekeeper stage
   if (floorWorst !== null && gatekeepers > 0 && trialsGate > 0) {
     let worstG = 101;
-    let worstNameG = "";
+    let worstNameG = '';
 
     const gCount = Math.min(gatekeepers, defenders.length);
     for (let i = 0; i < gCount; i++) {
@@ -3623,11 +3246,11 @@ function evalCandidateStaged({
             worstWin: worstG,
             worstName: worstNameG,
             bailed: true,
-            stage: "G",
+            stage: 'G',
             screenAvgWin: 0,
             screenAvgEx: 0,
             screenWorstWin: null,
-            screenWorstName: "",
+            screenWorstName: '',
             screenSampled: 0,
           };
         }
@@ -3643,7 +3266,7 @@ function evalCandidateStaged({
     let sumWin = 0;
     let sumEx = 0;
     let worstWin = 101;
-    let worstName = "";
+    let worstName = '';
 
     for (let i = 0; i < defenders.length; i++) {
       if (deterministic) setDetRng(i, stageTagB);
@@ -3667,11 +3290,11 @@ function evalCandidateStaged({
             worstWin,
             worstName,
             bailed: true,
-            stage: "B",
+            stage: 'B',
             screenAvgWin,
             screenAvgEx,
             screenWorstWin: null,
-            screenWorstName: "",
+            screenWorstName: '',
             screenSampled: 0,
           };
         }
@@ -3684,18 +3307,18 @@ function evalCandidateStaged({
       worstWin,
       worstName,
       bailed: false,
-      stage: "B",
+      stage: 'B',
       screenAvgWin,
       screenAvgEx,
       screenWorstWin: null,
-      screenWorstName: "",
+      screenWorstName: '',
       screenSampled: 0,
     };
   }
 
   // Stage A (screen)
   let worstA = 101;
-  let worstNameA = "";
+  let worstNameA = '';
   let sumWinA = 0;
   let sumExA = 0;
 
@@ -3722,7 +3345,7 @@ function evalCandidateStaged({
           worstWin: worstA,
           worstName: worstNameA,
           bailed: true,
-          stage: "A",
+          stage: 'A',
           // FIX: use sampled defenders, not defenders.length
           screenAvgWin: sumWinA / sampled,
           screenAvgEx: sumExA / sampled,
@@ -3741,7 +3364,7 @@ function evalCandidateStaged({
   let sumWin = 0;
   let sumEx = 0;
   let worstWin = 101;
-  let worstName = "";
+  let worstName = '';
 
   for (let i = 0; i < defenders.length; i++) {
     if (deterministic) setDetRng(i, stageTagB);
@@ -3765,7 +3388,7 @@ function evalCandidateStaged({
           worstWin,
           worstName,
           bailed: true,
-          stage: "B",
+          stage: 'B',
           screenAvgWin,
           screenAvgEx,
           screenWorstWin: worstA,
@@ -3782,7 +3405,7 @@ function evalCandidateStaged({
     worstWin,
     worstName,
     bailed: false,
-    stage: "B",
+    stage: 'B',
     screenAvgWin,
     screenAvgEx,
     screenWorstWin: worstA,
@@ -3795,12 +3418,12 @@ function evalCandidateStaged({
 // SEARCH-SPACE SANITY
 // =====================
 function maskName(mask) {
-  if (mask === 0b001) return "Gun+Gun";
-  if (mask === 0b010) return "Melee+Melee";
-  if (mask === 0b100) return "Proj+Proj";
-  if (mask === (0b001 | 0b010)) return "Gun+Melee";
-  if (mask === (0b001 | 0b100)) return "Gun+Proj";
-  if (mask === (0b010 | 0b100)) return "Melee+Proj";
+  if (mask === 0b001) return 'Gun+Gun';
+  if (mask === 0b010) return 'Melee+Melee';
+  if (mask === 0b100) return 'Proj+Proj';
+  if (mask === (0b001 | 0b010)) return 'Gun+Melee';
+  if (mask === (0b001 | 0b100)) return 'Gun+Proj';
+  if (mask === (0b010 | 0b100)) return 'Melee+Proj';
   return `mask(${mask.toString(2)})`;
 }
 
@@ -3819,16 +3442,9 @@ function estimateEffectiveCounts(
 
   const miscAllow = buildAllowedMiscTable(miscVariants);
   const miscPairsAllowed = buildMiscPairsAllowedByMask(miscPairs, miscAllow);
-  const weaponPairIdxByMask = buildWeaponPairIndicesByMask(
-    weaponVariants,
-    weaponPairs,
-  );
+  const weaponPairIdxByMask = buildWeaponPairIndicesByMask(weaponVariants, weaponPairs);
 
-  const eff = computeEffectiveCounts(
-    armorVariants,
-    weaponPairIdxByMask,
-    miscPairsAllowed,
-  );
+  const eff = computeEffectiveCounts(armorVariants, weaponPairIdxByMask, miscPairsAllowed);
 
   return {
     AV,
@@ -3863,9 +3479,7 @@ function buildSearchSpaceStats(
     miscVariants,
     miscPairs,
   );
-  const keepPct = supersetCandidates
-    ? (eff.effTotal / supersetCandidates) * 100
-    : 0;
+  const keepPct = supersetCandidates ? (eff.effTotal / supersetCandidates) * 100 : 0;
   return { pools, AV, WV, MV, WP, MP, supersetCandidates, eff, keepPct };
 }
 
@@ -3885,17 +3499,17 @@ function printSearchSpaceSummary(
     weaponPairs,
     miscPairs,
   );
-  console.log(section("SEARCH SPACE", "magenta"));
+  console.log(section('SEARCH SPACE', 'magenta'));
   console.log(
-    `${kv("effective", `${s.eff.effTotal} candidates`)} ${kv("superset", `${s.supersetCandidates}`)} ${kv("keep", `${s.keepPct.toFixed(2)}%`)}`,
+    `${kv('effective', `${s.eff.effTotal} candidates`)} ${kv('superset', `${s.supersetCandidates}`)} ${kv('keep', `${s.keepPct.toFixed(2)}%`)}`,
   );
   console.log(
-    `${kv("pools", `armors=${s.pools.armors.length} weapons=${s.pools.weapons.length} miscs=${s.pools.miscs.length}`)} ${kv("variants", `A=${s.AV} W=${s.WV} M=${s.MV}`)}`,
+    `${kv('pools', `armors=${s.pools.armors.length} weapons=${s.pools.weapons.length} miscs=${s.pools.miscs.length}`)} ${kv('variants', `A=${s.AV} W=${s.WV} M=${s.MV}`)}`,
   );
   console.log(
-    `${kv("pairing", `weaponPairs=${s.WP} miscPairs=${s.MP}`)} ${kv("perArmor", `${s.eff.effPerArmor}`)}`,
+    `${kv('pairing', `weaponPairs=${s.WP} miscPairs=${s.MP}`)} ${kv('perArmor', `${s.eff.effPerArmor}`)}`,
   );
-  console.log("");
+  console.log('');
 }
 
 function printSearchSpaceSanity(
@@ -3915,7 +3529,7 @@ function printSearchSpaceSanity(
     miscPairs,
   );
 
-  console.log("=== SANITY CHECK: search-space / combinations ===");
+  console.log('=== SANITY CHECK: search-space / combinations ===');
   console.log(
     `Pools: armors=${pools.armors.length}, weapons=${pools.weapons.length}, miscs=${pools.miscs.length}`,
   );
@@ -3928,48 +3542,39 @@ function printSearchSpaceSanity(
   console.log(
     `Superset candidates (before misc per-candidate filter): AV*WP*MP = ${s.supersetCandidates}`,
   );
-  console.log("");
+  console.log('');
 
-  console.log(
-    "Per-item variant counts (by item + allowed crystals + upgrades):",
-  );
+  console.log('Per-item variant counts (by item + allowed crystals + upgrades):');
   for (const a of pools.armors) {
     const cs = allowedCrystalsForArmor(a);
-    console.log(
-      `  Armor  ${padRight(a, 24)} -> ${cs.map(shortCrystal).join("")}  (${cs.length})`,
-    );
+    console.log(`  Armor  ${padRight(a, 24)} -> ${cs.map(shortCrystal).join('')}  (${cs.length})`);
   }
   for (const w of pools.weapons) {
     const cs = allowedCrystalsForWeapon(w);
     const slots = upgradeSlotsForWeapon(w);
     let upCount = 1;
-    if (slots && slots.length)
-      upCount = slots.reduce((acc, arr) => acc * (arr.length || 1), 1);
+    if (slots && slots.length) upCount = slots.reduce((acc, arr) => acc * (arr.length || 1), 1);
     console.log(
-      `  Weapon ${padRight(w, 24)} -> ${cs.map(shortCrystal).join("")} * upgrades(${upCount})  (${cs.length * upCount})`,
+      `  Weapon ${padRight(w, 24)} -> ${cs.map(shortCrystal).join('')} * upgrades(${upCount})  (${cs.length * upCount})`,
     );
   }
   for (const m of pools.miscs) {
     const cs = allowedCrystalsForMiscSuperset(m);
-    console.log(
-      `  Misc   ${padRight(m, 24)} -> ${cs.map(shortCrystal).join("")}  (${cs.length})`,
-    );
+    console.log(`  Misc   ${padRight(m, 24)} -> ${cs.map(shortCrystal).join('')}  (${cs.length})`);
   }
-  console.log("");
+  console.log('');
 
   console.log(
-    "Effective candidates AFTER misc per-candidate filter (exact for your current superset lists):",
+    'Effective candidates AFTER misc per-candidate filter (exact for your current superset lists):',
   );
-  console.log(
-    `  Per armor: sum_over_weaponPairs(keptMiscPairsForMask) = ${s.eff.effPerArmor}`,
-  );
+  console.log(`  Per armor: sum_over_weaponPairs(keptMiscPairsForMask) = ${s.eff.effPerArmor}`);
   console.log(
     `  Effective total: AV * perArmor = ${s.eff.AV} * ${s.eff.effPerArmor} = ${s.eff.effTotal}`,
   );
   console.log(`  Keep rate vs superset: ${s.keepPct.toFixed(2)}%`);
-  console.log("");
+  console.log('');
 
-  console.log("Breakdown by weapon mask (weaponPairs count * kept miscPairs):");
+  console.log('Breakdown by weapon mask (weaponPairs count * kept miscPairs):');
   s.eff.breakdown
     .sort((a, b) => b.contrib - a.contrib)
     .forEach((r) => {
@@ -3982,31 +3587,31 @@ function printSearchSpaceSanity(
       );
     });
 
-  console.log("=== END SANITY CHECK ===\n");
+  console.log('=== END SANITY CHECK ===\n');
 }
 
 // =====================
 // CATALOG HELPERS
 // =====================
 function parseCatalogTopN() {
-  const n = parseInt(process.env.LEGACY_CATALOG_TOP_N || "", 10);
+  const n = parseInt(process.env.LEGACY_CATALOG_TOP_N || '', 10);
   return Number.isFinite(n) && n > 0 ? n : 10;
 }
 function parseCatalogMargin() {
-  const x = parseFloat(process.env.LEGACY_CATALOG_MARGIN || "");
+  const x = parseFloat(process.env.LEGACY_CATALOG_MARGIN || '');
   return Number.isFinite(x) && x >= 0 ? x : 12.0;
 }
 function parseCatalogConfirmTrials(TRIALS_CONFIRM) {
-  const n = parseInt(process.env.LEGACY_CATALOG_CONFIRM_TRIALS || "", 10);
+  const n = parseInt(process.env.LEGACY_CATALOG_CONFIRM_TRIALS || '', 10);
   return Number.isFinite(n) && n > 0 ? n : TRIALS_CONFIRM;
 }
 function parseExportJsonPath() {
-  const raw = String(process.env.LEGACY_EXPORT_JSON || "").trim();
-  if (!raw) return "";
+  const raw = String(process.env.LEGACY_EXPORT_JSON || '').trim();
+  if (!raw) return '';
   const low = raw.toLowerCase();
-  if (["0", "false", "off", "no"].includes(low)) return "";
-  if (["1", "true", "on", "yes"].includes(low)) {
-    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  if (['0', 'false', 'off', 'no'].includes(low)) return '';
+  if (['1', 'true', 'on', 'yes'].includes(low)) {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     return `brute-sim-results-${stamp}.json`;
   }
   return raw;
@@ -4016,45 +3621,33 @@ function parseExportJsonPath() {
 // prefer higher screenWorst, then screenAvg.
 function isBetterScreen(a, b) {
   if (!b) return true;
-  if (a.screenWorstWin !== b.screenWorstWin)
-    return a.screenWorstWin > b.screenWorstWin;
+  if (a.screenWorstWin !== b.screenWorstWin) return a.screenWorstWin > b.screenWorstWin;
   return a.screenAvgWin > b.screenAvgWin;
 }
 function pushCatalogTop(lb, entry, keepN) {
   lb.push(entry);
-  lb.sort(
-    (a, b) =>
-      b.screenWorstWin - a.screenWorstWin || b.screenAvgWin - a.screenAvgWin,
-  );
+  lb.sort((a, b) => b.screenWorstWin - a.screenWorstWin || b.screenAvgWin - a.screenAvgWin);
   if (lb.length > keepN) lb.length = keepN;
 }
 
 function mixedCrystalRefineEnabled() {
-  const raw = String(process.env.LEGACY_MIXED_CRYSTALS ?? "")
+  const raw = String(process.env.LEGACY_MIXED_CRYSTALS ?? '')
     .trim()
     .toLowerCase();
   if (!raw) return true;
-  return !(raw === "0" || raw === "false" || raw === "off" || raw === "no");
+  return !(raw === '0' || raw === 'false' || raw === 'off' || raw === 'no');
 }
 
-function parseMixedCrystalSearchTrials(
-  defaultTrialsScreen,
-  defaultConfirmTrials,
-) {
-  const raw = String(
-    process.env.LEGACY_MIXED_CRYSTAL_SEARCH_TRIALS ?? "",
-  ).trim();
-  const fallback = Math.max(
-    defaultTrialsScreen || 0,
-    Math.min(defaultConfirmTrials || 0, 2000),
-  );
+function parseMixedCrystalSearchTrials(defaultTrialsScreen, defaultConfirmTrials) {
+  const raw = String(process.env.LEGACY_MIXED_CRYSTAL_SEARCH_TRIALS ?? '').trim();
+  const fallback = Math.max(defaultTrialsScreen || 0, Math.min(defaultConfirmTrials || 0, 2000));
   if (!raw) return fallback > 0 ? fallback : defaultConfirmTrials;
   const n = parseInt(raw, 10);
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
 function parseMixedCrystalPasses() {
-  const raw = String(process.env.LEGACY_MIXED_CRYSTAL_PASSES ?? "").trim();
+  const raw = String(process.env.LEGACY_MIXED_CRYSTAL_PASSES ?? '').trim();
   if (!raw) return 2;
   const n = parseInt(raw, 10);
   return Number.isFinite(n) && n > 0 ? n : 2;
@@ -4095,16 +3688,10 @@ function workerMain() {
 
   const sharedI32 = sharedBuf ? new Int32Array(sharedBuf) : null;
 
-  if (rngMode === "fast") {
+  if (rngMode === 'fast') {
     const baseSeed = (Number(rngSeed) || 0) >>> 0;
     const s0 = (baseSeed ^ (0x9e3779b9 * (workerId + 1))) >>> 0;
-    RNG = makeRng(
-      "fast",
-      s0,
-      s0 ^ 0xa341316c,
-      s0 ^ 0xc8013ea4,
-      s0 ^ 0xad90777d,
-    );
+    RNG = makeRng('fast', s0, s0 ^ 0xa341316c, s0 ^ 0xc8013ea4, s0 ^ 0xad90777d);
   } else {
     RNG = Math.random;
   }
@@ -4115,7 +3702,7 @@ function workerMain() {
 
   // Local variant cache
   const localCache = new Map();
-  function getV(itemName, crystalName, upgrade1 = "", upgrade2 = "") {
+  function getV(itemName, crystalName, upgrade1 = '', upgrade2 = '') {
     const key = variantKey(itemName, crystalName, upgrade1, upgrade2);
     let v = localCache.get(key);
     if (!v) {
@@ -4128,15 +3715,14 @@ function workerMain() {
   // Build variants
   const armorVariants = [];
   for (const nm of armorChoices)
-    for (const c of allowedCrystalsForArmor(nm))
-      armorVariants.push(getV(nm, c));
+    for (const c of allowedCrystalsForArmor(nm)) armorVariants.push(getV(nm, c));
 
   const weaponVariants = [];
   for (const nm of weapons) {
     for (const c of allowedCrystalsForWeapon(nm)) {
       for (const ups of iterateWeaponUpgradeCombos(nm)) {
-        const u1 = ups[0] || "";
-        const u2 = ups[1] || "";
+        const u1 = ups[0] || '';
+        const u2 = ups[1] || '';
         weaponVariants.push(getV(nm, c, u1, u2));
       }
     }
@@ -4144,30 +3730,20 @@ function workerMain() {
 
   const miscVariants = [];
   for (const nm of miscChoices)
-    for (const c of allowedCrystalsForMiscSuperset(nm))
-      miscVariants.push(getV(nm, c));
+    for (const c of allowedCrystalsForMiscSuperset(nm)) miscVariants.push(getV(nm, c));
 
   const weaponPairs = buildWeaponPairs(weaponVariants);
   const miscPairs = buildMiscPairsOrderlessAllDup(miscVariants);
 
   const miscAllow = buildAllowedMiscTable(miscVariants);
-  const miscPairsAllowedByMask = buildMiscPairsAllowedByMask(
-    miscPairs,
-    miscAllow,
-  );
-  const weaponPairIndicesByMask = buildWeaponPairIndicesByMask(
-    weaponVariants,
-    weaponPairs,
-  );
+  const miscPairsAllowedByMask = buildMiscPairsAllowedByMask(miscPairs, miscAllow);
+  const weaponPairIndicesByMask = buildWeaponPairIndicesByMask(weaponVariants, weaponPairs);
   const effCounts = computeEffectiveCounts(
     armorVariants,
     weaponPairIndicesByMask,
     miscPairsAllowedByMask,
   );
-  const maskBuckets = buildMaskBuckets(
-    weaponPairIndicesByMask,
-    miscPairsAllowedByMask,
-  );
+  const maskBuckets = buildMaskBuckets(weaponPairIndicesByMask, miscPairsAllowedByMask);
 
   const { plans, planGroups } = buildHpPlans();
 
@@ -4225,7 +3801,7 @@ function workerMain() {
     if (t - lastProgress < progressEveryMs) return;
     lastProgress = t;
     const { bestWorst, bestAvg } = currentBestSummary();
-    parentPort.postMessage({ type: "progress", processed, bestWorst, bestAvg });
+    parentPort.postMessage({ type: 'progress', processed, bestWorst, bestAvg });
   }
 
   function decodeSupersetIndex(gearIdx) {
@@ -4283,13 +3859,10 @@ function workerMain() {
     return { av, w1v, w2v, m1v, m2v, weaponMask };
   }
 
-  const accuracyBailCfg =
-    (PLAN_SWEEP_CONFIG && PLAN_SWEEP_CONFIG.safeAccuracyBail) || null;
+  const accuracyBailCfg = (PLAN_SWEEP_CONFIG && PLAN_SWEEP_CONFIG.safeAccuracyBail) || null;
 
   for (let idx = startIndex; idx < endIndex; idx += stride || 1) {
-    const dec = useSuperset
-      ? decodeSupersetIndex(idx)
-      : decodeEffectiveIndex(idx);
+    const dec = useSuperset ? decodeSupersetIndex(idx) : decodeEffectiveIndex(idx);
     const av = dec.av;
     const w1v = dec.w1v;
     const w2v = dec.w2v;
@@ -4303,7 +3876,7 @@ function workerMain() {
           const won = Atomics.compareExchange(sharedI32, 1, 0, 1);
           if (won === 0) {
             parentPort.postMessage({
-              type: "watch_hit",
+              type: 'watch_hit',
               workerId,
               idx,
               label:
@@ -4328,10 +3901,7 @@ function workerMain() {
     }
 
     if (debugMixed && workerId === 0 && debugPrinted < debugMixedN) {
-      const debugPlan =
-        planGroups[0] && planGroups[0].plans[0]
-          ? planGroups[0].plans[0]
-          : plans[0];
+      const debugPlan = planGroups[0] && planGroups[0].plans[0] ? planGroups[0].plans[0] : plans[0];
       if (debugPlan) {
         const s1 = w1v.weapon.skill;
         const s2 = w2v.weapon.skill;
@@ -4340,7 +3910,7 @@ function workerMain() {
           debugPrinted++;
           const [m1, m2] = mixedWeaponMultsFromWeaponSkill(s1, s2);
           const dbgAtt = compileAttacker(debugPlan, av, w1v, w2v, m1v, m2v);
-          const tag = isMixed ? "MIXED" : "SAME";
+          const tag = isMixed ? 'MIXED' : 'SAME';
           console.log(
             `[DEBUG_MIXED] ${tag} | W1=${w1v.itemName}(skill=${s1}, mult=${m1}) W2=${w2v.itemName}(skill=${s2}, mult=${m2}) | FINAL skills: gun=${dbgAtt.gun} mel=${dbgAtt.mel} prj=${dbgAtt.prj}`,
           );
@@ -4361,8 +3931,7 @@ function workerMain() {
         let lb = topsByHp[hpKey];
         if (!lb) lb = topsByHp[hpKey] = [];
 
-        const localFloor =
-          lb.length >= keepTopNPerHp ? lb[lb.length - 1].worstWin : null;
+        const localFloor = lb.length >= keepTopNPerHp ? lb[lb.length - 1].worstWin : null;
         const globalFloor = floorLoadPct(sharedI32);
         const floorWorst =
           localFloor === null && globalFloor === null
@@ -4374,9 +3943,7 @@ function workerMain() {
                 : Math.max(localFloor, globalFloor);
 
         const planKeySeed =
-          (((plan.hp & 0xffff) << 8) ^
-            ((plan.extraAcc & 0xff) << 1) ^
-            (plan.extraDodge & 0xff)) >>>
+          (((plan.hp & 0xffff) << 8) ^ ((plan.extraAcc & 0xff) << 1) ^ (plan.extraDodge & 0xff)) >>>
           0;
         const score = evalCandidateStaged({
           att,
@@ -4395,26 +3962,20 @@ function workerMain() {
         });
 
         if (prof) {
-          if (score.stage === "G") prof.bailedG++;
-          else if (score.stage === "A") prof.bailedA++;
-          else if (score.stage === "B") {
+          if (score.stage === 'G') prof.bailedG++;
+          else if (score.stage === 'A') prof.bailedA++;
+          else if (score.stage === 'B') {
             if (score.bailed) prof.bailedB++;
             else prof.confirmedB++;
           }
-          if (
-            typeof score.screenSampled === "number" &&
-            score.screenSampled > 0
-          ) {
+          if (typeof score.screenSampled === 'number' && score.screenSampled > 0) {
             prof.screenCalls++;
             prof.screenSampledSum += score.screenSampled;
             if (score.screenSampled === defenders.length) prof.screenFull++;
           }
         }
 
-        const wpTag = weaponPairTagFromSkills(
-          w1v.weapon.skill,
-          w2v.weapon.skill,
-        );
+        const wpTag = weaponPairTagFromSkills(w1v.weapon.skill, w2v.weapon.skill);
         const label = buildLabel(plan, av, w1v, w2v, m1v, m2v);
         const spec = buildSpec(av, w1v, w2v, m1v, m2v, plan);
 
@@ -4422,10 +3983,7 @@ function workerMain() {
           const sw = score.screenWorstWin;
           const sa = score.screenAvgWin;
 
-          const eligible =
-            floorWorst === null
-              ? true
-              : sw + 1e-9 >= floorWorst - catalogMargin;
+          const eligible = floorWorst === null ? true : sw + 1e-9 >= floorWorst - catalogMargin;
 
           if (eligible && sw !== null && sw !== undefined) {
             let topArr = catalogTopByHp[hpKey];
@@ -4444,8 +4002,7 @@ function workerMain() {
             );
 
             let bestTypes = catalogBestTypeByHp[hpKey];
-            if (!bestTypes)
-              bestTypes = catalogBestTypeByHp[hpKey] = Object.create(null);
+            if (!bestTypes) bestTypes = catalogBestTypeByHp[hpKey] = Object.create(null);
             const cand = {
               wpTag,
               label,
@@ -4460,8 +4017,7 @@ function workerMain() {
 
         if (!score.bailed) {
           let bestTypes = bestByTypeByHp[hpKey];
-          if (!bestTypes)
-            bestTypes = bestByTypeByHp[hpKey] = Object.create(null);
+          if (!bestTypes) bestTypes = bestByTypeByHp[hpKey] = Object.create(null);
 
           const candidateEntry = {
             wpTag,
@@ -4483,14 +4039,10 @@ function workerMain() {
             },
           };
 
-          if (isBetterScore(candidateEntry, bestTypes[wpTag]))
-            bestTypes[wpTag] = candidateEntry;
+          if (isBetterScore(candidateEntry, bestTypes[wpTag])) bestTypes[wpTag] = candidateEntry;
 
           const floor = lb.length ? lb[lb.length - 1] : null;
-          if (
-            lb.length < keepTopNPerHp ||
-            score.worstWin >= floor.worstWin - 1e-9
-          ) {
+          if (lb.length < keepTopNPerHp || score.worstWin >= floor.worstWin - 1e-9) {
             pushLeaderboard(
               lb,
               { wpTag, label, spec, ...score, stats: candidateEntry.stats },
@@ -4528,7 +4080,7 @@ function workerMain() {
   }
 
   parentPort.postMessage({
-    type: "done",
+    type: 'done',
     processed,
     topsByHp,
     bestByTypeByHp,
@@ -4561,9 +4113,9 @@ function runWarmStartAndGetWorstPct({
 }) {
   const baseSeed = (Number(rngSeed) || 0) >>> 0;
   RNG =
-    rngMode === "fast"
+    rngMode === 'fast'
       ? makeRng(
-          "fast",
+          'fast',
           baseSeed,
           baseSeed ^ 0xa341316c,
           baseSeed ^ 0xc8013ea4,
@@ -4572,7 +4124,7 @@ function runWarmStartAndGetWorstPct({
       : Math.random;
 
   const localCache = new Map();
-  function getV(itemName, crystalName, upgrade1 = "", upgrade2 = "") {
+  function getV(itemName, crystalName, upgrade1 = '', upgrade2 = '') {
     const key = variantKey(itemName, crystalName, upgrade1, upgrade2);
     let v = localCache.get(key);
     if (!v) {
@@ -4583,40 +4135,17 @@ function runWarmStartAndGetWorstPct({
   }
 
   prefillVariantsFromDefenders(defenderBuilds, getV);
-  const compiledDefenders =
-    defenders || defenderBuilds.map((d) => compileDefender(d, localCache));
+  const compiledDefenders = defenders || defenderBuilds.map((d) => compileDefender(d, localCache));
 
   const av = getV(WARM_START_BUILD.armor.item, WARM_START_BUILD.armor.crystal);
 
-  const w1u1 =
-    (WARM_START_BUILD.weapon1.upgrades &&
-      WARM_START_BUILD.weapon1.upgrades[0]) ||
-    "";
-  const w1u2 =
-    (WARM_START_BUILD.weapon1.upgrades &&
-      WARM_START_BUILD.weapon1.upgrades[1]) ||
-    "";
-  const w2u1 =
-    (WARM_START_BUILD.weapon2.upgrades &&
-      WARM_START_BUILD.weapon2.upgrades[0]) ||
-    "";
-  const w2u2 =
-    (WARM_START_BUILD.weapon2.upgrades &&
-      WARM_START_BUILD.weapon2.upgrades[1]) ||
-    "";
+  const w1u1 = (WARM_START_BUILD.weapon1.upgrades && WARM_START_BUILD.weapon1.upgrades[0]) || '';
+  const w1u2 = (WARM_START_BUILD.weapon1.upgrades && WARM_START_BUILD.weapon1.upgrades[1]) || '';
+  const w2u1 = (WARM_START_BUILD.weapon2.upgrades && WARM_START_BUILD.weapon2.upgrades[0]) || '';
+  const w2u2 = (WARM_START_BUILD.weapon2.upgrades && WARM_START_BUILD.weapon2.upgrades[1]) || '';
 
-  const w1v = getV(
-    WARM_START_BUILD.weapon1.item,
-    WARM_START_BUILD.weapon1.crystal,
-    w1u1,
-    w1u2,
-  );
-  const w2v = getV(
-    WARM_START_BUILD.weapon2.item,
-    WARM_START_BUILD.weapon2.crystal,
-    w2u1,
-    w2u2,
-  );
+  const w1v = getV(WARM_START_BUILD.weapon1.item, WARM_START_BUILD.weapon1.crystal, w1u1, w1u2);
+  const w2v = getV(WARM_START_BUILD.weapon2.item, WARM_START_BUILD.weapon2.crystal, w2u1, w2u2);
 
   const m1v = getV(WARM_START_BUILD.misc1.item, WARM_START_BUILD.misc1.crystal);
   const m2v = getV(WARM_START_BUILD.misc2.item, WARM_START_BUILD.misc2.crystal);
@@ -4659,9 +4188,9 @@ function confirmSpecAgainstDefenders({
 }) {
   const baseSeed = (Number(rngSeed) || 0) >>> 0;
   RNG =
-    rngMode === "fast"
+    rngMode === 'fast'
       ? makeRng(
-          "fast",
+          'fast',
           baseSeed ^ 0x1234abcd,
           baseSeed ^ 0x1234abcd ^ 0xa341316c,
           baseSeed ^ 0x1234abcd ^ 0xc8013ea4,
@@ -4671,7 +4200,7 @@ function confirmSpecAgainstDefenders({
 
   const compiledDef = defenders;
   const localCache = new Map();
-  function getV(itemName, crystalSpec, u1 = "", u2 = "") {
+  function getV(itemName, crystalSpec, u1 = '', u2 = '') {
     const key = variantKeyFromCrystalSpec(itemName, crystalSpec, u1, u2);
     let v = localCache.get(key);
     if (!v) {
@@ -4704,7 +4233,7 @@ function confirmSpecAgainstDefenders({
   let sumWin = 0;
   let sumEx = 0;
   let worstWin = 101;
-  let worstName = "";
+  let worstName = '';
 
   for (let i = 0; i < compiledDef.length; i++) {
     const D = compiledDef[i];
@@ -4780,17 +4309,12 @@ function refineSpecMixedCrystals({
     passesRan++;
     let passImproved = false;
 
-    for (const partKey of ["armor", "weapon1", "weapon2", "misc1", "misc2"]) {
+    for (const partKey of ['armor', 'weapon1', 'weapon2', 'misc1', 'misc2']) {
       const allowed = allowedCrystalsForSpecPart(currentSpec, partKey);
       if (!allowed.length) continue;
 
-      const mixes = enumerateCrystalCountMixes(
-        allowed,
-        VARIANT_CFG.crystalSlots,
-      );
-      const currentMixKey = crystalSpecKey(
-        partCrystalSpec(currentSpec[partKey]),
-      );
+      const mixes = enumerateCrystalCountMixes(allowed, VARIANT_CFG.crystalSlots);
+      const currentMixKey = crystalSpecKey(partCrystalSpec(currentSpec[partKey]));
       let bestSpec = currentSpec;
       let bestScore = currentSearch;
 
@@ -4824,9 +4348,7 @@ function refineSpecMixedCrystals({
   }
 
   const finalScore =
-    trialsConfirm === trialsSearch
-      ? currentSearch
-      : evalSpec(currentSpec, trialsConfirm);
+    trialsConfirm === trialsSearch ? currentSearch : evalSpec(currentSpec, trialsConfirm);
 
   return {
     ...finalScore,
@@ -4846,16 +4368,16 @@ function refineSpecMixedCrystals({
 // MAIN THREAD
 // =====================
 async function main() {
-  const single = process.argv.includes("--single");
+  const single = process.argv.includes('--single');
 
   const logical =
-    typeof os.availableParallelism === "function"
+    typeof os.availableParallelism === 'function'
       ? os.availableParallelism()
       : os.cpus().length || 1;
 
   const physicalGuess = logical >= 8 ? Math.ceil(logical / 2) : logical;
 
-  const envW = parseInt(process.env.LEGACY_WORKERS || "", 10);
+  const envW = parseInt(process.env.LEGACY_WORKERS || '', 10);
   const defaultWorkers = Math.min(physicalGuess, SETTINGS.WORKERS_DEFAULT_CAP);
 
   const workers = single
@@ -4864,65 +4386,52 @@ async function main() {
       ? Math.min(envW, logical)
       : defaultWorkers;
 
-  const envConfirm = parseInt(process.env.LEGACY_TRIALS || "", 10);
+  const envConfirm = parseInt(process.env.LEGACY_TRIALS || '', 10);
   const TRIALS_CONFIRM =
-    Number.isFinite(envConfirm) && envConfirm > 0
-      ? envConfirm
-      : SETTINGS.TRIALS_CONFIRM_DEFAULT;
+    Number.isFinite(envConfirm) && envConfirm > 0 ? envConfirm : SETTINGS.TRIALS_CONFIRM_DEFAULT;
 
-  const envScreen = parseInt(process.env.LEGACY_TRIALS_SCREEN || "", 10);
+  const envScreen = parseInt(process.env.LEGACY_TRIALS_SCREEN || '', 10);
   const TRIALS_SCREEN =
-    Number.isFinite(envScreen) && envScreen > 0
-      ? envScreen
-      : SETTINGS.TRIALS_SCREEN_DEFAULT;
+    Number.isFinite(envScreen) && envScreen > 0 ? envScreen : SETTINGS.TRIALS_SCREEN_DEFAULT;
 
   const printStage =
-    process.env.LEGACY_PRINT_STAGE === "1" ||
-    process.env.LEGACY_PRINT_STAGE === "true";
+    process.env.LEGACY_PRINT_STAGE === '1' || process.env.LEGACY_PRINT_STAGE === 'true';
 
-  const envGate = parseInt(process.env.LEGACY_TRIALS_GATE || "", 10);
+  const envGate = parseInt(process.env.LEGACY_TRIALS_GATE || '', 10);
   const TRIALS_GATE =
-    Number.isFinite(envGate) && envGate > 0
-      ? envGate
-      : SETTINGS.TRIALS_GATE_DEFAULT;
+    Number.isFinite(envGate) && envGate > 0 ? envGate : SETTINGS.TRIALS_GATE_DEFAULT;
 
-  const envGatekeepers = parseInt(process.env.LEGACY_GATEKEEPERS || "", 10);
+  const envGatekeepers = parseInt(process.env.LEGACY_GATEKEEPERS || '', 10);
   const GATEKEEPERS =
     Number.isFinite(envGatekeepers) && envGatekeepers >= 0
       ? envGatekeepers
       : SETTINGS.GATEKEEPERS_DEFAULT;
 
-  const envBailMargin = parseFloat(process.env.LEGACY_SCREEN_MARGIN || "");
+  const envBailMargin = parseFloat(process.env.LEGACY_SCREEN_MARGIN || '');
   const BAIL_MARGIN =
     Number.isFinite(envBailMargin) && envBailMargin >= 0
       ? envBailMargin
       : SETTINGS.SCREEN_BAIL_MARGIN_DEFAULT;
-  const rngMode = (process.env.LEGACY_RNG || "fast").toLowerCase();
-  const rngSeed = parseInt(process.env.LEGACY_SEED || "", 10) || 123456789;
+  const rngMode = (process.env.LEGACY_RNG || 'fast').toLowerCase();
+  const rngSeed = parseInt(process.env.LEGACY_SEED || '', 10) || 123456789;
   const deterministic =
-    process.env.LEGACY_DETERMINISTIC === "1" ||
-    process.env.LEGACY_DETERMINISTIC === "true";
+    process.env.LEGACY_DETERMINISTIC === '1' || process.env.LEGACY_DETERMINISTIC === 'true';
 
   const pools = parsePoolsFromEnv();
 
   const debugMixed =
-    process.env.LEGACY_DEBUG_MIXED === "1" ||
-    process.env.LEGACY_DEBUG_MIXED === "true";
-  const debugMixedN =
-    parseInt(process.env.LEGACY_DEBUG_MIXED_N || "", 10) || 12;
+    process.env.LEGACY_DEBUG_MIXED === '1' || process.env.LEGACY_DEBUG_MIXED === 'true';
+  const debugMixedN = parseInt(process.env.LEGACY_DEBUG_MIXED_N || '', 10) || 12;
 
-  const watchRaw = String(process.env.LEGACY_WATCH_BUILD ?? "")
+  const watchRaw = String(process.env.LEGACY_WATCH_BUILD ?? '')
     .trim()
     .toLowerCase();
   const watchEnabled =
-    watchRaw === "1" ||
-    watchRaw === "true" ||
-    watchRaw === "on" ||
-    watchRaw === "yes";
+    watchRaw === '1' || watchRaw === 'true' || watchRaw === 'on' || watchRaw === 'yes';
   const useSuperset =
-    String(process.env.LEGACY_USE_SUPERSET ?? "")
+    String(process.env.LEGACY_USE_SUPERSET ?? '')
       .trim()
-      .toLowerCase() === "1";
+      .toLowerCase() === '1';
 
   const catalogTopN = parseCatalogTopN();
   const catalogMargin = parseCatalogMargin();
@@ -4939,11 +4448,11 @@ async function main() {
   // - Default: use raw LEGACY_SCREEN_MARGIN (fast, matches older behavior)
   // - Optional: LEGACY_ALIGN_BAIL_TO_CATALOG=1 makes Stage A bail margin >= catalog margin (more forgiving, slower)
   const alignBailToCatalog = (() => {
-    const v = String(process.env.LEGACY_ALIGN_BAIL_TO_CATALOG ?? "")
+    const v = String(process.env.LEGACY_ALIGN_BAIL_TO_CATALOG ?? '')
       .trim()
       .toLowerCase();
     if (!v) return false;
-    return v === "1" || v === "true" || v === "yes" || v === "on";
+    return v === '1' || v === 'true' || v === 'yes' || v === 'on';
   })();
 
   const gateBailMarginEffective = BAIL_MARGIN; // keep Stage 0 tight by default
@@ -4955,18 +4464,18 @@ async function main() {
   // - stride (default): interleave indices across workers to avoid tail slowdowns from uneven ranges
   // - range: contiguous ranges (older behavior)
   const schedMode = (() => {
-    const v = String(process.env.LEGACY_SCHED ?? "")
+    const v = String(process.env.LEGACY_SCHED ?? '')
       .trim()
       .toLowerCase();
-    return v === "range" ? "range" : "stride";
+    return v === 'range' ? 'range' : 'stride';
   })();
 
   const profileEnabled = (() => {
-    const v = String(process.env.LEGACY_PROFILE ?? "")
+    const v = String(process.env.LEGACY_PROFILE ?? '')
       .trim()
       .toLowerCase();
     if (!v) return false;
-    return v === "1" || v === "true" || v === "yes" || v === "on";
+    return v === '1' || v === 'true' || v === 'yes' || v === 'on';
   })();
 
   // Build variants/pairs for sanity + counts
@@ -4977,8 +4486,7 @@ async function main() {
   const weaponPairs = buildWeaponPairs(weaponVariants);
   const miscPairs = buildMiscPairsOrderlessAllDup(miscVariants);
 
-  const { plans, perHpSummary, hpMode, allocationMode, warmStartPlan } =
-    buildHpPlans();
+  const { plans, perHpSummary, hpMode, allocationMode, warmStartPlan } = buildHpPlans();
 
   const WP = weaponPairs.length / 2;
   const MP = miscPairs.length / 2;
@@ -4987,14 +4495,8 @@ async function main() {
   const totalGearCandidatesSuperset = AV * WP * MP;
 
   const miscAllow = buildAllowedMiscTable(miscVariants);
-  const miscPairsAllowedByMask = buildMiscPairsAllowedByMask(
-    miscPairs,
-    miscAllow,
-  );
-  const weaponPairIndicesByMask = buildWeaponPairIndicesByMask(
-    weaponVariants,
-    weaponPairs,
-  );
+  const miscPairsAllowedByMask = buildMiscPairsAllowedByMask(miscPairs, miscAllow);
+  const weaponPairIndicesByMask = buildWeaponPairIndicesByMask(weaponVariants, weaponPairs);
   const effCounts = computeEffectiveCounts(
     armorVariants,
     weaponPairIndicesByMask,
@@ -5008,13 +4510,11 @@ async function main() {
   const totalCandidates = totalGearCandidates * plans.length;
 
   const sanityDisabledCompat =
-    process.env.LEGACY_SANITY_DISABLE === "1" ||
-    process.env.LEGACY_SANITY_DISABLE === "true";
+    process.env.LEGACY_SANITY_DISABLE === '1' || process.env.LEGACY_SANITY_DISABLE === 'true';
   if (!sanityDisabledCompat) {
     const fullSanity =
-      TERM_UI.sanity === "always" ||
-      (TERM_UI.sanity === "auto" && uiWantsVerbose());
-    const shortSanity = TERM_UI.sanity === "auto" && !uiWantsVerbose();
+      TERM_UI.sanity === 'always' || (TERM_UI.sanity === 'auto' && uiWantsVerbose());
+    const shortSanity = TERM_UI.sanity === 'auto' && !uiWantsVerbose();
 
     if (fullSanity) {
       printSearchSpaceSanity(
@@ -5059,13 +4559,12 @@ async function main() {
       plan: warmStartPlan || plans[0],
       trialsConfirm: warmTrials,
       maxTurns: SETTINGS.MAX_TURNS,
-      rngMode: rngMode === "fast" ? "fast" : "math",
+      rngMode: rngMode === 'fast' ? 'fast' : 'math',
       rngSeed,
     });
 
     const existing = floorLoadPct(sharedI32);
-    const next =
-      existing === null ? ws.worstWin : Math.max(existing, ws.worstWin);
+    const next = existing === null ? ws.worstWin : Math.max(existing, ws.worstWin);
 
     sharedI32[0] = (next * FLOOR_SCALE) | 0;
 
@@ -5143,34 +4642,34 @@ async function main() {
   }
   if (debugMixed)
     console.log(
-      `${statusTag("DEBUG", "yellow")} LEGACY_DEBUG_MIXED=1 enabled (prints up to ${debugMixedN} lines from worker 0).`,
+      `${statusTag('DEBUG', 'yellow')} LEGACY_DEBUG_MIXED=1 enabled (prints up to ${debugMixedN} lines from worker 0).`,
     );
 
-  console.log(section("HP PLANS", "magenta"));
-  if (TERM_UI.detail === "quiet") {
+  console.log(section('HP PLANS', 'magenta'));
+  if (TERM_UI.detail === 'quiet') {
     const r = perHpSummary[0];
     if (r) {
       const allocNote =
-        allocationMode === "dodge_only"
-          ? "dodge-only"
-          : `acc=${r.accMin}..${r.accMax}${r.accStep > 0 ? ` step=${r.accStep}` : ""}`;
+        allocationMode === 'dodge_only'
+          ? 'dodge-only'
+          : `acc=${r.accMin}..${r.accMax}${r.accStep > 0 ? ` step=${r.accStep}` : ''}`;
       console.log(
         `HP=${r.hp} freePoints=${r.freePoints} allocs=${r.allocCount} (${allocNote}, dodge=freePoints-acc, speed=0)`,
       );
     }
   } else {
-    console.log("HP plans (reassurance):");
+    console.log('HP plans (reassurance):');
     for (const r of perHpSummary) {
       const allocNote =
-        allocationMode === "dodge_only"
-          ? "dodge-only"
-          : `acc=${r.accMin}..${r.accMax}${r.accStep > 0 ? ` step=${r.accStep}` : ""}`;
+        allocationMode === 'dodge_only'
+          ? 'dodge-only'
+          : `acc=${r.accMin}..${r.accMax}${r.accStep > 0 ? ` step=${r.accStep}` : ''}`;
       console.log(
         `  HP=${r.hp} freePoints=${r.freePoints} allocs=${r.allocCount}  (${allocNote}, dodge=freePoints-acc, speed=0)`,
       );
     }
   }
-  console.log("");
+  console.log('');
 
   if (watchEnabled) {
     const chk = checkWatchBuildReachable(pools);
@@ -5181,17 +4680,11 @@ async function main() {
 
     console.log(`WATCH_BUILD: ${pretty}`);
     if (chk.reachable) {
-      console.log(
-        "WATCH_BUILD: reachable in current search-space. Will log once when hit.\n",
-      );
+      console.log('WATCH_BUILD: reachable in current search-space. Will log once when hit.\n');
     } else {
-      console.log(
-        "WATCH_BUILD: NOT reachable in current search-space due to constraints:",
-      );
+      console.log('WATCH_BUILD: NOT reachable in current search-space due to constraints:');
       for (const r of chk.reasons) console.log(`  - ${r}`);
-      console.log(
-        "WATCH_BUILD: (so it will never be “hit” unless you loosen constraints.)\n",
-      );
+      console.log('WATCH_BUILD: (so it will never be “hit” unless you loosen constraints.)\n');
     }
   }
 
@@ -5219,7 +4712,7 @@ async function main() {
   const profileByWorker = new Array(workers).fill(null);
 
   const ranges = [];
-  if (schedMode === "range") {
+  if (schedMode === 'range') {
     const perWorker = Math.floor(totalGearCandidates / workers);
     for (let w = 0; w < workers; w++) {
       const s = w * perWorker;
@@ -5233,7 +4726,7 @@ async function main() {
 
     for (let w = 0; w < workers; w++) {
       let startIndex, endIndex, stride;
-      if (schedMode === "range") {
+      if (schedMode === 'range') {
         [startIndex, endIndex] = ranges[w];
         stride = 1;
       } else {
@@ -5258,7 +4751,7 @@ async function main() {
           startIndex,
           endIndex,
           stride,
-          rngMode: rngMode === "fast" ? "fast" : "math",
+          rngMode: rngMode === 'fast' ? 'fast' : 'math',
           rngSeed,
           deterministic,
           sharedBuf,
@@ -5274,21 +4767,19 @@ async function main() {
         },
       });
 
-      wk.on("message", (msg) => {
+      wk.on('message', (msg) => {
         if (!msg || !msg.type) return;
 
-        if (msg.type === "watch_hit") {
+        if (msg.type === 'watch_hit') {
           clearLiveLine();
-          console.log(
-            `\n[WATCH_BUILD HIT] worker=${msg.workerId} idx=${msg.idx} | ${msg.label}\n`,
-          );
+          console.log(`\n[WATCH_BUILD HIT] worker=${msg.workerId} idx=${msg.idx} | ${msg.label}\n`);
           return;
         }
 
-        if (msg.type === "progress") {
+        if (msg.type === 'progress') {
           processedByWorker[w] = msg.processed || processedByWorker[w];
 
-          if (typeof msg.bestWorst === "number") {
+          if (typeof msg.bestWorst === 'number') {
             if (liveBestWorst === null || msg.bestWorst > liveBestWorst) {
               liveBestWorst = msg.bestWorst;
               liveBestAvg = msg.bestAvg;
@@ -5316,16 +4807,15 @@ async function main() {
               bestAvg: liveBestAvg,
             });
 
-            if (TERM_UI.progress === "off") {
+            if (TERM_UI.progress === 'off') {
               // no-op
-            } else if (TERM_UI.progress === "single") {
+            } else if (TERM_UI.progress === 'single') {
               writeLiveLine(line);
-            } else if (TERM_UI.progress === "checkpoints") {
+            } else if (TERM_UI.progress === 'checkpoints') {
               const pct = frac * 100;
               if (pct >= nextCheckpointPct || done >= totalCandidates) {
                 console.log(line);
-                while (pct >= nextCheckpointPct)
-                  nextCheckpointPct += REPORT_CFG.checkpointStepPct;
+                while (pct >= nextCheckpointPct) nextCheckpointPct += REPORT_CFG.checkpointStepPct;
               }
             } else {
               console.log(line);
@@ -5333,7 +4823,7 @@ async function main() {
           }
         }
 
-        if (msg.type === "done") {
+        if (msg.type === 'done') {
           processedByWorker[w] = msg.processed || processedByWorker[w];
           if (msg.profile) profileByWorker[w] = msg.profile;
 
@@ -5343,8 +4833,7 @@ async function main() {
             if (!localLB || !localLB.length) continue;
 
             const globalLB = globalByHp[hpKey] || (globalByHp[hpKey] = []);
-            for (const e of localLB)
-              pushLeaderboard(globalLB, e, SETTINGS.KEEP_TOP_N_PER_HP);
+            for (const e of localLB) pushLeaderboard(globalLB, e, SETTINGS.KEEP_TOP_N_PER_HP);
           }
 
           const bestByType = msg.bestByTypeByHp || {};
@@ -5367,8 +4856,7 @@ async function main() {
           for (const hpKey in cTop) {
             const arr = cTop[hpKey];
             if (!arr || !arr.length) continue;
-            const gArr =
-              globalCatalogTopByHp[hpKey] || (globalCatalogTopByHp[hpKey] = []);
+            const gArr = globalCatalogTopByHp[hpKey] || (globalCatalogTopByHp[hpKey] = []);
             for (const e of arr) pushCatalogTop(gArr, e, catalogTopN);
           }
 
@@ -5391,16 +4879,15 @@ async function main() {
         }
       });
 
-      wk.on("error", reject);
-      wk.on("exit", (code) => {
-        if (code !== 0)
-          reject(new Error(`Worker ${w} exited with code ${code}`));
+      wk.on('error', reject);
+      wk.on('exit', (code) => {
+        if (code !== 0) reject(new Error(`Worker ${w} exited with code ${code}`));
       });
     }
   });
 
   const elapsedAll = (nowMs() - start) / 1000;
-  if (TERM_UI.progress === "single" && process.stdout?.isTTY) {
+  if (TERM_UI.progress === 'single' && process.stdout?.isTTY) {
     const finalFloor = floorLoadPct(sharedI32);
     const finalLine = buildRunProgressLine({
       done: totalCandidates,
@@ -5416,7 +4903,7 @@ async function main() {
   flushLiveLine();
 
   if (profileEnabled) {
-    console.log("\n\n=== PROFILE (LEGACY_PROFILE=1) ===");
+    console.log('\n\n=== PROFILE (LEGACY_PROFILE=1) ===');
     for (let w = 0; w < workers; w++) {
       const p = profileByWorker[w];
       if (!p) continue;
@@ -5427,7 +4914,7 @@ async function main() {
         )}/${defenderBuilds.length} fullScreens=${p.screenFull} | accBailStops=${p.accBailStops} accPlansSkipped=${p.accPlansSkipped}`,
       );
     }
-    console.log("=== END PROFILE ===\n");
+    console.log('=== END PROFILE ===\n');
   }
 
   printResults({
@@ -5438,7 +4925,7 @@ async function main() {
     elapsedAll,
     totalCandidates,
     printStage,
-    rngMode: rngMode === "fast" ? "fast" : "math",
+    rngMode: rngMode === 'fast' ? 'fast' : 'math',
     rngSeed,
     catalogConfirmTrials,
     exportJsonPath,
@@ -5469,8 +4956,7 @@ function dedupeRefinedEntries(entries) {
       (e.worstWin === prior.worstWin &&
         e.avgWin === prior.avgWin &&
         (e.baseWorstWin > prior.baseWorstWin ||
-          (e.baseWorstWin === prior.baseWorstWin &&
-            e.baseAvgWin > prior.baseAvgWin))) ||
+          (e.baseWorstWin === prior.baseWorstWin && e.baseAvgWin > prior.baseAvgWin))) ||
       (e.worstWin === prior.worstWin &&
         e.avgWin === prior.avgWin &&
         e.baseWorstWin === prior.baseWorstWin &&
@@ -5512,8 +4998,7 @@ function dedupeRefinedEntries(entries) {
       (e.worstWin === prior.worstWin &&
         e.avgWin === prior.avgWin &&
         (e.baseWorstWin > prior.baseWorstWin ||
-          (e.baseWorstWin === prior.baseWorstWin &&
-            e.baseAvgWin > prior.baseAvgWin))) ||
+          (e.baseWorstWin === prior.baseWorstWin && e.baseAvgWin > prior.baseAvgWin))) ||
       (e.worstWin === prior.worstWin &&
         e.avgWin === prior.avgWin &&
         e.baseWorstWin === prior.baseWorstWin &&
@@ -5553,24 +5038,17 @@ function printResults({
   mixedCrystalSearchTrials,
   mixedCrystalPasses,
 }) {
-  console.log(section("RUN COMPLETE", "green"));
+  console.log(section('RUN COMPLETE', 'green'));
   console.log(
-    `${kv("tested", totalCandidates)} ${kv("elapsed", formatDuration(elapsedAll))} ${kv("kept/HP", SETTINGS.KEEP_TOP_N_PER_HP)} ${kv("catalogTrials", catalogConfirmTrials)}`,
+    `${kv('tested', totalCandidates)} ${kv('elapsed', formatDuration(elapsedAll))} ${kv('kept/HP', SETTINGS.KEEP_TOP_N_PER_HP)} ${kv('catalogTrials', catalogConfirmTrials)}`,
   );
-  if (TERM_UI.detail !== "quiet") {
+  if (TERM_UI.detail !== 'quiet') {
     console.log(
-      `${kv("mixed refine", `${mixedCrystalRefine ? "ON" : "OFF"} search=${mixedCrystalSearchTrials} passes=${mixedCrystalPasses}`)} ${kv("report", `${TERM_UI.detail} top=${REPORT_CFG.finalistsTopN}`)}`,
+      `${kv('mixed refine', `${mixedCrystalRefine ? 'ON' : 'OFF'} search=${mixedCrystalSearchTrials} passes=${mixedCrystalPasses}`)} ${kv('report', `${TERM_UI.detail} top=${REPORT_CFG.finalistsTopN}`)}`,
     );
   }
 
-  const archetypes = [
-    "Gun+Gun",
-    "Gun+Melee",
-    "Gun+Proj",
-    "Melee+Melee",
-    "Melee+Proj",
-    "Proj+Proj",
-  ];
+  const archetypes = ['Gun+Gun', 'Gun+Melee', 'Gun+Proj', 'Melee+Melee', 'Melee+Proj', 'Proj+Proj'];
 
   const hpKeys = Object.keys(globalByHp)
     .map((x) => parseInt(x, 10))
@@ -5607,21 +5085,14 @@ function printResults({
     totalUnits: Math.max(1, 1 + estimatedConfirmTasks + estimatedRefineTasks),
     doneUnits: 0,
     lastCheckpointPct: -1,
-    lastPhase: "",
+    lastPhase: '',
   };
 
-  function renderFinalizationProgress({
-    phase,
-    hp = null,
-    note = "",
-    force = false,
-  }) {
-    if (TERM_UI.progress === "off") return;
+  function renderFinalizationProgress({ phase, hp = null, note = '', force = false }) {
+    if (TERM_UI.progress === 'off') return;
     const elapsedSec = (nowMs() - finalProgress.startMs) / 1000;
     const frac =
-      finalProgress.totalUnits > 0
-        ? finalProgress.doneUnits / finalProgress.totalUnits
-        : 1;
+      finalProgress.totalUnits > 0 ? finalProgress.doneUnits / finalProgress.totalUnits : 1;
     const etaSec = frac > 0 && frac < 1 ? (elapsedSec / frac) * (1 - frac) : 0;
     const line = buildFinalizationProgressLine({
       phase,
@@ -5633,7 +5104,7 @@ function printResults({
       note,
     });
 
-    if (TERM_UI.progress === "single") {
+    if (TERM_UI.progress === 'single') {
       writeLiveLine(line);
       return;
     }
@@ -5642,7 +5113,7 @@ function printResults({
     const checkpoint = Math.floor(pct / REPORT_CFG.checkpointStepPct);
     const shouldPrint =
       force ||
-      TERM_UI.progress === "lines" ||
+      TERM_UI.progress === 'lines' ||
       phase !== finalProgress.lastPhase ||
       checkpoint > finalProgress.lastCheckpointPct;
 
@@ -5654,23 +5125,20 @@ function printResults({
     }
   }
 
-  function advanceFinalization(phase, hp = null, note = "", force = false) {
-    finalProgress.doneUnits = Math.min(
-      finalProgress.totalUnits,
-      finalProgress.doneUnits + 1,
-    );
+  function advanceFinalization(phase, hp = null, note = '', force = false) {
+    finalProgress.doneUnits = Math.min(finalProgress.totalUnits, finalProgress.doneUnits + 1);
     renderFinalizationProgress({ phase, hp, note, force });
   }
 
   renderFinalizationProgress({
-    phase: "compile defenders",
+    phase: 'compile defenders',
     note: `defs=${defenderBuilds.length}`,
     force: true,
   });
 
   const compiledDefendersOnce = (() => {
     const localCache = new Map();
-    function getV(itemName, crystalName, u1 = "", u2 = "") {
+    function getV(itemName, crystalName, u1 = '', u2 = '') {
       const key = variantKey(itemName, crystalName, u1, u2);
       let v = localCache.get(key);
       if (!v) {
@@ -5683,18 +5151,13 @@ function printResults({
     prefillVariantsFromDefenders(defenderBuilds, getV);
     return defenderBuilds.map((d) => compileDefender(d, localCache));
   })();
-  advanceFinalization(
-    "compile defenders",
-    null,
-    `defs=${compiledDefendersOnce.length}`,
-    true,
-  );
+  advanceFinalization('compile defenders', null, `defs=${compiledDefendersOnce.length}`, true);
 
   const mixedRefineEvalCache = new Map();
   const mixedRefineResultCache = new Map();
   const catalogConfirmCache = new Map();
 
-  function confirmCatalogSpec(spec, hp = null, note = "") {
+  function confirmCatalogSpec(spec, hp = null, note = '') {
     const key = specKey(spec);
     let hit = catalogConfirmCache.get(key);
     if (!hit) {
@@ -5709,7 +5172,7 @@ function printResults({
       catalogConfirmCache.set(key, hit);
       mixedRefineEvalCache.set(`${catalogConfirmTrials}|${key}`, hit);
       advanceFinalization(
-        "catalog confirm",
+        'catalog confirm',
         hp,
         note || compactBuildLabel(buildLabelFromSpec(spec), 64),
       );
@@ -5733,11 +5196,7 @@ function printResults({
         sharedEvalCache: mixedRefineEvalCache,
       });
       mixedRefineResultCache.set(key, hit);
-      advanceFinalization(
-        "mixed refine",
-        hp,
-        compactBuildLabel(hit.label || baseEntry.label, 64),
-      );
+      advanceFinalization('mixed refine', hp, compactBuildLabel(hit.label || baseEntry.label, 64));
     }
     return hit;
   }
@@ -5788,8 +5247,8 @@ function printResults({
         hp,
         kept: [],
         winner: null,
-        winnerSourceKind: "kept",
-        winnerSourceLabel: outcomeLabelForSource("kept"),
+        winnerSourceKind: 'kept',
+        winnerSourceLabel: outcomeLabelForSource('kept'),
         displayTop: [],
         displayTypes: [],
         refineChanges: [],
@@ -5819,11 +5278,7 @@ function printResults({
       if (!e) continue;
       const key = specKey(e.spec);
       if (confirmedCatalogByKey.has(key)) continue;
-      const conf = confirmCatalogSpec(
-        e.spec,
-        hp,
-        compactBuildLabel(e.label, 64),
-      );
+      const conf = confirmCatalogSpec(e.spec, hp, compactBuildLabel(e.label, 64));
       confirmedCatalogByKey.set(key, { ...e, ...conf });
     }
 
@@ -5832,8 +5287,7 @@ function printResults({
       const type = e.type || e.wpTag;
       if (!type) continue;
       const candidate = { type, ...e };
-      if (isBetterScore(candidate, confirmedTypesMap[type]))
-        confirmedTypesMap[type] = candidate;
+      if (isBetterScore(candidate, confirmedTypesMap[type])) confirmedTypesMap[type] = candidate;
     }
     const confirmedTypes = archetypes
       .map((t) => confirmedTypesMap[t])
@@ -5861,11 +5315,7 @@ function printResults({
       .map((t) => ({ type: t, ...bestTypes[t] }))
       .sort((a, b) => b.worstWin - a.worstWin || b.avgWin - a.avgWin);
 
-    const displayTop = refinedTop.length
-      ? refinedTop
-      : confirmedTop.length
-        ? confirmedTop
-        : lb;
+    const displayTop = refinedTop.length ? refinedTop : confirmedTop.length ? confirmedTop : lb;
     const displayTypes = refinedTypes.length
       ? refinedTypes
       : confirmedTypes.length
@@ -5874,12 +5324,11 @@ function printResults({
 
     const winner = displayTop[0] || lb[0];
     const winnerSourceKind = refinedTop.length
-      ? "refined"
+      ? 'refined'
       : confirmedTop.length
-        ? "catalog"
-        : "kept";
-    const winnerRefine =
-      winnerSourceKind === "refined" ? refineNote(winner) : "";
+        ? 'catalog'
+        : 'kept';
+    const winnerRefine = winnerSourceKind === 'refined' ? refineNote(winner) : '';
     const refineChanges = refinedTop
       .map((e, idx) => {
         const deltaWorst = e.worstWin - e.baseWorstWin;
@@ -5892,7 +5341,7 @@ function printResults({
           note: classifyRefineOutcome(deltaWorst, deltaAvg),
         };
       })
-      .filter((e) => e.note !== "same")
+      .filter((e) => e.note !== 'same')
       .sort((a, b) => b.worstWin - a.worstWin || b.avgWin - a.avgWin);
 
     hpReports.push({
@@ -5945,33 +5394,25 @@ function printResults({
 
     const refineSummary = [];
     for (const report of hpReports) {
-      for (const e of (report.refineChanges || []).slice(
-        0,
-        REPORT_CFG.refineChangesTopN,
-      )) {
+      for (const e of (report.refineChanges || []).slice(0, REPORT_CFG.refineChangesTopN)) {
         refineSummary.push({ hp: report.hp, ...e });
       }
     }
     exportPayload.summary.refineSummary = refineSummary
-      .sort(
-        (a, b) =>
-          b.deltaWorst - a.deltaWorst ||
-          b.worstWin - a.worstWin ||
-          b.avgWin - a.avgWin,
-      )
+      .sort((a, b) => b.deltaWorst - a.deltaWorst || b.worstWin - a.worstWin || b.avgWin - a.avgWin)
       .slice(0, REPORT_CFG.refineChangesTopN);
   }
 
   finalProgress.doneUnits = finalProgress.totalUnits;
   renderFinalizationProgress({
-    phase: "render tables",
+    phase: 'render tables',
     note: `hp=${hpReports.length}`,
     force: true,
   });
   flushLiveLine();
 
   if (hpWinners.length > 1) {
-    console.log(section("HP WINNERS", "cyan"));
+    console.log(section('HP WINNERS', 'cyan'));
     const rows = hpWinners.map((e) => [
       `HP${e.hp}`,
       fmtPctTone(e.worstWin),
@@ -5980,23 +5421,26 @@ function printResults({
       e.winnerSourceLabel,
       compactBuildLabel(e.label, 94),
     ]);
-    printTable(
-      ["HP", "MinWR", "AvgWR", "Worst Matchup", "Source", "Build"],
-      rows,
-      ["left", "right", "right", "left", "left", "left"],
-    );
-    console.log("");
+    printTable(['HP', 'MinWR', 'AvgWR', 'Worst Matchup', 'Source', 'Build'], rows, [
+      'left',
+      'right',
+      'right',
+      'left',
+      'left',
+      'left',
+    ]);
+    console.log('');
   }
 
   for (const report of hpReports) {
-    console.log(section(`HP ${report.hp}`, "cyan"));
+    console.log(section(`HP ${report.hp}`, 'cyan'));
 
     if (!report.winner) {
-      console.log(`${statusTag("NOTE", "yellow")} no kept results.\n`);
+      console.log(`${statusTag('NOTE', 'yellow')} no kept results.\n`);
       continue;
     }
 
-    printWinnerCard("overall winner", report.winner, {
+    printWinnerCard('overall winner', report.winner, {
       hp: report.hp,
       source: report.winnerSourceLabel,
       refine: report.winnerRefine,
@@ -6008,43 +5452,44 @@ function printResults({
         `#${i + 1}`,
         fmtPctTone(e.worstWin),
         fmtPctTone(e.avgWin),
-        e.type || e.wpTag || "—",
+        e.type || e.wpTag || '—',
         e.worstName,
         compactBuildLabel(e.label, 96),
       ]);
     console.log(
-      `${statusTag("TOP", "cyan")} top ${Math.min(REPORT_CFG.finalistsTopN, report.displayTop.length)} finalists`,
+      `${statusTag('TOP', 'cyan')} top ${Math.min(REPORT_CFG.finalistsTopN, report.displayTop.length)} finalists`,
     );
-    printTable(
-      ["Rank", "MinWR", "AvgWR", "Type", "Worst Matchup", "Build"],
-      topRows,
-      ["left", "right", "right", "left", "left", "left"],
-    );
-    console.log("");
+    printTable(['Rank', 'MinWR', 'AvgWR', 'Type', 'Worst Matchup', 'Build'], topRows, [
+      'left',
+      'right',
+      'right',
+      'left',
+      'left',
+      'left',
+    ]);
+    console.log('');
 
     if (report.displayTypes.length) {
-      console.log(`${statusTag("TYPE", "magenta")} best by weapon archetype`);
+      console.log(`${statusTag('TYPE', 'magenta')} best by weapon archetype`);
       const rows = report.displayTypes.map((e) => [
-        e.type || e.wpTag || "—",
+        e.type || e.wpTag || '—',
         fmtPctTone(e.worstWin),
         fmtPctTone(e.avgWin),
         e.worstName,
         compactBuildLabel(e.label, 96),
       ]);
-      printTable(["Type", "MinWR", "AvgWR", "Worst Matchup", "Build"], rows, [
-        "left",
-        "right",
-        "right",
-        "left",
-        "left",
+      printTable(['Type', 'MinWR', 'AvgWR', 'Worst Matchup', 'Build'], rows, [
+        'left',
+        'right',
+        'right',
+        'left',
+        'left',
       ]);
-      console.log("");
+      console.log('');
     }
 
     if (mixedCrystalRefine && report.refineChanges.length) {
-      console.log(
-        `${statusTag("REFINE", "green")} meaningful mixed-crystal changes`,
-      );
+      console.log(`${statusTag('REFINE', 'green')} meaningful mixed-crystal changes`);
       const rows = report.refineChanges
         .slice(0, REPORT_CFG.refineChangesTopN)
         .map((e) => [
@@ -6056,16 +5501,20 @@ function printResults({
           e.note,
           compactBuildLabel(e.label, 96),
         ]);
-      printTable(
-        ["Rank", "MinWR", "AvgWR", "ΔMin", "ΔAvg", "Result", "Build"],
-        rows,
-        ["left", "right", "right", "right", "right", "left", "left"],
-      );
-      console.log("");
+      printTable(['Rank', 'MinWR', 'AvgWR', 'ΔMin', 'ΔAvg', 'Result', 'Build'], rows, [
+        'left',
+        'right',
+        'right',
+        'right',
+        'right',
+        'left',
+        'left',
+      ]);
+      console.log('');
     }
 
     if (uiWantsVerbose()) {
-      console.log(`${statusTag("DETAIL", "dim")} kept finalists`);
+      console.log(`${statusTag('DETAIL', 'dim')} kept finalists`);
       const keptRows = report.kept.map((e, i) =>
         printStage
           ? [
@@ -6074,7 +5523,7 @@ function printResults({
               fmtPctTone(e.avgWin),
               e.wpTag,
               e.worstName,
-              e.stage || "?",
+              e.stage || '?',
               compactBuildLabel(e.label, 100),
             ]
           : [
@@ -6088,27 +5537,17 @@ function printResults({
       );
       printTable(
         printStage
-          ? [
-              "Rank",
-              "MinWR",
-              "AvgWR",
-              "Type",
-              "Worst Matchup",
-              "Stage",
-              "Build",
-            ]
-          : ["Rank", "MinWR", "AvgWR", "Type", "Worst Matchup", "Build"],
+          ? ['Rank', 'MinWR', 'AvgWR', 'Type', 'Worst Matchup', 'Stage', 'Build']
+          : ['Rank', 'MinWR', 'AvgWR', 'Type', 'Worst Matchup', 'Build'],
         keptRows,
         printStage
-          ? ["left", "right", "right", "left", "left", "left", "left"]
-          : ["left", "right", "right", "left", "left", "left"],
+          ? ['left', 'right', 'right', 'left', 'left', 'left', 'left']
+          : ['left', 'right', 'right', 'left', 'left', 'left'],
       );
-      console.log("");
+      console.log('');
 
       if (report.confirmedTop.length) {
-        console.log(
-          `${statusTag("DETAIL", "dim")} catalog finalists (full confirm)`,
-        );
+        console.log(`${statusTag('DETAIL', 'dim')} catalog finalists (full confirm)`);
         const rows = report.confirmedTop.map((e, i) => [
           `#${i + 1}`,
           fmtPctTone(e.worstWin),
@@ -6118,24 +5557,20 @@ function printResults({
           fmtPct(e.screenWorstWin),
           compactBuildLabel(e.label, 100),
         ]);
-        printTable(
-          [
-            "Rank",
-            "MinWR",
-            "AvgWR",
-            "Type",
-            "Worst Matchup",
-            "ScreenWR",
-            "Build",
-          ],
-          rows,
-          ["left", "right", "right", "left", "left", "right", "left"],
-        );
-        console.log("");
+        printTable(['Rank', 'MinWR', 'AvgWR', 'Type', 'Worst Matchup', 'ScreenWR', 'Build'], rows, [
+          'left',
+          'right',
+          'right',
+          'left',
+          'left',
+          'right',
+          'left',
+        ]);
+        console.log('');
       }
 
       if (mixedCrystalRefine && report.refinedTop.length) {
-        console.log(`${statusTag("DETAIL", "dim")} refined catalog finalists`);
+        console.log(`${statusTag('DETAIL', 'dim')} refined catalog finalists`);
         const rows = report.refinedTop.map((e, i) => {
           const deltaWorst = e.worstWin - e.baseWorstWin;
           const deltaAvg = e.avgWin - e.baseAvgWin;
@@ -6149,12 +5584,16 @@ function printResults({
             compactBuildLabel(e.label, 100),
           ];
         });
-        printTable(
-          ["Rank", "MinWR", "AvgWR", "ΔMin", "ΔAvg", "Result", "Build"],
-          rows,
-          ["left", "right", "right", "right", "right", "left", "left"],
-        );
-        console.log("");
+        printTable(['Rank', 'MinWR', 'AvgWR', 'ΔMin', 'ΔAvg', 'Result', 'Build'], rows, [
+          'left',
+          'right',
+          'right',
+          'right',
+          'right',
+          'left',
+          'left',
+        ]);
+        console.log('');
       }
     }
   }
@@ -6169,7 +5608,7 @@ function printResults({
 // =====================
 if (isMainThread) {
   main().catch((err) => {
-    console.error("\nFatal:", err && err.stack ? err.stack : err);
+    console.error('\nFatal:', err && err.stack ? err.stack : err);
     process.exit(1);
   });
 } else {

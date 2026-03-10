@@ -130,6 +130,22 @@ const DEFENDER_PAYLOADS = {
     misc1: S('Scout Drones', 'Perfect Pink Crystal', []),
     misc2: S('Scout Drones', 'Perfect Pink Crystal', []),
   },
+  // 'Reaper Axe Build 1': {
+  //   stats: { level: 80, hp: 600, speed: 60, dodge: 67, accuracy: 14 },
+  //   armor: S('Dark Legion Armor', 'Abyss Crystal', []),
+  //   weapon1: S('Reaper Axe', 'Amulet Crystal', []),
+  //   weapon2: S('Core Staff', 'Amulet Crystal', []),
+  //   misc1: S('Bio Spinal Enhancer', 'Perfect Pink Crystal', []),
+  //   misc2: S('Bio Spinal Enhancer', 'Perfect Pink Crystal', []),
+  // },
+  // 'Reaper Axe Build 2': {
+  //   stats: { level: 80, hp: 600, speed: 60, dodge: 67, accuracy: 14 },
+  //   armor: S('Dark Legion Armor', 'Abyss Crystal', []),
+  //   weapon1: S('Reaper Axe', 'Amulet Crystal', []),
+  //   weapon2: S('Core Staff', 'Amulet Crystal', []),
+  //   misc1: S('Scout Drones', 'Amulet Crystal', []),
+  //   misc2: S('Scout Drones', 'Amulet Crystal', []),
+  // },
 };
 
 if (!DEFENDER_PAYLOADS['SG1 Split Bombs T2'] && DEFENDER_PAYLOADS['SG1 Split bombs']) {

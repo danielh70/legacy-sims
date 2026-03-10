@@ -27,7 +27,7 @@ const USER_CONFIG = {
     // Custom attacker build template (only used when mode='custom').
     // Tip: copy one of the ATTACKER_PRESETS below and paste it here to start.
     custom: {
-      stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
+      stats: { level: 80, hp: 650, speed: 60, dodge: 57, accuracy: 14 },
       armor: {
         name: 'Dark Legion Armor',
         crystal: 'Abyss Crystal',
@@ -35,15 +35,15 @@ const USER_CONFIG = {
       },
 
       weapon1: {
-        name: 'Crystal Maul',
+        name: 'Reaper Axe',
         crystal: 'Amulet Crystal',
         upgrades: [],
       },
       weapon2: { name: 'Core Staff', crystal: 'Amulet Crystal', upgrades: [] },
 
       misc1: {
-        name: 'Bio Spinal Enhancer',
-        crystal: 'Perfect Pink Crystal',
+        name: 'Droid Drone',
+        crystal: 'Perfect Orange Crystal',
         upgrades: [],
       },
       misc2: {
