@@ -84,7 +84,7 @@ const SETTINGS = {
   SCREEN_BAIL_MARGIN_DEFAULT: 6.0,
   INIT_FLOOR_PCT: 41, // 0 disables manual shared-floor seeding
 
-  KEEP_TOP_N_PER_HP: 10,
+  KEEP_TOP_N_PER_HP: 15,
   PROGRESS_EVERY_MS: 2000,
 
   // Historical single-HP default.
@@ -99,19 +99,19 @@ const SETTINGS = {
 const PLAN_SWEEP_CONFIG = {
   // 'single' = only use singleHp below
   // 'sweep'  = use hpSweep.min..max in hpSweep.step increments
-  hpMode: "single",
+  hpMode: "sweep",
   singleHp: SETTINGS.LOCKED_HP,
 
   hpSweep: {
-    min: 400,
+    min: 500,
     max: 700,
-    step: 100,
+    step: 50,
     includeSingleHp: false,
   },
 
   // 'dodge_only'      = old behavior (all free points into dodge)
   // 'acc_dodge_sweep' = sweep accuracy allocations and put the rest into dodge
-  allocationMode: "dodge_only",
+  allocationMode: "acc_dodge_sweep",
   allocation: {
     accStep: 10,
     customAccValues: [], // e.g. [15, 25] to force extra checkpoints when valid for a given HP
@@ -143,15 +143,15 @@ const POOLS = {
     "Void Axe",
     "Scythe T2",
     "Void Sword",
-    "Ritual Dagger IV",
-    "Warlords Katana",
+    // "Ritual Dagger IV",
+    // "Warlords Katana",
     "Fortified Void Bow",
     "Split Crystal Bombs T2",
     "Rift Gun",
     "Double Barrel Sniper Rifle",
     "Q15 Gun",
     "Bio Gun Mk4",
-    "Gun Blade Mk4",
+    // "Gun Blade Mk4",
     "Reaper Axe",
     "Alien Staff",
   ],
@@ -712,7 +712,7 @@ function shortCrystal(c) {
     case "Cabrusion Crystal":
       return "C";
     case "Berserker Crystal":
-      return "R";
+      return "Z";
     default:
       return "?";
   }
