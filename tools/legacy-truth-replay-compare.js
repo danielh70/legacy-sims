@@ -6,8 +6,11 @@ const path = require('path');
 const os = require('os');
 const cp = require('child_process');
 
-const truthPath = process.argv[2] || 'legacy-truth-2026-03-08T22-45-46-231Z.json';
-const simPath = process.argv[3] || 'legacy-sim-v1.0.1.js';
+const repoRoot = path.resolve(__dirname, '..');
+const truthPath =
+  process.argv[2] ||
+  path.join(repoRoot, 'data', 'truth', 'legacy-truth-stratified-v1.json');
+const simPath = process.argv[3] || path.join(repoRoot, 'simulator', 'legacy-sim-latest.js');
 const trials = Number(process.env.LEGACY_REPLAY_TRIALS || '200000');
 const topN = Number(process.env.LEGACY_REPLAY_TOP || '15');
 const sweepMode = String(process.env.LEGACY_REPLAY_SWEEP || 'none').trim() || 'none';
@@ -97,8 +100,21 @@ function pageBuildToLegacyCustom(pageBuild) {
   };
 }
 
+function findMatchingBrace(text, openIndex) {
+  let depth = 0;
+  for (let i = openIndex; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '{') depth += 1;
+    else if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+}
+
 function patchSimToCustom(simText, customBuild) {
-  const modePat = /mode:\s*"(?:env|preset|custom)"\s*,\s*\/\/ env \| preset \| custom/;
+  const modePat = /mode:\s*['"](?:env|preset|custom)['"]\s*,\s*\/\/ env \| preset \| custom/;
   if (!modePat.test(simText)) {
     throw new Error('Could not find USER_CONFIG attacker mode line to patch');
   }
@@ -107,15 +123,32 @@ function patchSimToCustom(simText, customBuild) {
     'mode: "custom", // env | preset | custom',
   );
 
-  const customPat = /custom:\s*\{[\s\S]*?\n\s*\},\n\s*\},\n\n\s*defenders:/;
-  const repl = `custom: ${JSON.stringify(customBuild, null, 6).replace(
-    /^/gm,
-    '',
-  )},\n  },\n\n  defenders:`;
-  if (!customPat.test(out)) {
+  const customMatch = /(^[ \t]*)custom:\s*\{/m.exec(out);
+  if (!customMatch) {
     throw new Error('Could not find USER_CONFIG.attacker.custom block to patch');
   }
-  out = out.replace(customPat, repl);
+
+  const customLineIndent = customMatch[1];
+  const customLineStart = customMatch.index;
+  const customBraceIndex = out.indexOf('{', customLineStart);
+  const customBraceEnd = findMatchingBrace(out, customBraceIndex);
+  if (customBraceEnd < 0) {
+    throw new Error('Could not find the end of USER_CONFIG.attacker.custom block');
+  }
+
+  const defendersMatch = /\n([ \t]*)defenders:\s*\{/m.exec(out.slice(customBraceEnd + 1));
+  if (!defendersMatch) {
+    throw new Error('Could not find USER_CONFIG.defenders block after attacker.custom');
+  }
+
+  const defendersIndent = defendersMatch[1];
+  const defendersLineStart = customBraceEnd + 1 + defendersMatch.index + 1;
+  const customJson = JSON.stringify(customBuild, null, 2)
+    .split('\n')
+    .map((line, idx) => (idx === 0 ? line : `${customLineIndent}${line}`))
+    .join('\n');
+  const repl = `${customLineIndent}custom: ${customJson},\n${defendersIndent}},\n\n`;
+  out = out.slice(0, customLineStart) + repl + out.slice(defendersLineStart);
   return out;
 }
 

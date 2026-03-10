@@ -1,0 +1,13 @@
+{
+  "name": "legacy-sims",
+  "private": true,
+  "scripts": {
+    "ui": "npm --prefix sim_ui run dev",
+    "ui:build": "npm --prefix sim_ui run build",
+    "ui:typecheck": "npm --prefix sim_ui run typecheck",
+    "legacy": "node simulator/legacy-sim-latest.js",
+    "brute": "node simulator/brute-sim-latest.js",
+    "compare": "node tools/legacy-truth-replay-compare.js data/truth/legacy-truth-stratified-v1.json simulator/legacy-sim-latest.js",
+    "verify": "npm run compare"
+  }
+}

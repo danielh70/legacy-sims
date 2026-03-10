@@ -4,7 +4,7 @@
 /**
  * =====================
  * LEGACY BRUTE FORCE (CONSTRAINED + STAGED + DETERMINISTIC RNG OPTION)
- * v1.4.2 (polished compact dashboard + final progress line + JSON summary block)
+ * v1.4.4 (new gang weapons + upgrade families from shared defs)
  * =====================
  *
  * Fixes / Improvements:
@@ -60,7 +60,7 @@
 // =====================
 const fs = require("fs");
 const os = require("os");
-const VERSION = "v1.4.2";
+const VERSION = "v1.4.4";
 const {
   Worker,
   isMainThread,
@@ -143,12 +143,15 @@ const POOLS = {
     "Void Axe",
     "Scythe T2",
     "Void Sword",
+    "Ritual Dagger IV",
+    "Warlords Katana",
     "Fortified Void Bow",
     "Split Crystal Bombs T2",
     "Rift Gun",
     "Double Barrel Sniper Rifle",
     "Q15 Gun",
     "Bio Gun Mk4",
+    "Gun Blade Mk4",
     "Reaper Axe",
     "Alien Staff",
   ],
@@ -159,6 +162,7 @@ const POOLS = {
     "Orphic Amulet",
     "Projector Bots",
     "Recon Drones",
+    "Nerve Gauntlet",
   ],
 };
 
@@ -946,6 +950,18 @@ function shortUpgrade(u) {
     .replace("Enhanced Scope 4", "ES4")
     .replace("Faster Ammo 4", "FA4")
     .replace("Tracer Rounds 4", "TR4")
+    .replace("Sharpened Blade 1", "SB1")
+    .replace("Faster Reload 1", "FR1")
+    .replace("Magnetic Blade 1", "MB1")
+    .replace("Faster Ammo 1", "FA1")
+    .replace("Magnetic Blade 3", "MB3")
+    .replace("Stronger Guard 3", "SG3")
+    .replace("Sharpened Blade 3", "SB3")
+    .replace("Extra Grip 3", "EG3")
+    .replace("Magnetic Blade 2", "MB2")
+    .replace("Enhanced Poison 2", "EP2")
+    .replace("Sharpened Blade 2", "SB2")
+    .replace("Extra Grip 2", "EG2")
     .replace("Laser Sight", "LS")
     .replace("Poisoned Tip", "PT");
 }
@@ -960,6 +976,8 @@ function shortItem(name) {
     .replace("Void Axe", "VA")
     .replace("Scythe T2", "Scy")
     .replace("Void Sword", "VS")
+    .replace("Ritual Dagger IV", "RD4")
+    .replace("Warlords Katana", "WK")
     .replace("Fortified Void Bow", "FVBow")
     .replace("Split Crystal Bombs T2", "Bombs")
     .replace("Void Bow", "VBow")
@@ -967,6 +985,7 @@ function shortItem(name) {
     .replace("Double Barrel Sniper Rifle", "DBSR")
     .replace("Q15 Gun", "Q15")
     .replace("Bio Gun Mk4", "Mk4")
+    .replace("Gun Blade Mk4", "GB4")
     .replace("Reaper Axe", "RA")
     .replace("Alien Staff", "AS")
     .replace("Bio Spinal Enhancer", "Bio")
@@ -974,7 +993,8 @@ function shortItem(name) {
     .replace("Droid Drone", "Droid")
     .replace("Orphic Amulet", "Orphic")
     .replace("Projector Bots", "ProjBot")
-    .replace("Recon Drones", "Recon");
+    .replace("Recon Drones", "Recon")
+    .replace("Nerve Gauntlet", "Nerve");
 }
 
 // =====================

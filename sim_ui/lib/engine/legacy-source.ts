@@ -29,14 +29,18 @@ export async function loadLegacyModules() {
       const [legacySimMod, legacyDefsMod, legacyDefendersMod] = await Promise.all([
         import(
           /* webpackIgnore: true */ pathToFileURL(
-            path.join(repoRoot, 'legacy-sim-v1.0.4-ui.js'),
+            path.join(repoRoot, 'archive', 'legacy-sim-v1.0.4-ui.js'),
           ).href
         ),
         import(
-          /* webpackIgnore: true */ pathToFileURL(path.join(repoRoot, 'legacy-defs.js')).href
+          /* webpackIgnore: true */ pathToFileURL(
+            path.join(repoRoot, 'data', 'legacy-defs.js'),
+          ).href
         ),
         import(
-          /* webpackIgnore: true */ pathToFileURL(path.join(repoRoot, 'legacy-defenders.js')).href
+          /* webpackIgnore: true */ pathToFileURL(
+            path.join(repoRoot, 'data', 'legacy-defenders.js'),
+          ).href
         ),
       ]);
 

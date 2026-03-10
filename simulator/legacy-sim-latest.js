@@ -17,7 +17,7 @@ const path = require('path');
 //   Put upgrade names in `upgrades: []` for weapons that support them (e.g. Void Bow, Bio Gun Mk4).
 //   For weapons that don't take upgrades, leave `upgrades: []`.
 //
-// Defender payloads live in ./legacy-defender-payloads.js (edit that file to tweak meta builds).
+// Defender payloads live in data/legacy-defenders.js, with fallbacks for simulator/ layout.
 // If you rename the defender file, update `defenders.file` here.
 const USER_CONFIG = {
   attacker: {
@@ -39,7 +39,7 @@ const USER_CONFIG = {
   },
 
   defenders: {
-    file: '../legacy-defenders.js',
+    file: 'data/legacy-defenders.js',
   },
 };
 // === END USER CONFIG =========================================================
@@ -1200,16 +1200,35 @@ let ItemDefs = {
 
 // Prefer external shared defs (single source of truth), if present.
 // This keeps canonical and brute-force aligned without duplicating tables.
-try {
-  const defs = require('../legacy-defs.js');
-  const extCrystal = defs && (defs.CrystalDefs || defs.crystalDefs);
-  const extUpgrade = defs && (defs.UpgradeDefs || defs.upgradeDefs);
-  const extItem = defs && (defs.ItemDefs || defs.itemDefs);
-  if (extCrystal && typeof extCrystal === 'object') CrystalDefs = extCrystal;
-  if (extUpgrade && typeof extUpgrade === 'object') UpgradeDefs = extUpgrade;
-  if (extItem && typeof extItem === 'object') ItemDefs = extItem;
-} catch (_) {
-  // no-op
+const SHARED_DEFS_CANDIDATES = [
+  'data/legacy-defs.js',
+  '../data/legacy-defs.js',
+  'legacy-defs.js',
+  '../legacy-defs.js',
+  'legacy-defs-v1.0.0.js',
+  '../legacy-defs-v1.0.0.js',
+];
+const DEFENDER_PAYLOAD_CANDIDATES = [
+  'data/legacy-defenders.js',
+  '../data/legacy-defenders.js',
+  'legacy-defenders.js',
+  '../legacy-defenders.js',
+  'legacy-defenders-v1.0.0.js',
+  '../legacy-defenders-v1.0.0.js',
+];
+for (const defsPath of SHARED_DEFS_CANDIDATES) {
+  try {
+    const defs = require(path.resolve(__dirname, defsPath));
+    const extCrystal = defs && (defs.CrystalDefs || defs.crystalDefs);
+    const extUpgrade = defs && (defs.UpgradeDefs || defs.upgradeDefs);
+    const extItem = defs && (defs.ItemDefs || defs.itemDefs);
+    if (extCrystal && typeof extCrystal === 'object') CrystalDefs = extCrystal;
+    if (extUpgrade && typeof extUpgrade === 'object') UpgradeDefs = extUpgrade;
+    if (extItem && typeof extItem === 'object') ItemDefs = extItem;
+    break;
+  } catch (_) {
+    // keep trying
+  }
 }
 
 const HF_ARMOR_BASE_OVERRIDE = Number(pickEnv('LEGACY_HF_ARMOR_BASE_OVERRIDE', ''));
@@ -1597,11 +1616,22 @@ function applyHiddenRoleBonuses(c, role, cfg) {
 }
 
 let DEFENDER_PAYLOADS;
-try {
-  DEFENDER_PAYLOADS = require(path.resolve(__dirname, USER_CONFIG.defenders.file));
-} catch (e) {
-  // Fallback for older repos that still have the original filename.
-  DEFENDER_PAYLOADS = require(path.resolve(__dirname, '../legacy-defenders.js'));
+for (const candidate of [
+  USER_CONFIG && USER_CONFIG.defenders && USER_CONFIG.defenders.file
+    ? String(USER_CONFIG.defenders.file).trim()
+    : '',
+  ...DEFENDER_PAYLOAD_CANDIDATES,
+]) {
+  if (!candidate) continue;
+  try {
+    DEFENDER_PAYLOADS = require(path.resolve(__dirname, candidate));
+    break;
+  } catch (_) {
+    // keep trying
+  }
+}
+if (!DEFENDER_PAYLOADS) {
+  throw new Error('Could not load defender payloads from configured fallback candidates.');
 }
 
 // --- Defender name aliases / backwards-compat ---

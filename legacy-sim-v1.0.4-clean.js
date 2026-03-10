@@ -17,7 +17,7 @@ const path = require('path');
 //   Put upgrade names in `upgrades: []` for weapons that support them (e.g. Void Bow, Bio Gun Mk4).
 //   For weapons that don't take upgrades, leave `upgrades: []`.
 //
-// Defender payloads default to ./legacy-defenders.js.
+// Defender payloads default to data/legacy-defenders.js.
 // You can also override the file at runtime with LEGACY_DEFENDER_FILE.
 const USER_CONFIG = {
   attacker: {
@@ -27,7 +27,7 @@ const USER_CONFIG = {
     // Custom attacker build template (only used when mode='custom').
     // Tip: copy one of the ATTACKER_PRESETS below and paste it here to start.
     custom: {
-      stats: { level: 80, hp: 595, speed: 60, dodge: 68, accuracy: 14 },
+      stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
       armor: {
         name: 'Dark Legion Armor',
         crystal: 'Abyss Crystal',
@@ -36,18 +36,18 @@ const USER_CONFIG = {
 
       weapon1: {
         name: 'Crystal Maul',
-        crystal: 'Perfect Fire Crystal',
+        crystal: 'Amulet Crystal',
         upgrades: [],
       },
       weapon2: { name: 'Core Staff', crystal: 'Amulet Crystal', upgrades: [] },
 
       misc1: {
         name: 'Bio Spinal Enhancer',
-        crystal: 'Perfect Orange Crystal',
+        crystal: 'Perfect Pink Crystal',
         upgrades: [],
       },
       misc2: {
-        name: 'Projector Bots',
+        name: 'Bio Spinal Enhancer',
         crystal: 'Perfect Pink Crystal',
         upgrades: [],
       },
@@ -55,7 +55,7 @@ const USER_CONFIG = {
   },
 
   defenders: {
-    file: './legacy-defenders.js',
+    file: 'data/legacy-defenders.js',
   },
 };
 // === END USER CONFIG =========================================================
@@ -1244,11 +1244,27 @@ let ItemDefs = {
 // Prefer external shared defs (single source of truth), if present.
 // This keeps canonical and brute-force aligned without duplicating tables.
 let LOADED_DEFS_PATH = '(embedded)';
+const SHARED_DEFS_CANDIDATES = [
+  'data/legacy-defs.js',
+  '../data/legacy-defs.js',
+  'legacy-defs.js',
+  '../legacy-defs.js',
+  'legacy-defs-v1.0.0.js',
+  '../legacy-defs-v1.0.0.js',
+];
+const DEFENDER_PAYLOAD_CANDIDATES = [
+  'data/legacy-defenders.js',
+  '../data/legacy-defenders.js',
+  'legacy-defenders.js',
+  '../legacy-defenders.js',
+  'legacy-defenders-v1.0.0.js',
+  '../legacy-defenders-v1.0.0.js',
+];
 function loadSharedDefs() {
   const errors = [];
-  for (const defsPath of ['./legacy-defs.js', './legacy-defs-v1.0.0.js']) {
+  for (const defsPath of SHARED_DEFS_CANDIDATES) {
     try {
-      const defs = require(defsPath);
+      const defs = require(path.resolve(__dirname, defsPath));
       const extCrystal = defs && (defs.CrystalDefs || defs.crystalDefs);
       const extUpgrade = defs && (defs.UpgradeDefs || defs.upgradeDefs);
       const extItem = defs && (defs.ItemDefs || defs.itemDefs);
@@ -1684,11 +1700,7 @@ function loadDefenderPayloads() {
   if (envFile) candidates.push(envFile);
   if (cfgFile) candidates.push(cfgFile);
 
-  for (const fallback of [
-    './legacy-defenders.js',
-    './legacy-defenders-v1.0.0.js',
-    './legacy-defs.js',
-  ]) {
+  for (const fallback of DEFENDER_PAYLOAD_CANDIDATES) {
     if (!candidates.includes(fallback)) candidates.push(fallback);
   }
 

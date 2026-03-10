@@ -4,7 +4,9 @@ import { spawnSync } from 'node:child_process';
 
 const require = createRequire(import.meta.url);
 const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
-const legacySim = require(path.join(repoRoot, 'legacy-sim-v1.0.4-ui.js'));
+const legacyUiSimPath = path.join(repoRoot, 'archive', 'legacy-sim-v1.0.4-ui.js');
+const legacyCliSimPath = path.join(repoRoot, 'legacy-sim-v1.0.4-clean.js');
+const legacySim = require(legacyUiSimPath);
 
 const CASES = ['DL Gun Build', 'SG1 Split Bombs T2'];
 const TRIALS = 500;
@@ -45,7 +47,7 @@ for (const defenderName of CASES) {
     deterministic: true,
   });
 
-  const cli = spawnSync('node', ['legacy-sim-v1.0.4-clean.js'], {
+  const cli = spawnSync('node', [legacyCliSimPath], {
     cwd: repoRoot,
     env: {
       ...process.env,

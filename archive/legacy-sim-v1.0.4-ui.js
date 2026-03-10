@@ -17,7 +17,7 @@ const path = require('path');
 //   Put upgrade names in `upgrades: []` for weapons that support them (e.g. Void Bow, Bio Gun Mk4).
 //   For weapons that don't take upgrades, leave `upgrades: []`.
 //
-// Defender payloads default to ./legacy-defenders.js.
+// Defender payloads default to ../data/legacy-defenders.js.
 // You can also override the file at runtime with LEGACY_DEFENDER_FILE.
 const USER_CONFIG = {
   attacker: {
@@ -55,7 +55,7 @@ const USER_CONFIG = {
   },
 
   defenders: {
-    file: "./legacy-defenders.js",
+    file: "../data/legacy-defenders.js",
   },
 };
 // === END USER CONFIG =========================================================
@@ -1246,7 +1246,7 @@ let ItemDefs = {
 let LOADED_DEFS_PATH = '(embedded)';
 function loadSharedDefs() {
   const errors = [];
-  for (const defsPath of ['./legacy-defs.js', './legacy-defs-v1.0.0.js']) {
+  for (const defsPath of ['../data/legacy-defs.js', './legacy-defs-v1.0.0.js']) {
     try {
       const defs = require(defsPath);
       const extCrystal = defs && (defs.CrystalDefs || defs.crystalDefs);
@@ -1685,9 +1685,9 @@ function loadDefenderPayloads() {
   if (cfgFile) candidates.push(cfgFile);
 
   for (const fallback of [
-    './legacy-defenders.js',
+    '../data/legacy-defenders.js',
     './legacy-defenders-v1.0.0.js',
-    './legacy-defs.js',
+    '../data/legacy-defs.js',
   ]) {
     if (!candidates.includes(fallback)) candidates.push(fallback);
   }
