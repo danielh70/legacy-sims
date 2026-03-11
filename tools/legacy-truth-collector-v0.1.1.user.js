@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.1.2';
+  const VERSION = '0.1.3';
 
   function nowIso() {
     return new Date().toISOString();
@@ -104,17 +104,78 @@
     });
   }
 
+  function getExportButtons() {
+    const byOnclick = getButtonsByOnclick('shareBuildCode');
+    if (byOnclick.length) return byOnclick;
+    const byValue = getButtonsByValue('Export');
+    if (byValue.length) return byValue;
+    return getActionEls().filter((el) => /export/i.test((el.value || textOf(el)).trim()));
+  }
+
+  function normalizeAttackType(v) {
+    const s = String(v || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ');
+    if (!s) return 'normal';
+    if (s === 'quick' || s === 'quick atk' || s === 'quick attack') return 'quick';
+    if (s === 'aimed' || s === 'aim' || s === 'aimed atk' || s === 'aimed attack') return 'aimed';
+    if (s === 'cover' || s === 'covered' || s === 'take cover' || s === 'cover attack')
+      return 'cover';
+    return 'normal';
+  }
+
+  function findSelectOption(selectEl, valueNeedle) {
+    if (!selectEl) return null;
+    const rawNeedle = String(valueNeedle || '').trim();
+    const needle = rawNeedle.toLowerCase();
+    const options = Array.from(selectEl.options || []);
+    return options.find((opt) => String(opt.value || '').trim().toLowerCase() === needle)
+      || options.find((opt) => textOf(opt).toLowerCase() === needle)
+      || options.find((opt) => textOf(opt).toLowerCase().includes(needle))
+      || options.find((opt) => String(opt.value || '').trim() === rawNeedle);
+  }
+
   function setSelectByText(selectEl, textNeedle) {
     if (!selectEl) return false;
-    const needle = String(textNeedle || '').trim().toLowerCase();
-    const options = Array.from(selectEl.options || []);
-    const match = options.find((opt) => textOf(opt).toLowerCase() === needle)
-      || options.find((opt) => textOf(opt).toLowerCase().includes(needle))
-      || options.find((opt) => String(opt.value).trim() === String(textNeedle).trim());
+    const match = findSelectOption(selectEl, textNeedle);
     if (!match) return false;
     selectEl.value = match.value;
     selectEl.dispatchEvent(new Event('change', { bubbles: true }));
     return true;
+  }
+
+  function setAttackType(selectEl, attackType) {
+    if (!selectEl) return false;
+    const normalized = normalizeAttackType(attackType);
+    return setSelectByText(selectEl, normalized)
+      || setSelectByText(selectEl, normalized === 'cover' ? 'Take Cover' : normalized)
+      || setSelectByText(selectEl, normalized === 'normal' ? 'Normal Atk' : normalized === 'quick' ? 'Quick Atk' : normalized === 'aimed' ? 'Aimed Atk' : 'Take Cover');
+  }
+
+  function isAttackTypeSelect(selectEl) {
+    if (!selectEl) return false;
+    const values = Array.from(selectEl.options || []).map((opt) =>
+      normalizeAttackType(opt.value || textOf(opt)),
+    );
+    return values.includes('normal')
+      && values.includes('quick')
+      && values.includes('aimed')
+      && values.includes('cover');
+  }
+
+  function findAttackTypeSelects(selects) {
+    const attacker = document.querySelector('select[name="attacker_attack_type"]');
+    const defender = document.querySelector('select[name="defender_attack_type"]');
+    const attackSelects = (selects || []).filter((el) => isAttackTypeSelect(el));
+    const fallback = attackSelects.filter((el) => el !== attacker && el !== defender);
+
+    return {
+      attackerAttackTypeSelect: attacker || fallback[0] || null,
+      defenderAttackTypeSelect:
+        defender || fallback.find((el) => el !== (attacker || fallback[0] || null)) || null,
+      attackTypeSelectCandidates: attackSelects,
+    };
   }
 
   function buildToPageImport(build) {
@@ -144,8 +205,251 @@
         dodge: Number(build.stats?.dodge ?? 14),
         accuracy: Number(build.stats?.accuracy ?? 14),
       },
-      attackType: String(build.attackType || 'normal').toLowerCase().includes('aura') ? 'aura' : 'normal',
+      attackType: normalizeAttackType(build.attackType),
     };
+  }
+
+  function normalizeUpgradeArray(upgrades) {
+    return Array.isArray(upgrades)
+      ? upgrades.map((x) => String(x || '').trim()).filter(Boolean)
+      : [];
+  }
+
+  function normalizeSlotCrystalEntries(slot) {
+    if (!slot) return [];
+    const crystals = normalizeUpgradeArray(slot.crystals);
+    if (crystals.length) return crystals;
+    const crystal = String(
+      (slot.crystal != null ? slot.crystal : slot.crystalName != null ? slot.crystalName : '') || '',
+    ).trim();
+    return crystal ? [crystal, crystal, crystal, crystal] : [];
+  }
+
+  function normalizeSlotUpgradeEntries(slot) {
+    if (!slot) return [];
+    const inlineUpgrades = normalizeUpgradeArray(slot.upgrades);
+    const fieldUpgrades = normalizeUpgradeArray([slot.upgrade1, slot.upgrade2]);
+    const crystalEntries = normalizeSlotCrystalEntries(slot);
+    if (crystalEntries.length) {
+      if (
+        inlineUpgrades.length >= crystalEntries.length
+        && stableStringify(inlineUpgrades.slice(0, crystalEntries.length)) === stableStringify(crystalEntries)
+      ) {
+        return inlineUpgrades;
+      }
+      return crystalEntries.concat(inlineUpgrades.length ? inlineUpgrades : fieldUpgrades);
+    }
+    return inlineUpgrades.length ? inlineUpgrades : fieldUpgrades;
+  }
+
+  function normalizePageBuildSlot(slot) {
+    return {
+      name: String(slot && slot.name ? slot.name : '').trim(),
+      upgrades: normalizeSlotUpgradeEntries(slot),
+    };
+  }
+
+  function normalizePageBuild(pageBuild) {
+    const stats = (pageBuild && pageBuild.stats) || {};
+    return {
+      stats: {
+        level: Number(stats.level),
+        hp: Number(stats.hp),
+        speed: Number(stats.speed),
+        dodge: Number(stats.dodge),
+        accuracy: Number(stats.accuracy),
+      },
+      armor: normalizePageBuildSlot(pageBuild && pageBuild.armor),
+      weapon1: normalizePageBuildSlot(pageBuild && pageBuild.weapon1),
+      weapon2: normalizePageBuildSlot(pageBuild && pageBuild.weapon2),
+      misc1: normalizePageBuildSlot(pageBuild && pageBuild.misc1),
+      misc2: normalizePageBuildSlot(pageBuild && pageBuild.misc2),
+      attackType: normalizeAttackType(pageBuild && pageBuild.attackType),
+    };
+  }
+
+  function normalizedBuildIdentity(pageBuild) {
+    const normalized = normalizePageBuild(pageBuild);
+    return {
+      stats: normalized.stats,
+      armor: normalized.armor,
+      weapon1: normalized.weapon1,
+      weapon2: normalized.weapon2,
+      misc1: normalized.misc1,
+      misc2: normalized.misc2,
+    };
+  }
+
+  function diffNormalizedBuilds(expected, actual) {
+    const diffs = [];
+    function addDiff(path, exp, act) {
+      if (stableStringify(exp) === stableStringify(act)) return;
+      diffs.push({ path, expected: exp, actual: act });
+    }
+    ['level', 'hp', 'speed', 'dodge', 'accuracy'].forEach((key) => {
+      addDiff(`stats.${key}`, expected && expected.stats ? expected.stats[key] : null, actual && actual.stats ? actual.stats[key] : null);
+    });
+    ['armor', 'weapon1', 'weapon2', 'misc1', 'misc2'].forEach((slotKey) => {
+      const expSlot = expected && expected[slotKey] ? expected[slotKey] : { name: '', upgrades: [] };
+      const actSlot = actual && actual[slotKey] ? actual[slotKey] : { name: '', upgrades: [] };
+      addDiff(`${slotKey}.name`, expSlot.name, actSlot.name);
+      addDiff(`${slotKey}.upgrades`, expSlot.upgrades, actSlot.upgrades);
+    });
+    return diffs;
+  }
+
+  function stableStringify(x) {
+    if (x === null) return 'null';
+    const t = typeof x;
+    if (t === 'number' || t === 'boolean') return String(x);
+    if (t === 'string') return JSON.stringify(x);
+    if (t !== 'object') return JSON.stringify(String(x));
+    if (Array.isArray(x)) return '[' + x.map((v) => stableStringify(v)).join(',') + ']';
+    const keys = Object.keys(x).sort();
+    return '{' + keys.map((k) => JSON.stringify(k) + ':' + stableStringify(x[k])).join(',') + '}';
+  }
+
+  function hashStr32(str) {
+    str = String(str);
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+
+  function hex8(u32) {
+    return (u32 >>> 0).toString(16).padStart(8, '0');
+  }
+
+  function buildHash(normalizedPageBuild) {
+    return hex8(hashStr32(stableStringify(normalizedPageBuild)));
+  }
+
+  function currentSelectAttackType(selectEl) {
+    if (!selectEl) return '';
+    const option = selectEl.options && selectEl.selectedIndex >= 0
+      ? selectEl.options[selectEl.selectedIndex]
+      : null;
+    return normalizeAttackType(
+      option ? (option.value || textOf(option)) : (selectEl.value || textOf(selectEl)),
+    );
+  }
+
+  function looksLikePageBuildObject(parsed) {
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
+    const keys = ['armor', 'weapon1', 'weapon2', 'misc1', 'misc2', 'stats'];
+    if (!keys.every((key) => parsed[key] && typeof parsed[key] === 'object')) return false;
+    const stats = parsed.stats || {};
+    const statKeys = ['level', 'hp', 'speed', 'dodge', 'accuracy'];
+    return statKeys.every((key) => Number.isFinite(Number(stats[key])));
+  }
+
+  function tryParsePageBuildJson(text) {
+    if (text == null) return null;
+    if (typeof text === 'object') {
+      return looksLikePageBuildObject(text) ? text : null;
+    }
+    const raw = String(text).trim();
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      return looksLikePageBuildObject(parsed) ? parsed : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function tryParsePageBuild(raw) {
+    return tryParsePageBuildJson(raw);
+  }
+
+  function previewText(raw, maxLen = 160) {
+    const text = String(raw == null ? '' : raw).replace(/\s+/g, ' ').trim();
+    return text.length > maxLen ? `${text.slice(0, Math.max(0, maxLen - 3))}...` : text;
+  }
+
+  function describeButton(buttonEl) {
+    if (!buttonEl) return null;
+    return {
+      tag: (buttonEl.tagName || '').toLowerCase(),
+      id: buttonEl.id || '',
+      name: buttonEl.getAttribute ? buttonEl.getAttribute('name') || '' : '',
+      value: buttonEl.value || '',
+      text: previewText(textOf(buttonEl), 80),
+      className: typeof buttonEl.className === 'string' ? buttonEl.className : '',
+      onclick: buttonEl.getAttribute ? buttonEl.getAttribute('onclick') || '' : '',
+    };
+  }
+
+  function collectExportDomCandidates() {
+    const out = [];
+    const seen = new Set();
+    const selectors = [
+      'textarea',
+      'input[type="text"]',
+      'input:not([type])',
+      'dialog',
+      '[role="dialog"]',
+      '.modal',
+      '.popup',
+      'pre',
+      'code',
+    ];
+    const nodes = Array.from(document.querySelectorAll(selectors.join(',')));
+    nodes.forEach((el, idx) => {
+      const tag = (el.tagName || '').toLowerCase();
+      const raw =
+        tag === 'textarea' || tag === 'input'
+          ? el.value
+          : textOf(el);
+      const text = String(raw || '').trim();
+      if (!text) return;
+      const key = [
+        tag,
+        el.id || '',
+        el.getAttribute ? el.getAttribute('name') || '' : '',
+        typeof el.className === 'string' ? el.className : '',
+        idx,
+      ].join('|');
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push({
+        key,
+        source: tag === 'textarea' || tag === 'input' ? 'domInput' : 'domModal',
+        text,
+        meta: {
+          tag,
+          id: el.id || '',
+          name: el.getAttribute ? el.getAttribute('name') || '' : '',
+          className: typeof el.className === 'string' ? el.className : '',
+        },
+      });
+    });
+    return out;
+  }
+
+  function makeBuildVerificationError(details) {
+    const attackerBuildSummary = details && details.attacker && Array.isArray(details.attacker.diff)
+      ? details.attacker.diff.map((d) => d.path).join(', ')
+      : '';
+    const defenderBuildSummary = details && details.defender && Array.isArray(details.defender.diff)
+      ? details.defender.diff.map((d) => d.path).join(', ')
+      : '';
+    const attackerAttackTypeSummary =
+      details && details.attackerAttackTypeMatch
+        ? ''
+        : ` attackerAttackType=${details && details.requestedAttackTypes ? details.requestedAttackTypes.attacker : ''}->${details && details.actualAttackTypes ? details.actualAttackTypes.attacker : ''}`;
+    const defenderAttackTypeSummary =
+      details && details.defenderAttackTypeMatch
+        ? ''
+        : ` defenderAttackType=${details && details.requestedAttackTypes ? details.requestedAttackTypes.defender : ''}->${details && details.actualAttackTypes ? details.actualAttackTypes.defender : ''}`;
+    const err = new Error(
+      `Imported page verification mismatch: attackerBuild=${details.attackerBuildMatch ? 'ok' : 'mismatch'} defenderBuild=${details.defenderBuildMatch ? 'ok' : 'mismatch'} attackerStyle=${details.attackerAttackTypeMatch ? 'ok' : 'mismatch'} defenderStyle=${details.defenderAttackTypeMatch ? 'ok' : 'mismatch'}${attackerBuildSummary ? ` attackerDiffs=${attackerBuildSummary}` : ''}${defenderBuildSummary ? ` defenderDiffs=${defenderBuildSummary}` : ''}${attackerAttackTypeSummary}${defenderAttackTypeSummary}`,
+    );
+    err.buildVerification = details;
+    return err;
   }
 
   function parseResultsText(rawText) {
@@ -367,6 +671,17 @@
         attacker: buildToPageImport(attacker.build),
         defender: buildToPageImport(defender.build),
       },
+      requestedPageBuilds: successfulRuns[0].requestedPageBuilds || null,
+      verifiedPageBuilds: successfulRuns[0].verifiedPageBuilds || null,
+      requestedHashes: successfulRuns[0].requestedHashes || null,
+      verifiedHashes: successfulRuns[0].verifiedHashes || null,
+      buildVerified: true,
+      requestedAttackTypes: successfulRuns[0].requestedAttackTypes || null,
+      actualAttackTypes: successfulRuns[0].actualAttackTypes || null,
+      attackerBuildMatch: true,
+      defenderBuildMatch: true,
+      attackerAttackTypeMatch: true,
+      defenderAttackTypeMatch: true,
       repeatCount,
       repeatTarget,
       parsedResults: {
@@ -719,13 +1034,12 @@
     const importButtons = getButtonsByOnclick('inputBuildCode').length
       ? getButtonsByOnclick('inputBuildCode')
       : getButtonsByValue('Import');
-    const exportButtons = getButtonsByOnclick('shareBuildCode').length
-      ? getButtonsByOnclick('shareBuildCode')
-      : getButtonsByValue('Export');
+    const exportButtons = getExportButtons();
     const attackP1 = getButtonsByValue('Attack as P1')[0] || null;
     const attackP2 = getButtonsByValue('Attack as P2')[0] || null;
     const selects = Array.from(document.querySelectorAll('select'));
     const trialSelect = selects.find((el) => Array.from(el.options || []).some((opt) => /times/i.test(textOf(opt))));
+    const attackTypeHandles = findAttackTypeSelects(selects);
     const loadingMsg = document.querySelector('#loading-msg, #loading, .loading, [id*="loading"]');
     const resultsBox = findResultsBox();
 
@@ -735,6 +1049,9 @@
       attackP1,
       attackP2,
       trialSelect,
+      attackerAttackTypeSelect: attackTypeHandles.attackerAttackTypeSelect,
+      defenderAttackTypeSelect: attackTypeHandles.defenderAttackTypeSelect,
+      attackTypeSelectCandidates: attackTypeHandles.attackTypeSelectCandidates,
       loadingMsg,
       resultsBox,
     };
@@ -772,6 +1089,327 @@
       window.alert = originalAlert;
       window.confirm = originalConfirm;
     }
+  }
+
+  async function exportBuildByButton(buttonEl, opts = {}) {
+    if (!buttonEl) throw new Error('Export button not found.');
+    const originalPrompt = window.prompt;
+    const originalAlert = window.alert;
+    const originalConfirm = window.confirm;
+    const originalClipboard = typeof navigator !== 'undefined' && navigator.clipboard
+      ? navigator.clipboard
+      : null;
+    const originalWriteText =
+      originalClipboard && typeof originalClipboard.writeText === 'function'
+        ? originalClipboard.writeText
+        : null;
+    const originalWrite =
+      originalClipboard && typeof originalClipboard.write === 'function'
+        ? originalClipboard.write
+        : null;
+    let clipboardWriteTextPatched = false;
+    let clipboardWritePatched = false;
+    const beforeDomCandidates = collectExportDomCandidates();
+    const beforeDomMap = new Map(beforeDomCandidates.map((entry) => [entry.key, entry.text]));
+
+    let bestCapture = null;
+    const debug = {
+      button: describeButton(buttonEl),
+      promptFired: false,
+      promptArgs: [],
+      promptDefaultValueSeen: null,
+      promptReturnValueSeen: null,
+      alertTexts: [],
+      clipboardTextLength: null,
+      domCandidates: [],
+      captureSourcesTried: [],
+    };
+
+    function recordCapture(source, raw, priority, extraMeta = null) {
+      const parsed = tryParsePageBuildJson(raw);
+      if (!parsed) return false;
+      const text = typeof raw === 'string' ? raw : JSON.stringify(raw);
+      if (!bestCapture || priority > bestCapture.priority) {
+        bestCapture = {
+          source,
+          raw: text,
+          pageBuild: parsed,
+          priority,
+          extraMeta,
+        };
+      }
+      return true;
+    }
+
+    function rememberPromptArgs(args) {
+      debug.promptArgs = args.map((arg, idx) => ({
+        index: idx,
+        type: typeof arg,
+        length: String(arg == null ? '' : arg).length,
+        preview: previewText(arg),
+      }));
+    }
+
+    function scanDomCandidates() {
+      const current = collectExportDomCandidates();
+      const changed = [];
+      current.forEach((entry) => {
+        if (beforeDomMap.get(entry.key) === entry.text) return;
+        changed.push(entry);
+        if (debug.domCandidates.length < 8) {
+          debug.domCandidates.push({
+            source: entry.source,
+            meta: entry.meta,
+            length: entry.text.length,
+            preview: previewText(entry.text),
+          });
+        }
+        recordCapture(entry.source, entry.text, entry.source === 'domInput' ? 120 : 110, entry.meta);
+      });
+      return changed.length;
+    }
+
+    window.prompt = function (...args) {
+      debug.promptFired = true;
+      rememberPromptArgs(args);
+      debug.captureSourcesTried.push('prompt');
+      const defaultValue = args.length > 1 ? args[1] : '';
+      debug.promptDefaultValueSeen = previewText(defaultValue);
+      recordCapture('promptDefaultValue', defaultValue, 400);
+      const promptReturnValue = typeof defaultValue === 'string' ? defaultValue : '';
+      debug.promptReturnValueSeen = previewText(promptReturnValue);
+      recordCapture('promptReturnValue', promptReturnValue, 300);
+      return promptReturnValue;
+    };
+    window.alert = function (...args) {
+      debug.captureSourcesTried.push('alert');
+      debug.alertTexts = args.map((arg) => previewText(arg));
+      args.forEach((arg) => {
+        recordCapture('alert', arg, 200);
+      });
+    };
+    window.confirm = function (...args) {
+      debug.captureSourcesTried.push('confirm');
+      args.forEach((arg) => {
+        recordCapture('confirm', arg, 150);
+      });
+      return true;
+    };
+    if (originalClipboard && originalWriteText) {
+      try {
+        originalClipboard.writeText = async function (text) {
+          debug.captureSourcesTried.push('clipboard.writeText');
+          debug.clipboardTextLength = String(text || '').length;
+          recordCapture('clipboardWriteText', text, 180);
+          return originalWriteText.call(originalClipboard, text);
+        };
+        clipboardWriteTextPatched = true;
+      } catch (_) {}
+    }
+    if (originalClipboard && originalWrite) {
+      try {
+        originalClipboard.write = async function (items) {
+          debug.captureSourcesTried.push('clipboard.write');
+          try {
+            if (Array.isArray(items)) {
+              for (const item of items) {
+                if (!item || !Array.isArray(item.types) || !item.types.includes('text/plain')) continue;
+                const blob = await item.getType('text/plain');
+                const text = await blob.text();
+                debug.clipboardTextLength = String(text || '').length;
+                recordCapture('clipboardWrite', text, 170);
+              }
+            }
+          } catch (_) {}
+          return originalWrite.call(originalClipboard, items);
+        };
+        clipboardWritePatched = true;
+      } catch (_) {}
+    }
+
+    try {
+      buttonEl.click();
+      const waitMs = opts.exportDelayMs ?? 300;
+      const deadline = Date.now() + waitMs;
+      while (Date.now() < deadline) {
+        scanDomCandidates();
+        if (bestCapture && bestCapture.priority >= 400) break;
+        await sleep(50);
+      }
+      scanDomCandidates();
+    } finally {
+      window.prompt = originalPrompt;
+      window.alert = originalAlert;
+      window.confirm = originalConfirm;
+      if (originalClipboard && clipboardWriteTextPatched) originalClipboard.writeText = originalWriteText;
+      if (originalClipboard && clipboardWritePatched) originalClipboard.write = originalWrite;
+    }
+
+    if (!bestCapture) {
+      console.error('[LegacyTruthCollector] Export capture failed:', debug);
+      const err = new Error('Export click did not yield a parseable page build JSON.');
+      err.exportCaptureDebug = debug;
+      throw err;
+    }
+
+    return {
+      raw: bestCapture.raw,
+      pageBuild: bestCapture.pageBuild,
+      source: bestCapture.source,
+    };
+  }
+
+  async function verifyCurrentPageBuilds(attackerBuild, defenderBuild, handles = getPageHandles(), opts = {}) {
+    if (!handles || !Array.isArray(handles.exportButtons) || handles.exportButtons.length < 2) {
+      throw new Error(`Expected at least 2 Export buttons, found ${handles && handles.exportButtons ? handles.exportButtons.length : 0}.`);
+    }
+
+    const requestedPageBuilds = {
+      attacker: normalizePageBuild(buildToPageImport(attackerBuild)),
+      defender: normalizePageBuild(buildToPageImport(defenderBuild)),
+    };
+    const requestedBuildIdentities = {
+      attacker: normalizedBuildIdentity(requestedPageBuilds.attacker),
+      defender: normalizedBuildIdentity(requestedPageBuilds.defender),
+    };
+    const requestedAttackTypes = {
+      attacker: normalizeAttackType(attackerBuild && attackerBuild.attackType),
+      defender: normalizeAttackType(defenderBuild && defenderBuild.attackType),
+    };
+
+    const attackerExport = await exportBuildByButton(handles.exportButtons[0], opts);
+    const defenderExport = await exportBuildByButton(handles.exportButtons[1], opts);
+
+    const verifiedPageBuilds = {
+      attacker: normalizePageBuild(attackerExport.pageBuild),
+      defender: normalizePageBuild(defenderExport.pageBuild),
+    };
+    const verifiedBuildIdentities = {
+      attacker: normalizedBuildIdentity(verifiedPageBuilds.attacker),
+      defender: normalizedBuildIdentity(verifiedPageBuilds.defender),
+    };
+    const actualAttackTypes = {
+      attacker: currentSelectAttackType(handles.attackerAttackTypeSelect),
+      defender: currentSelectAttackType(handles.defenderAttackTypeSelect),
+    };
+    const exportedAttackTypes = {
+      attacker: {
+        present:
+          !!attackerExport.pageBuild
+          && Object.prototype.hasOwnProperty.call(attackerExport.pageBuild, 'attackType'),
+        raw:
+          attackerExport.pageBuild
+          && Object.prototype.hasOwnProperty.call(attackerExport.pageBuild, 'attackType')
+            ? attackerExport.pageBuild.attackType
+            : undefined,
+        normalized: normalizeAttackType(attackerExport.pageBuild && attackerExport.pageBuild.attackType),
+      },
+      defender: {
+        present:
+          !!defenderExport.pageBuild
+          && Object.prototype.hasOwnProperty.call(defenderExport.pageBuild, 'attackType'),
+        raw:
+          defenderExport.pageBuild
+          && Object.prototype.hasOwnProperty.call(defenderExport.pageBuild, 'attackType')
+            ? defenderExport.pageBuild.attackType
+            : undefined,
+        normalized: normalizeAttackType(defenderExport.pageBuild && defenderExport.pageBuild.attackType),
+      },
+    };
+
+    const requestedHashes = {
+      attacker: buildHash(requestedBuildIdentities.attacker),
+      defender: buildHash(requestedBuildIdentities.defender),
+    };
+    const verifiedHashes = {
+      attacker: buildHash(verifiedBuildIdentities.attacker),
+      defender: buildHash(verifiedBuildIdentities.defender),
+    };
+
+    const attackerDiff = diffNormalizedBuilds(
+      requestedBuildIdentities.attacker,
+      verifiedBuildIdentities.attacker,
+    );
+    const defenderDiff = diffNormalizedBuilds(
+      requestedBuildIdentities.defender,
+      verifiedBuildIdentities.defender,
+    );
+    const attackerBuildMatch = attackerDiff.length === 0;
+    const defenderBuildMatch = defenderDiff.length === 0;
+    const attackerAttackTypeMatch =
+      !!handles.attackerAttackTypeSelect
+      && actualAttackTypes.attacker === requestedAttackTypes.attacker;
+    const defenderAttackTypeMatch =
+      !!handles.defenderAttackTypeSelect
+      && actualAttackTypes.defender === requestedAttackTypes.defender;
+
+    console.log('[LegacyTruthCollector] Attack type verification:', {
+      requestedAttackTypes,
+      actualAttackTypes,
+      exportedAttackTypes,
+      attackerSelectorFound: !!handles.attackerAttackTypeSelect,
+      defenderSelectorFound: !!handles.defenderAttackTypeSelect,
+    });
+
+    if (!attackerBuildMatch) {
+      console.error('[LegacyTruthCollector] Attacker build verification mismatch:', {
+        expected: requestedBuildIdentities.attacker,
+        actual: verifiedBuildIdentities.attacker,
+        diff: attackerDiff,
+      });
+    }
+    if (!defenderBuildMatch) {
+      console.error('[LegacyTruthCollector] Defender build verification mismatch:', {
+        expected: requestedBuildIdentities.defender,
+        actual: verifiedBuildIdentities.defender,
+        diff: defenderDiff,
+      });
+    }
+    if (!attackerAttackTypeMatch) {
+      console.error('[LegacyTruthCollector] Attacker attack type selector mismatch:', {
+        requested: requestedAttackTypes.attacker,
+        actual: actualAttackTypes.attacker,
+        selectorFound: !!handles.attackerAttackTypeSelect,
+        exportedAttackType: exportedAttackTypes.attacker,
+      });
+    }
+    if (!defenderAttackTypeMatch) {
+      console.error('[LegacyTruthCollector] Defender attack type selector mismatch:', {
+        requested: requestedAttackTypes.defender,
+        actual: actualAttackTypes.defender,
+        selectorFound: !!handles.defenderAttackTypeSelect,
+        exportedAttackType: exportedAttackTypes.defender,
+      });
+    }
+
+    return {
+      buildVerified:
+        attackerBuildMatch
+        && defenderBuildMatch
+        && attackerAttackTypeMatch
+        && defenderAttackTypeMatch,
+      attackerBuildMatch,
+      defenderBuildMatch,
+      attackerAttackTypeMatch,
+      defenderAttackTypeMatch,
+      requestedPageBuilds,
+      verifiedPageBuilds,
+      requestedHashes,
+      verifiedHashes,
+      requestedAttackTypes,
+      actualAttackTypes,
+      exportedAttackTypes,
+      attacker: {
+        match: attackerBuildMatch,
+        exportRaw: attackerExport.raw,
+        diff: attackerDiff,
+      },
+      defender: {
+        match: defenderBuildMatch,
+        exportRaw: defenderExport.raw,
+        diff: defenderDiff,
+      },
+    };
   }
 
   async function waitForSim(handles, beforeText, timeoutMs) {
@@ -817,6 +1455,9 @@
     const handles = getPageHandles();
     if (handles.importButtons.length < 2) {
       throw new Error(`Expected at least 2 Import buttons, found ${handles.importButtons.length}.`);
+    }
+    if (handles.exportButtons.length < 2) {
+      throw new Error(`Expected at least 2 Export buttons, found ${handles.exportButtons.length}.`);
     }
     if (!handles.attackP1) {
       throw new Error('Attack as P1 button not found.');
@@ -870,6 +1511,11 @@
         repeats,
         runsPlanned: attackers.length * defenders.length * repeats,
       },
+      handleDiscovery: {
+        attackerAttackTypeSelectFound: !!handles.attackerAttackTypeSelect,
+        defenderAttackTypeSelectFound: !!handles.defenderAttackTypeSelect,
+        attackTypeSelectCandidatesFound: handles.attackTypeSelectCandidates.length,
+      },
       matchups: [],
       rawRuns: [],
       errors: [],
@@ -878,6 +1524,14 @@
     console.log(
       `[LegacyTruthCollector] Starting ${run.counts.matchups} matchups x ${repeats} repeats = ${run.counts.runsPlanned} runs (${attackers.length} attackers x ${defenders.length} defenders).`,
     );
+    console.log(
+      `[LegacyTruthCollector] Attack type selectors: attacker=${run.handleDiscovery.attackerAttackTypeSelectFound ? 'found' : 'missing'} defender=${run.handleDiscovery.defenderAttackTypeSelectFound ? 'found' : 'missing'} candidates=${run.handleDiscovery.attackTypeSelectCandidatesFound}`,
+    );
+    if (!run.handleDiscovery.attackerAttackTypeSelectFound || !run.handleDiscovery.defenderAttackTypeSelectFound) {
+      console.warn(
+        '[LegacyTruthCollector] Attack type selector(s) missing. Strict verification will still run, but attack-style verification will fail clearly until the live selector handles are found.',
+      );
+    }
 
     let runIdx = 0;
     for (const attacker of attackers) {
@@ -896,14 +1550,38 @@
           const startedAt = nowIso();
 
           try {
-            await importBuildByButton(handles.importButtons[0], buildToPageImport(attacker.build), {
+            const requestedAttackerPageBuild = buildToPageImport(attacker.build);
+            const requestedDefenderPageBuild = buildToPageImport(defender.build);
+
+            await importBuildByButton(handles.importButtons[0], requestedAttackerPageBuild, {
               importDelayMs,
               strictPrompt: false,
             });
-            await importBuildByButton(handles.importButtons[1], buildToPageImport(defender.build), {
+            await importBuildByButton(handles.importButtons[1], requestedDefenderPageBuild, {
               importDelayMs,
               strictPrompt: false,
             });
+
+            const attackerAttackType = normalizeAttackType(attacker.build && attacker.build.attackType);
+            const defenderAttackType = normalizeAttackType(defender.build && defender.build.attackType);
+            const attackerAttackTypeSet = setAttackType(
+              handles.attackerAttackTypeSelect,
+              attackerAttackType,
+            );
+            const defenderAttackTypeSet = setAttackType(
+              handles.defenderAttackTypeSelect,
+              defenderAttackType,
+            );
+
+            const buildVerification = await verifyCurrentPageBuilds(
+              attacker.build,
+              defender.build,
+              handles,
+              { exportDelayMs: importDelayMs },
+            );
+            if (!buildVerification.buildVerified) {
+              throw makeBuildVerificationError(buildVerification);
+            }
 
             handles.attackP1.click();
             const rawText = await waitForSim(handles, beforeText, timeoutMs);
@@ -920,8 +1598,31 @@
               startedAt,
               finishedAt: nowIso(),
               pageBuilds: {
-                attacker: buildToPageImport(attacker.build),
-                defender: buildToPageImport(defender.build),
+                attacker: requestedAttackerPageBuild,
+                defender: requestedDefenderPageBuild,
+              },
+              requestedPageBuilds: buildVerification.requestedPageBuilds,
+              verifiedPageBuilds: buildVerification.verifiedPageBuilds,
+              requestedHashes: buildVerification.requestedHashes,
+              verifiedHashes: buildVerification.verifiedHashes,
+              buildVerified: true,
+              requestedAttackTypes: buildVerification.requestedAttackTypes,
+              actualAttackTypes: buildVerification.actualAttackTypes,
+              attackerBuildMatch: buildVerification.attackerBuildMatch,
+              defenderBuildMatch: buildVerification.defenderBuildMatch,
+              attackerAttackTypeMatch: buildVerification.attackerAttackTypeMatch,
+              defenderAttackTypeMatch: buildVerification.defenderAttackTypeMatch,
+              attackTypes: {
+                attacker: attackerAttackType,
+                defender: defenderAttackType,
+                attackerSelectFound: !!handles.attackerAttackTypeSelect,
+                defenderSelectFound: !!handles.defenderAttackTypeSelect,
+                attackerSet: attackerAttackTypeSet,
+                defenderSet: defenderAttackTypeSet,
+                actualAttacker: buildVerification.actualAttackTypes.attacker,
+                actualDefender: buildVerification.actualAttackTypes.defender,
+                exportedBuildAttacker: buildVerification.exportedAttackTypes.attacker,
+                exportedBuildDefender: buildVerification.exportedAttackTypes.defender,
               },
               parsedResults: parsed,
               metrics,
@@ -937,7 +1638,7 @@
           } catch (err) {
             const message = err && err.message ? err.message : String(err);
             console.error(`[LegacyTruthCollector] ERROR on ${label} repeat ${repeatIndex}/${repeats}:`, err);
-            run.errors.push({
+            const errorRow = {
               attacker: attacker.name,
               defender: defender.name,
               repeatIndex,
@@ -945,7 +1646,11 @@
               startedAt,
               failedAt: nowIso(),
               error: message,
-            });
+              buildVerification: err && err.buildVerification ? err.buildVerification : null,
+            };
+            run.errors.push(errorRow);
+            run.rawRuns.push(errorRow);
+            rawRowsForMatchup.push(errorRow);
           }
 
           await sleep(betweenRunsMs);
@@ -985,6 +1690,10 @@
     STRATIFIED_HP_BUCKETS: STRATIFIED_HP_BUCKETS.slice(),
     STRATIFIED_STYLES: STRATIFIED_STYLES.slice(),
     buildToPageImport,
+    normalizeAttackType,
+    normalizePageBuild,
+    setAttackType,
+    verifyCurrentPageBuilds,
     makeStratifiedAttackers,
     makeStratifiedConfig,
     parseResultsText,
@@ -1008,6 +1717,19 @@
         attackP1: h.attackP1 ? { value: h.attackP1.value || textOf(h.attackP1), onclick: h.attackP1.getAttribute && h.attackP1.getAttribute('onclick') } : null,
         attackP2: h.attackP2 ? { value: h.attackP2.value || textOf(h.attackP2), onclick: h.attackP2.getAttribute && h.attackP2.getAttribute('onclick') } : null,
         trialSelectFound: !!h.trialSelect,
+        attackerAttackTypeSelect: h.attackerAttackTypeSelect
+          ? {
+              name: h.attackerAttackTypeSelect.name || '',
+              value: h.attackerAttackTypeSelect.value || '',
+            }
+          : null,
+        defenderAttackTypeSelect: h.defenderAttackTypeSelect
+          ? {
+              name: h.defenderAttackTypeSelect.name || '',
+              value: h.defenderAttackTypeSelect.value || '',
+            }
+          : null,
+        attackTypeSelectCandidatesFound: h.attackTypeSelectCandidates.length,
         loadingMsgFound: !!h.loadingMsg,
         resultsBoxFound: !!h.resultsBox,
         resultsPreview: h.resultsBox ? textOf(h.resultsBox).slice(0, 300) : '',

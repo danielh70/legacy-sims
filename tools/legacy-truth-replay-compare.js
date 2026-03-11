@@ -64,6 +64,29 @@ function parseCsv(str) {
     .filter(Boolean);
 }
 
+function normalizeAttackType(v) {
+  const s = String(v || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+  if (!s) return 'normal';
+  if (s === 'aimed' || s === 'aim' || s === 'aimed atk' || s === 'aimed attack') return 'aimed';
+  if (s === 'cover' || s === 'covered' || s === 'take cover' || s === 'cover attack')
+    return 'cover';
+  if (s === 'quick' || s === 'quick atk' || s === 'quick attack') return 'quick';
+  return 'normal';
+}
+
+function ensureReplayAttackTypeSupported(v, label) {
+  const attackType = normalizeAttackType(v);
+  if (attackType === 'quick') {
+    throw new Error(
+      `Quick attack is not supported in legacy truth replay for ${label}. Use normal, aimed, or cover.`,
+    );
+  }
+  return attackType;
+}
+
 function groupBy(xs, keyFn) {
   const m = new Map();
   for (const x of xs) {
@@ -83,8 +106,12 @@ function collapseCrystal(part) {
   return { name: part.name, crystal, upgrades: other };
 }
 
-function pageBuildToLegacyCustom(pageBuild) {
+function pageBuildToLegacyBuild(pageBuild) {
   return {
+    attackType: ensureReplayAttackTypeSupported(
+      pageBuild && pageBuild.attackType,
+      'page build attackType',
+    ),
     stats: {
       level: Number(pageBuild.stats.level),
       hp: Number(pageBuild.stats.hp),
@@ -98,6 +125,14 @@ function pageBuildToLegacyCustom(pageBuild) {
     misc1: collapseCrystal(pageBuild.misc1),
     misc2: collapseCrystal(pageBuild.misc2),
   };
+}
+
+function pageBuildToLegacyCustom(pageBuild) {
+  return pageBuildToLegacyBuild(pageBuild);
+}
+
+function pageBuildToLegacyDefenderPayload(pageBuild) {
+  return pageBuildToLegacyBuild(pageBuild);
 }
 
 function findMatchingBrace(text, openIndex) {
@@ -169,6 +204,15 @@ function isUsablePageBuild(pageBuild) {
 function getCustomBuildFromPageBuild(pageBuild) {
   if (!isUsablePageBuild(pageBuild)) return null;
   return pageBuildToLegacyCustom(pageBuild);
+}
+
+function buildExactReplayError(message) {
+  return `exact replay requires truth.pageBuilds.attacker and truth.pageBuilds.defender (${message})`;
+}
+
+function writeExactDefenderPayloadFile(filePath, defenderKey, pageBuild) {
+  const payload = { [defenderKey]: pageBuildToLegacyDefenderPayload(pageBuild) };
+  fs.writeFileSync(filePath, `module.exports = ${JSON.stringify(payload, null, 2)};\n`);
 }
 
 function toFiniteNumber(v) {
@@ -343,14 +387,51 @@ function parseCompactOutput(stdout) {
 }
 
 function parseExportRows(exportPath) {
-  if (!fs.existsSync(exportPath)) return {};
+  if (!fs.existsSync(exportPath)) {
+    return {
+      rows: {},
+      resolvedBuilds: null,
+      resolvedHashes: null,
+      resolvedConfig: null,
+    };
+  }
   const payload = readJson(exportPath);
   const variants = Array.isArray(payload.variants) ? payload.variants : [];
   const variant = variants[0];
-  if (!variant || !Array.isArray(variant.defenders)) return {};
   const rows = {};
-  for (const row of variant.defenders) rows[row.name] = row;
-  return rows;
+  if (variant && Array.isArray(variant.defenders)) {
+    for (const row of variant.defenders) rows[row.name] = row;
+  }
+  return {
+    rows,
+    resolvedBuilds: payload && payload.resolvedBuilds ? payload.resolvedBuilds : null,
+    resolvedHashes: payload && payload.resolvedHashes ? payload.resolvedHashes : null,
+    resolvedConfig: payload && payload.resolvedConfig ? payload.resolvedConfig : null,
+  };
+}
+
+function buildIdentitySection(row, simIdentity) {
+  return {
+    replaySource: row.replaySource || 'pageBuilds-exact',
+    truthBuildVerified: typeof row.buildVerified === 'boolean' ? row.buildVerified : null,
+    truthRequestedHashes: row.requestedHashes || null,
+    truthVerifiedHashes: row.verifiedHashes || null,
+    simResolvedHashes:
+      simIdentity && simIdentity.resolvedHashes ? simIdentity.resolvedHashes : null,
+  };
+}
+
+function attachIdentityFields(out, row, simIdentity) {
+  out.requestedPageBuilds = row.requestedPageBuilds || null;
+  out.verifiedPageBuilds = row.verifiedPageBuilds || null;
+  out.requestedHashes = row.requestedHashes || null;
+  out.verifiedHashes = row.verifiedHashes || null;
+  out.buildVerified = typeof row.buildVerified === 'boolean' ? row.buildVerified : null;
+  out.resolvedBuilds = simIdentity && simIdentity.resolvedBuilds ? simIdentity.resolvedBuilds : null;
+  out.resolvedHashes = simIdentity && simIdentity.resolvedHashes ? simIdentity.resolvedHashes : null;
+  out.resolvedConfig = simIdentity && simIdentity.resolvedConfig ? simIdentity.resolvedConfig : null;
+  out.identity = buildIdentitySection(row, simIdentity);
+  return out;
 }
 
 function normalizeSimRow(stdoutRow, exportRow) {
@@ -408,6 +489,29 @@ function truthToRow(m) {
   if (!j) {
     throw new Error(`Missing network.best.json for ${m.attacker} vs ${m.defender}`);
   }
+  const attackerPageBuild = m.pageBuilds && m.pageBuilds.attacker ? m.pageBuilds.attacker : null;
+  const defenderPageBuild = m.pageBuilds && m.pageBuilds.defender ? m.pageBuilds.defender : null;
+  let replayError = null;
+  try {
+    ensureReplayAttackTypeSupported(
+      attackerPageBuild && attackerPageBuild.attackType,
+      `${m.attacker} attacker attackType`,
+    );
+    ensureReplayAttackTypeSupported(
+      defenderPageBuild && defenderPageBuild.attackType,
+      `${m.defender} defender attackType`,
+    );
+  } catch (err) {
+    replayError = buildExactReplayError(err && err.message ? err.message : String(err));
+  }
+  replayError =
+    replayError ||
+    (!isUsablePageBuild(attackerPageBuild)
+      ? buildExactReplayError('missing/invalid attacker page build')
+      : !isUsablePageBuild(defenderPageBuild)
+        ? buildExactReplayError('missing/invalid defender page build')
+        : null);
+
   return {
     attacker: m.attacker,
     defender: m.defender,
@@ -427,7 +531,20 @@ function truthToRow(m) {
       A_damagePerFight: Number((j.attackerDamage.total / j.times).toFixed(1)),
       D_damagePerFight: Number((j.defenderDamage.total / j.times).toFixed(1)),
     },
-    pageBuild: m.pageBuilds.attacker,
+    pageBuild: attackerPageBuild,
+    pageBuilds: {
+      attacker: attackerPageBuild,
+      defender: defenderPageBuild,
+    },
+    attackerPageBuild,
+    defenderPageBuild,
+    requestedPageBuilds: m.requestedPageBuilds || null,
+    verifiedPageBuilds: m.verifiedPageBuilds || null,
+    requestedHashes: m.requestedHashes || null,
+    verifiedHashes: m.verifiedHashes || null,
+    buildVerified: typeof m.buildVerified === 'boolean' ? m.buildVerified : null,
+    replaySource: 'pageBuilds-exact',
+    replayError,
     matchupKey: matchupKey(m.attacker, m.defender),
     label: `${m.attacker} | ${m.defender}`,
   };
@@ -511,9 +628,9 @@ function createProgressTracker(totalJobs) {
   };
 }
 
-function buildMatchupResult(row, sim) {
+function buildMatchupResult(row, sim, simIdentity) {
   if (!sim) {
-    return {
+    return attachIdentityFields({
       attacker: row.attacker,
       defender: row.defender,
       error: 'missing sim row',
@@ -525,11 +642,12 @@ function buildMatchupResult(row, sim) {
       absWinPct: null,
       dAvgTurns: null,
       absAvgTurns: null,
+      replaySource: row.replaySource || 'pageBuilds-exact',
       matchupKey: row.matchupKey,
-    };
+    }, row, simIdentity);
   }
 
-  const out = {
+  const out = attachIdentityFields({
     attacker: row.attacker,
     defender: row.defender,
     truth: row.truth,
@@ -537,8 +655,9 @@ function buildMatchupResult(row, sim) {
     delta: {},
     absDelta: {},
     error: null,
+    replaySource: row.replaySource || 'pageBuilds-exact',
     matchupKey: row.matchupKey,
-  };
+  }, row, simIdentity);
 
   for (const [field, digits] of Object.entries(NUMERIC_FIELDS)) {
     out.delta[field] = signedDelta(sim[field], row.truth[field], digits);
@@ -554,6 +673,24 @@ function buildMatchupResult(row, sim) {
   out.dAvgTurns = out.delta.avgTurns;
   out.absAvgTurns = out.absDelta.avgTurns;
   return out;
+}
+
+function buildReplayErrorResult(row, error) {
+  return attachIdentityFields({
+    attacker: row.attacker,
+    defender: row.defender,
+    truth: row.truth,
+    sim: null,
+    delta: {},
+    absDelta: {},
+    dWinPct: null,
+    absWinPct: null,
+    dAvgTurns: null,
+    absAvgTurns: null,
+    error,
+    replaySource: row.replaySource || 'pageBuilds-exact',
+    matchupKey: row.matchupKey,
+  }, row, null);
 }
 
 function sortRows(rows) {
@@ -1137,27 +1274,55 @@ function createJobRunner({
   tracker,
 }) {
   return async function runJob(row) {
+    if (row.replayError) return buildReplayErrorResult(row, row.replayError);
+
     let scriptToRun = simAbs;
-    const customBuild = getCustomBuildFromPageBuild(row.pageBuild);
+    const attackerPageBuild =
+      (row.pageBuilds && row.pageBuilds.attacker) || row.attackerPageBuild || row.pageBuild || null;
+    const defenderPageBuild =
+      (row.pageBuilds && row.pageBuilds.defender) || row.defenderPageBuild || null;
+    let attackerAttackType = 'normal';
+    let defenderAttackType = 'normal';
+    try {
+      attackerAttackType = ensureReplayAttackTypeSupported(
+        attackerPageBuild && attackerPageBuild.attackType,
+        `${row.attacker} attacker attackType`,
+      );
+      defenderAttackType = ensureReplayAttackTypeSupported(
+        defenderPageBuild && defenderPageBuild.attackType,
+        `${row.defender} defender attackType`,
+      );
+    } catch (err) {
+      return buildReplayErrorResult(row, err && err.message ? err.message : String(err));
+    }
+    const customBuild = getCustomBuildFromPageBuild(attackerPageBuild);
+    if (!customBuild || !isUsablePageBuild(defenderPageBuild)) {
+      return buildReplayErrorResult(row, buildExactReplayError('missing exact attacker/defender page builds at replay time'));
+    }
+
+    const defenderKey = `__REPLAY_DEFENDER__${sanitizeFilePart(row.attacker)}__${sanitizeFilePart(row.defender)}`.slice(0, 120);
     const exportPath = path.join(
       variantTmpDir,
       `${sanitizeFilePart(row.attacker)}--${sanitizeFilePart(row.defender)}--${process.pid}.json`,
     );
+    const defenderFilePath = path.join(
+      variantTmpDir,
+      `${sanitizeFilePart(row.attacker)}--${sanitizeFilePart(row.defender)}--defender.js`,
+    );
 
-    if (customBuild) {
-      const key = JSON.stringify(customBuild);
-      scriptToRun = customScriptCache.get(key);
-      if (!scriptToRun) {
-        const patched = patchSimToCustom(fs.readFileSync(simAbs, 'utf8'), customBuild);
-        scriptToRun = path.join(
-          path.dirname(simAbs),
-          `.legacy-sim-custom--${process.pid}--${sanitizeFilePart(variant.name)}--${customScriptCache.size + 1}.js`,
-        );
-        fs.writeFileSync(scriptToRun, patched);
-        customScriptCache.set(key, scriptToRun);
-        generatedScripts.add(scriptToRun);
-      }
+    const key = JSON.stringify(customBuild);
+    scriptToRun = customScriptCache.get(key);
+    if (!scriptToRun) {
+      const patched = patchSimToCustom(fs.readFileSync(simAbs, 'utf8'), customBuild);
+      scriptToRun = path.join(
+        path.dirname(simAbs),
+        `.legacy-sim-custom--${process.pid}--${sanitizeFilePart(variant.name)}--${customScriptCache.size + 1}.js`,
+      );
+      fs.writeFileSync(scriptToRun, patched);
+      customScriptCache.set(key, scriptToRun);
+      generatedScripts.add(scriptToRun);
     }
+    writeExactDefenderPayloadFile(defenderFilePath, defenderKey, defenderPageBuild);
 
     const env = {
       ...process.env,
@@ -1171,13 +1336,12 @@ function createJobRunner({
       LEGACY_PRINT_GAME: '0',
       LEGACY_EXPORT_JSON: '1',
       LEGACY_EXPORT_JSON_FILE: exportPath,
-      LEGACY_VERIFY_DEFENDERS: row.defender,
+      LEGACY_DEFENDER_FILE: defenderFilePath,
+      LEGACY_VERIFY_DEFENDERS: defenderKey,
+      LEGACY_ATTACKER_ATTACK_TYPE: attackerAttackType,
+      LEGACY_DEFENDER_ATTACK_TYPE: defenderAttackType,
       ...(variant.env || {}),
     };
-
-    if (!customBuild) {
-      env.LEGACY_ATTACKER_PRESET = row.attacker;
-    }
 
     tracker.jobStarted(row.label);
     try {
@@ -1211,15 +1375,19 @@ function createJobRunner({
       });
 
       const compactRows = parseCompactOutput(proc.stdout);
-      const exportRows = parseExportRows(exportPath);
+      const exportResult = parseExportRows(exportPath);
       return buildMatchupResult(
         row,
-        normalizeSimRow(compactRows[row.defender], exportRows[row.defender]),
+        normalizeSimRow(compactRows[defenderKey], exportResult.rows[defenderKey]),
+        exportResult,
       );
     } finally {
       tracker.jobFinished(row.label);
       try {
         fs.unlinkSync(exportPath);
+      } catch {}
+      try {
+        fs.unlinkSync(defenderFilePath);
       } catch {}
     }
   };

@@ -4,7 +4,7 @@
 /**
  * =====================
  * LEGACY BRUTE FORCE (CONSTRAINED + STAGED + DETERMINISTIC RNG OPTION)
- * v1.4.4 (new gang weapons + upgrade families from shared defs)
+ * v1.4.6 (attacker-only attack style control by product requirement)
  * =====================
  *
  * Fixes / Improvements:
@@ -43,6 +43,11 @@
  *   LEGACY_SKILL_ROLL_MODE=int           LEGACY_SKILL_GE=1   LEGACY_SKILL_QROUND=round
  *   LEGACY_DMG_ROLL=int
  *   LEGACY_ARMOR_K=8                     LEGACY_ARMOR_APPLY=per_weapon  LEGACY_ARMOR_ROUND=ceil
+ *   LEGACY_ATTACK_STYLE_MODE=lock|sweep
+ *   LEGACY_ATTACKER_ATTACK_TYPE=normal|aimed|cover
+ *   LEGACY_ATTACK_STYLE_SET=normal,aimed,cover
+ *   LEGACY_ATTACK_STYLE_ROUND=floor|round|ceil
+ *   LEGACY_DEFENDER_ATTACK_TYPE is intentionally ignored in brute-sim.
  *
  * Optional debugging:
  *   LEGACY_WATCH_BUILD=1                 # log one watched build when encountered
@@ -60,7 +65,7 @@
 // =====================
 const fs = require('fs');
 const os = require('os');
-const VERSION = 'v1.4.4';
+const VERSION = 'v1.4.6';
 const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
 
 // =====================
@@ -71,9 +76,9 @@ const SETTINGS = {
   HP_MAX: 865,
   MAX_TURNS: 200,
 
-  TRIALS_CONFIRM_DEFAULT: 30000,
-  TRIALS_SCREEN_DEFAULT: 2000,
-  TRIALS_GATE_DEFAULT: 500,
+  TRIALS_CONFIRM_DEFAULT: 15000,
+  TRIALS_SCREEN_DEFAULT: 1000,
+  TRIALS_GATE_DEFAULT: 300,
   GATEKEEPERS_DEFAULT: 4,
 
   SCREEN_BAIL_MARGIN_DEFAULT: 6.0,
@@ -501,13 +506,13 @@ function printCompactRunHeader({
     `${kv('run', `defs=${defenderCount} hidden=${hiddenPreset} workers=${workers} (${logical}/${physicalGuess})`)} ${kv('ui', `${TERM_UI.detail}/${TERM_UI.progress} colors=${TERM_UI.colors ? 'ON' : 'OFF'}`)}`,
   );
   console.log(
-    `${kv('search', `${useSuperset ? 'SUPERSET' : 'EFFECTIVE'} gear=${useSuperset ? totalGearCandidatesSuperset : totalGearCandidatesEffective} plans=${totalPlans} buckets=${buckets}`)} ${kv('plan', `hpMode=${hpMode} alloc=${allocationMode}`)}`,
+    `${kv('search', `${useSuperset ? 'SUPERSET' : 'EFFECTIVE'} gear=${useSuperset ? totalGearCandidatesSuperset : totalGearCandidatesEffective} plans=${totalPlans} styles=${ATTACK_STYLE_MODE_LABEL} buckets=${buckets}`)} ${kv('plan', `hpMode=${hpMode} alloc=${allocationMode}`)}`,
   );
   console.log(
     `${kv('trials', `gate=${trialsGate} screen=${trialsScreen} confirm=${trialsConfirm}`)} ${kv('gate', `N=${gatekeepers} bail=${screenBailMarginEffective.toFixed(2)}%`)} ${kv('catalog', `top=${catalogTopN} margin=${catalogMargin.toFixed(1)}% confirm=${catalogConfirmTrials}`)}`,
   );
   console.log(
-    `${kv('rng', `${rngMode === 'fast' ? 'fast(sfc32)' : 'Math.random'}/${deterministic ? 'det' : 'live'}`)} ${kv('warm', `HP=${locked.hp} A${locked.extraAcc} D${locked.extraDodge} free=${locked.freePoints}`)} ${kv('refine', `${mixedCrystalRefine ? 'ON' : 'OFF'} ${mixedCrystalSearchTrials}x${mixedCrystalPasses}`)}`,
+    `${kv('rng', `${rngMode === 'fast' ? 'fast(sfc32)' : 'Math.random'}/${deterministic ? 'det' : 'live'}`)} ${kv('attack style', ATTACK_STYLE_MODE_LABEL)} ${kv('warm', `HP=${locked.hp} A${locked.extraAcc} D${locked.extraDodge} free=${locked.freePoints}`)} ${kv('refine', `${mixedCrystalRefine ? 'ON' : 'OFF'} ${mixedCrystalSearchTrials}x${mixedCrystalPasses}`)}`,
   );
   if (exportJsonPath) console.log(`${kv('json', exportJsonPath)}`);
   console.log('');
@@ -564,11 +569,11 @@ function printVerboseRunHeader({
 
   if (useSuperset) {
     console.log(
-      `${kv('search mode', 'SUPERSET (compat)')} ${kv('gear candidates', `${totalGearCandidatesSuperset}`)} ${kv('plan slots', `${totalCandidates}`)}`,
+      `${kv('search mode', 'SUPERSET (compat)')} ${kv('gear candidates', `${totalGearCandidatesSuperset}`)} ${kv('attacker style', ATTACK_STYLE_MODE_LABEL)} ${kv('tested', `${totalCandidates}`)}`,
     );
   } else {
     console.log(
-      `${kv('search mode', 'EFFECTIVE (optimized)')} ${kv('gear candidates', `${totalGearCandidatesEffective}`)} ${kv('superset size', `${totalGearCandidatesSuperset}`)}`,
+      `${kv('search mode', 'EFFECTIVE (optimized)')} ${kv('gear candidates', `${totalGearCandidatesEffective}`)} ${kv('superset size', `${totalGearCandidatesSuperset}`)} ${kv('attacker style', ATTACK_STYLE_MODE_LABEL)}`,
     );
   }
 
@@ -773,6 +778,10 @@ function cloneSpec(spec) {
   return JSON.parse(JSON.stringify(spec));
 }
 
+function formatAttackStyleShort(attackTypeRaw) {
+  return normalizeBruteAttackType(attackTypeRaw);
+}
+
 function specKey(spec) {
   const plan = spec.plan || {};
   const parts = [spec.armor, spec.weapon1, spec.weapon2, spec.misc1, spec.misc2].map((part) => {
@@ -780,7 +789,8 @@ function specKey(spec) {
     const u2 = part && part.u2 ? part.u2 : '';
     return `${part.item}|${crystalSpecKey(partCrystalSpec(part))}|${u1}|${u2}`;
   });
-  return `HP${plan.hp}|A${plan.extraAcc}|D${plan.extraDodge}|${parts.join('|')}`;
+  const attackType = formatAttackStyleShort(spec.attackType);
+  return `HP${plan.hp}|A${plan.extraAcc}|D${plan.extraDodge}|S${attackType}|${parts.join('|')}`;
 }
 
 function formatWeaponShortFromSpecPart(part) {
@@ -793,8 +803,9 @@ function formatWeaponShortFromSpecPart(part) {
 
 function buildLabelFromSpec(spec) {
   const plan = spec.plan || {};
+  const attackType = formatAttackStyleShort(spec.attackType);
   return (
-    `HP${plan.hp} A${plan.extraAcc} D${plan.extraDodge} | ` +
+    `HP${plan.hp} A${plan.extraAcc} D${plan.extraDodge} S${attackType} | ` +
     `${shortItem(spec.armor.item)}[${crystalSpecShort(partCrystalSpec(spec.armor))}] ` +
     `${formatWeaponShortFromSpecPart(spec.weapon1)}+${formatWeaponShortFromSpecPart(spec.weapon2)} ` +
     `${shortItem(spec.misc1.item)}[${crystalSpecShort(partCrystalSpec(spec.misc1))}]+${shortItem(spec.misc2.item)}[${crystalSpecShort(partCrystalSpec(spec.misc2))}]`
@@ -1890,6 +1901,30 @@ const VARIANT_CFG = (() => {
   };
 })();
 
+const ATTACK_STYLE_ROUND_MODE = (() => {
+  const raw = _envStr('LEGACY_ATTACK_STYLE_ROUND', 'floor').trim().toLowerCase();
+  return raw === 'round' || raw === 'ceil' ? raw : 'floor';
+})();
+const ATTACK_STYLE_MODE = (() => {
+  const raw = _envStr('LEGACY_ATTACK_STYLE_MODE', 'lock').trim().toLowerCase();
+  return raw === 'sweep' ? 'sweep' : 'lock';
+})();
+const ATTACKER_ATTACK_TYPE = normalizeBruteAttackType(
+  _envStr('LEGACY_ATTACKER_ATTACK_TYPE', 'normal'),
+);
+const ATTACK_STYLE_SET = parseAttackStyleSet(
+  _envStr('LEGACY_ATTACK_STYLE_SET', 'normal,aimed,cover'),
+);
+const ACTIVE_ATTACKER_ATTACK_TYPES =
+  ATTACK_STYLE_MODE === 'sweep' ? ATTACK_STYLE_SET.slice() : [ATTACKER_ATTACK_TYPE];
+const ATTACK_STYLE_SWEEP_COUNT = ACTIVE_ATTACKER_ATTACK_TYPES.length;
+const ATTACK_STYLE_MODE_LABEL =
+  ATTACK_STYLE_MODE === 'sweep'
+    ? `sweep(${ACTIVE_ATTACKER_ATTACK_TYPES.join(',')})`
+    : `lock(${ATTACKER_ATTACK_TYPE})`;
+const DEFENDER_ATTACK_TYPE_ENV_IGNORED = _envStr('LEGACY_DEFENDER_ATTACK_TYPE', '').trim();
+const DEFENDER_ATTACK_TYPE = 'normal';
+
 const MISC_NO_CRYSTAL_SKILL = new Set(
   _envStr('LEGACY_MISC_NO_CRYSTAL_SKILL', '')
     .split(',')
@@ -2005,6 +2040,93 @@ function roundStat(v, mode) {
 function roundWeaponDmg(v, mode) {
   // weapon dmg behaves like stats rounding for our current best-fit; keep distinct for future.
   return roundStat(v, mode);
+}
+function normalizeAttackType(v) {
+  const s = String(v || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+  if (!s) return 'normal';
+  if (s === 'quick' || s === 'quick atk' || s === 'quick attack') return 'quick';
+  if (s === 'aimed' || s === 'aim' || s === 'aimed atk' || s === 'aimed attack') return 'aimed';
+  if (s === 'cover' || s === 'covered' || s === 'take cover' || s === 'cover attack')
+    return 'cover';
+  return 'normal';
+}
+function normalizeBruteAttackType(v) {
+  const s = String(v || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+  if (!s) return 'normal';
+  if (s === 'normal' || s === 'normal atk' || s === 'normal attack') return 'normal';
+  if (s === 'aimed' || s === 'aim' || s === 'aimed atk' || s === 'aimed attack') return 'aimed';
+  if (s === 'cover' || s === 'covered' || s === 'take cover' || s === 'cover attack')
+    return 'cover';
+  return 'normal';
+}
+function isRecognizedBruteAttackTypeToken(v) {
+  const s = String(v || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+  return (
+    s === 'normal' ||
+    s === 'normal atk' ||
+    s === 'normal attack' ||
+    s === 'aimed' ||
+    s === 'aim' ||
+    s === 'aimed atk' ||
+    s === 'aimed attack' ||
+    s === 'cover' ||
+    s === 'covered' ||
+    s === 'take cover' ||
+    s === 'cover attack'
+  );
+}
+function parseAttackStyleSet(raw) {
+  const toks = String(raw || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const out = [];
+  const seen = new Set();
+  for (const tok of toks) {
+    if (!isRecognizedBruteAttackTypeToken(tok)) continue;
+    const attackType = normalizeBruteAttackType(tok);
+    if (attackType !== 'normal' && attackType !== 'aimed' && attackType !== 'cover') continue;
+    if (!seen.has(attackType)) {
+      seen.add(attackType);
+      out.push(attackType);
+    }
+  }
+  if (!out.length) out.push('normal');
+  return out;
+}
+function roundAttackStyleStat(v, mode) {
+  mode = String(mode || 'floor')
+    .trim()
+    .toLowerCase();
+  if (mode === 'round') return Math.round(v);
+  if (mode === 'ceil') return Math.ceil(v);
+  return Math.floor(v);
+}
+function applyAttackStyle(c, attackTypeRaw) {
+  if (!c) return c;
+  const attackType = normalizeAttackType(attackTypeRaw);
+  c.attackType = attackType;
+
+  if (attackType === 'aimed') {
+    c.acc = Math.max(0, roundAttackStyleStat(c.acc * 1.2, ATTACK_STYLE_ROUND_MODE));
+    c.dodge = Math.max(0, roundAttackStyleStat(c.dodge * 0.9, ATTACK_STYLE_ROUND_MODE));
+    c.speed = Math.max(0, roundAttackStyleStat(c.speed * 0.9, ATTACK_STYLE_ROUND_MODE));
+  } else if (attackType === 'cover') {
+    c.dodge = Math.max(0, roundAttackStyleStat(c.dodge * 1.2, ATTACK_STYLE_ROUND_MODE));
+    c.acc = Math.max(0, roundAttackStyleStat(c.acc * 0.9, ATTACK_STYLE_ROUND_MODE));
+    c.speed = Math.max(0, roundAttackStyleStat(c.speed * 0.9, ATTACK_STYLE_ROUND_MODE));
+  }
+
+  return c;
 }
 function normalizeCrystalStackMode(mode) {
   if (!mode) return 'sum4';
@@ -3063,13 +3185,14 @@ function compileDefender(def, variantCacheLocal) {
     baseDmg: BASE.baseDamagePerHit,
   };
   applyHiddenRoleBonuses(c, 'D');
+  applyAttackStyle(c, DEFENDER_ATTACK_TYPE);
   return c;
 }
 
 // =====================
 // COMPILE ATTACKER
 // =====================
-function compileAttacker(plan, av, w1v, w2v, m1v, m2v) {
+function compileAttacker(plan, av, w1v, w2v, m1v, m2v, attackTypeRaw = ATTACKER_ATTACK_TYPE) {
   const level = BASE.level;
   const m1Eff = m1v;
   const m2Eff = rebuildMiscVariantForSlot(m2v, 2);
@@ -3133,6 +3256,7 @@ function compileAttacker(plan, av, w1v, w2v, m1v, m2v) {
     baseDmg: BASE.baseDamagePerHit,
   };
   applyHiddenRoleBonuses(c, 'A');
+  applyAttackStyle(c, attackTypeRaw);
   return c;
 }
 
@@ -3154,17 +3278,19 @@ function formatWeaponShort(wv) {
     : `${shortItem(wv.itemName)}[${shortCrystal(wv.crystalName)}]`;
 }
 
-function buildLabel(plan, av, w1v, w2v, m1v, m2v) {
+function buildLabel(plan, av, w1v, w2v, m1v, m2v, attackTypeRaw = ATTACKER_ATTACK_TYPE) {
+  const attackType = formatAttackStyleShort(attackTypeRaw);
   return (
-    `HP${plan.hp} A${plan.extraAcc} D${plan.extraDodge} | ` +
+    `HP${plan.hp} A${plan.extraAcc} D${plan.extraDodge} S${attackType} | ` +
     `${shortItem(av.itemName)}[${shortCrystal(av.crystalName)}] ` +
     `${formatWeaponShort(w1v)}+${formatWeaponShort(w2v)} ` +
     `${shortItem(m1v.itemName)}[${shortCrystal(m1v.crystalName)}]+${shortItem(m2v.itemName)}[${shortCrystal(m2v.crystalName)}]`
   );
 }
 
-function buildSpec(av, w1v, w2v, m1v, m2v, plan) {
+function buildSpec(av, w1v, w2v, m1v, m2v, plan, attackTypeRaw = ATTACKER_ATTACK_TYPE) {
   return {
+    attackType: formatAttackStyleShort(attackTypeRaw),
     plan: {
       hp: plan.hp,
       extraAcc: plan.extraAcc,
@@ -3471,7 +3597,7 @@ function buildSearchSpaceStats(
   const MV = miscVariants.length;
   const WP = weaponPairs.length / 2;
   const MP = miscPairs.length / 2;
-  const supersetCandidates = AV * WP * MP;
+  const supersetCandidatesBase = AV * WP * MP;
   const eff = estimateEffectiveCounts(
     armorVariants,
     weaponVariants,
@@ -3479,8 +3605,22 @@ function buildSearchSpaceStats(
     miscVariants,
     miscPairs,
   );
-  const keepPct = supersetCandidates ? (eff.effTotal / supersetCandidates) * 100 : 0;
-  return { pools, AV, WV, MV, WP, MP, supersetCandidates, eff, keepPct };
+  const supersetCandidates = supersetCandidatesBase * ATTACK_STYLE_SWEEP_COUNT;
+  const keepPct = supersetCandidatesBase ? (eff.effTotal / supersetCandidatesBase) * 100 : 0;
+  return {
+    pools,
+    AV,
+    WV,
+    MV,
+    WP,
+    MP,
+    supersetCandidatesBase,
+    supersetCandidates,
+    attackerStyleCount: ATTACK_STYLE_SWEEP_COUNT,
+    attackStyleModeLabel: ATTACK_STYLE_MODE_LABEL,
+    eff,
+    keepPct,
+  };
 }
 
 function printSearchSpaceSummary(
@@ -3501,13 +3641,13 @@ function printSearchSpaceSummary(
   );
   console.log(section('SEARCH SPACE', 'magenta'));
   console.log(
-    `${kv('effective', `${s.eff.effTotal} candidates`)} ${kv('superset', `${s.supersetCandidates}`)} ${kv('keep', `${s.keepPct.toFixed(2)}%`)}`,
+    `${kv('effective', `${s.eff.effTotal * s.attackerStyleCount} candidates`)} ${kv('superset', `${s.supersetCandidates}`)} ${kv('keep', `${s.keepPct.toFixed(2)}%`)}`,
   );
   console.log(
     `${kv('pools', `armors=${s.pools.armors.length} weapons=${s.pools.weapons.length} miscs=${s.pools.miscs.length}`)} ${kv('variants', `A=${s.AV} W=${s.WV} M=${s.MV}`)}`,
   );
   console.log(
-    `${kv('pairing', `weaponPairs=${s.WP} miscPairs=${s.MP}`)} ${kv('perArmor', `${s.eff.effPerArmor}`)}`,
+    `${kv('pairing', `weaponPairs=${s.WP} miscPairs=${s.MP}`)} ${kv('perArmor', `${s.eff.effPerArmor}`)} ${kv('attacker style', `${s.attackStyleModeLabel} x${s.attackerStyleCount}`)}`,
   );
   console.log('');
 }
@@ -3540,7 +3680,7 @@ function printSearchSpaceSanity(
     `Pairs (orderless): weaponPairs=${s.WP} (=WV*(WV+1)/2), miscPairs=${s.MP} (=MV*(MV+1)/2)`,
   );
   console.log(
-    `Superset candidates (before misc per-candidate filter): AV*WP*MP = ${s.supersetCandidates}`,
+    `Superset candidates (before misc per-candidate filter): AV*WP*MP = ${s.supersetCandidatesBase} | attackerStyle=${s.attackStyleModeLabel} => ${s.supersetCandidates}`,
   );
   console.log('');
 
@@ -3569,7 +3709,7 @@ function printSearchSpaceSanity(
   );
   console.log(`  Per armor: sum_over_weaponPairs(keptMiscPairsForMask) = ${s.eff.effPerArmor}`);
   console.log(
-    `  Effective total: AV * perArmor = ${s.eff.AV} * ${s.eff.effPerArmor} = ${s.eff.effTotal}`,
+    `  Effective total: (${s.eff.AV} * ${s.eff.effPerArmor}) * ${s.attackerStyleCount} = ${s.eff.effTotal * s.attackerStyleCount}`,
   );
   console.log(`  Keep rate vs superset: ${s.keepPct.toFixed(2)}%`);
   console.log('');
@@ -3746,6 +3886,8 @@ function workerMain() {
   const maskBuckets = buildMaskBuckets(weaponPairIndicesByMask, miscPairsAllowedByMask);
 
   const { plans, planGroups } = buildHpPlans();
+  const attackerAttackTypes = ACTIVE_ATTACKER_ATTACK_TYPES;
+  const attackerStyleSweepCount = attackerAttackTypes.length;
 
   // Ensure defender variants exist in cache
   prefillVariantsFromDefenders(defenderBuilds, getV);
@@ -3879,10 +4021,15 @@ function workerMain() {
               type: 'watch_hit',
               workerId,
               idx,
-              label:
-                `${shortItem(av.itemName)}[${shortCrystal(av.crystalName)}] ` +
-                `${formatWeaponShort(w1v)}+${formatWeaponShort(w2v)} ` +
-                `${shortItem(m1v.itemName)}[${shortCrystal(m1v.crystalName)}]+${shortItem(m2v.itemName)}[${shortCrystal(m2v.crystalName)}]`,
+              label: buildLabel(
+                plans[0] || { hp: BASE.hp, extraAcc: 0, extraDodge: 0 },
+                av,
+                w1v,
+                w2v,
+                m1v,
+                m2v,
+                attackerAttackTypes[0],
+              ),
             });
           }
         }
@@ -3894,7 +4041,7 @@ function workerMain() {
         !miscVariantAllowedForWeaponMask(m1v, weaponMask) ||
         !miscVariantAllowedForWeaponMask(m2v, weaponMask)
       ) {
-        processed += plans.length;
+        processed += plans.length * attackerStyleSweepCount;
         maybeReportProgress();
         continue;
       }
@@ -3909,10 +4056,10 @@ function workerMain() {
         if (isMixed || debugPrinted < Math.min(3, debugMixedN)) {
           debugPrinted++;
           const [m1, m2] = mixedWeaponMultsFromWeaponSkill(s1, s2);
-          const dbgAtt = compileAttacker(debugPlan, av, w1v, w2v, m1v, m2v);
+          const dbgAtt = compileAttacker(debugPlan, av, w1v, w2v, m1v, m2v, attackerAttackTypes[0]);
           const tag = isMixed ? 'MIXED' : 'SAME';
           console.log(
-            `[DEBUG_MIXED] ${tag} | W1=${w1v.itemName}(skill=${s1}, mult=${m1}) W2=${w2v.itemName}(skill=${s2}, mult=${m2}) | FINAL skills: gun=${dbgAtt.gun} mel=${dbgAtt.mel} prj=${dbgAtt.prj}`,
+            `[DEBUG_MIXED] ${tag} | style=${dbgAtt.attackType} | W1=${w1v.itemName}(skill=${s1}, mult=${m1}) W2=${w2v.itemName}(skill=${s2}, mult=${m2}) | FINAL skills: gun=${dbgAtt.gun} mel=${dbgAtt.mel} prj=${dbgAtt.prj}`,
           );
         }
       }
@@ -3924,133 +4071,142 @@ function workerMain() {
 
       for (let planIdx = 0; planIdx < group.plans.length; planIdx++) {
         const plan = group.plans[planIdx];
-        processed++;
+        let bestPlanScore = null;
+        for (let styleIdx = 0; styleIdx < attackerAttackTypes.length; styleIdx++) {
+          const attackType = attackerAttackTypes[styleIdx];
+          processed++;
 
-        const att = compileAttacker(plan, av, w1v, w2v, m1v, m2v);
+          const att = compileAttacker(plan, av, w1v, w2v, m1v, m2v, attackType);
 
-        let lb = topsByHp[hpKey];
-        if (!lb) lb = topsByHp[hpKey] = [];
+          let lb = topsByHp[hpKey];
+          if (!lb) lb = topsByHp[hpKey] = [];
 
-        const localFloor = lb.length >= keepTopNPerHp ? lb[lb.length - 1].worstWin : null;
-        const globalFloor = floorLoadPct(sharedI32);
-        const floorWorst =
-          localFloor === null && globalFloor === null
-            ? null
-            : localFloor === null
-              ? globalFloor
-              : globalFloor === null
-                ? localFloor
-                : Math.max(localFloor, globalFloor);
+          const localFloor = lb.length >= keepTopNPerHp ? lb[lb.length - 1].worstWin : null;
+          const globalFloor = floorLoadPct(sharedI32);
+          const floorWorst =
+            localFloor === null && globalFloor === null
+              ? null
+              : localFloor === null
+                ? globalFloor
+                : globalFloor === null
+                  ? localFloor
+                  : Math.max(localFloor, globalFloor);
 
-        const planKeySeed =
-          (((plan.hp & 0xffff) << 8) ^ ((plan.extraAcc & 0xff) << 1) ^ (plan.extraDodge & 0xff)) >>>
-          0;
-        const score = evalCandidateStaged({
-          att,
-          defenders,
-          maxTurns,
-          trialsGate,
-          gatekeepers,
-          trialsScreen,
-          trialsConfirm,
-          floorWorst,
-          gateBailMargin,
-          screenBailMargin,
-          deterministic,
-          baseSeed: detBaseSeed,
-          candidateKey: mix32((idx + 1) ^ planKeySeed),
-        });
+          const planKeySeed =
+            (((plan.hp & 0xffff) << 8) ^
+              ((plan.extraAcc & 0xff) << 1) ^
+              (plan.extraDodge & 0xff)) >>>
+            0;
+          const styleKeySeed = ((styleIdx + 1) * 0x9e3779b9) >>> 0;
+          const score = evalCandidateStaged({
+            att,
+            defenders,
+            maxTurns,
+            trialsGate,
+            gatekeepers,
+            trialsScreen,
+            trialsConfirm,
+            floorWorst,
+            gateBailMargin,
+            screenBailMargin,
+            deterministic,
+            baseSeed: detBaseSeed,
+            candidateKey: mix32((idx + 1) ^ planKeySeed ^ styleKeySeed),
+          });
+          if (!bestPlanScore || isBetterScore(score, bestPlanScore)) bestPlanScore = score;
 
-        if (prof) {
-          if (score.stage === 'G') prof.bailedG++;
-          else if (score.stage === 'A') prof.bailedA++;
-          else if (score.stage === 'B') {
-            if (score.bailed) prof.bailedB++;
-            else prof.confirmedB++;
+          if (prof) {
+            if (score.stage === 'G') prof.bailedG++;
+            else if (score.stage === 'A') prof.bailedA++;
+            else if (score.stage === 'B') {
+              if (score.bailed) prof.bailedB++;
+              else prof.confirmedB++;
+            }
+            if (typeof score.screenSampled === 'number' && score.screenSampled > 0) {
+              prof.screenCalls++;
+              prof.screenSampledSum += score.screenSampled;
+              if (score.screenSampled === defenders.length) prof.screenFull++;
+            }
           }
-          if (typeof score.screenSampled === 'number' && score.screenSampled > 0) {
-            prof.screenCalls++;
-            prof.screenSampledSum += score.screenSampled;
-            if (score.screenSampled === defenders.length) prof.screenFull++;
-          }
-        }
 
-        const wpTag = weaponPairTagFromSkills(w1v.weapon.skill, w2v.weapon.skill);
-        const label = buildLabel(plan, av, w1v, w2v, m1v, m2v);
-        const spec = buildSpec(av, w1v, w2v, m1v, m2v, plan);
+          const wpTag = weaponPairTagFromSkills(w1v.weapon.skill, w2v.weapon.skill);
+          const label = buildLabel(plan, av, w1v, w2v, m1v, m2v, attackType);
+          const spec = buildSpec(av, w1v, w2v, m1v, m2v, plan, attackType);
 
-        if (trialsScreen > 0 && score.screenSampled === defenders.length) {
-          const sw = score.screenWorstWin;
-          const sa = score.screenAvgWin;
+          if (trialsScreen > 0 && score.screenSampled === defenders.length) {
+            const sw = score.screenWorstWin;
+            const sa = score.screenAvgWin;
 
-          const eligible = floorWorst === null ? true : sw + 1e-9 >= floorWorst - catalogMargin;
+            const eligible = floorWorst === null ? true : sw + 1e-9 >= floorWorst - catalogMargin;
 
-          if (eligible && sw !== null && sw !== undefined) {
-            let topArr = catalogTopByHp[hpKey];
-            if (!topArr) topArr = catalogTopByHp[hpKey] = [];
-            pushCatalogTop(
-              topArr,
-              {
+            if (eligible && sw !== null && sw !== undefined) {
+              let topArr = catalogTopByHp[hpKey];
+              if (!topArr) topArr = catalogTopByHp[hpKey] = [];
+              pushCatalogTop(
+                topArr,
+                {
+                  wpTag,
+                  label,
+                  spec,
+                  screenWorstWin: sw,
+                  screenWorstName: score.screenWorstName,
+                  screenAvgWin: sa,
+                },
+                catalogTopN,
+              );
+
+              let bestTypes = catalogBestTypeByHp[hpKey];
+              if (!bestTypes) bestTypes = catalogBestTypeByHp[hpKey] = Object.create(null);
+              const cand = {
                 wpTag,
                 label,
                 spec,
                 screenWorstWin: sw,
                 screenWorstName: score.screenWorstName,
                 screenAvgWin: sa,
-              },
-              catalogTopN,
-            );
+              };
+              if (isBetterScreen(cand, bestTypes[wpTag])) bestTypes[wpTag] = cand;
+            }
+          }
 
-            let bestTypes = catalogBestTypeByHp[hpKey];
-            if (!bestTypes) bestTypes = catalogBestTypeByHp[hpKey] = Object.create(null);
-            const cand = {
+          if (!score.bailed) {
+            let bestTypes = bestByTypeByHp[hpKey];
+            if (!bestTypes) bestTypes = bestByTypeByHp[hpKey] = Object.create(null);
+
+            const candidateEntry = {
               wpTag,
               label,
               spec,
-              screenWorstWin: sw,
-              screenWorstName: score.screenWorstName,
-              screenAvgWin: sa,
+              ...score,
+              stats: {
+                hp: plan.hp,
+                attackType: att.attackType,
+                extraAcc: plan.extraAcc,
+                extraDodge: plan.extraDodge,
+                speed: att.speed,
+                armor: att.armor,
+                acc: att.acc,
+                dodge: att.dodge,
+                mel: att.mel,
+                defSk: att.defSk,
+                gun: att.gun,
+                prj: att.prj,
+              },
             };
-            if (isBetterScreen(cand, bestTypes[wpTag])) bestTypes[wpTag] = cand;
-          }
-        }
 
-        if (!score.bailed) {
-          let bestTypes = bestByTypeByHp[hpKey];
-          if (!bestTypes) bestTypes = bestByTypeByHp[hpKey] = Object.create(null);
+            if (isBetterScore(candidateEntry, bestTypes[wpTag])) bestTypes[wpTag] = candidateEntry;
 
-          const candidateEntry = {
-            wpTag,
-            label,
-            spec,
-            ...score,
-            stats: {
-              hp: plan.hp,
-              extraAcc: plan.extraAcc,
-              extraDodge: plan.extraDodge,
-              speed: att.speed,
-              armor: att.armor,
-              acc: att.acc,
-              dodge: att.dodge,
-              mel: att.mel,
-              defSk: att.defSk,
-              gun: att.gun,
-              prj: att.prj,
-            },
-          };
-
-          if (isBetterScore(candidateEntry, bestTypes[wpTag])) bestTypes[wpTag] = candidateEntry;
-
-          const floor = lb.length ? lb[lb.length - 1] : null;
-          if (lb.length < keepTopNPerHp || score.worstWin >= floor.worstWin - 1e-9) {
-            pushLeaderboard(
-              lb,
-              { wpTag, label, spec, ...score, stats: candidateEntry.stats },
-              keepTopNPerHp,
-            );
-            if (lb.length >= keepTopNPerHp) {
-              const newLocalFloor = lb[lb.length - 1].worstWin;
-              floorTryRaise(sharedI32, newLocalFloor);
+            const floor = lb.length ? lb[lb.length - 1] : null;
+            if (lb.length < keepTopNPerHp || score.worstWin >= floor.worstWin - 1e-9) {
+              pushLeaderboard(
+                lb,
+                { wpTag, label, spec, ...score, stats: candidateEntry.stats },
+                keepTopNPerHp,
+              );
+              if (lb.length >= keepTopNPerHp) {
+                const newLocalFloor = lb[lb.length - 1].worstWin;
+                floorTryRaise(sharedI32, newLocalFloor);
+              }
             }
           }
         }
@@ -4058,16 +4214,16 @@ function workerMain() {
         const triggeredAccuracyBail = updateAccuracySweepState(
           accuracyState,
           plan,
-          score,
+          bestPlanScore,
           defenders.length,
         );
         if (triggeredAccuracyBail) {
           const remaining = group.plans.length - (planIdx + 1);
           if (remaining > 0) {
-            processed += remaining;
+            processed += remaining * attackerStyleSweepCount;
             if (prof) {
               prof.accBailStops++;
-              prof.accPlansSkipped += remaining;
+              prof.accPlansSkipped += remaining * attackerStyleSweepCount;
             }
           }
           maybeReportProgress();
@@ -4149,30 +4305,34 @@ function runWarmStartAndGetWorstPct({
 
   const m1v = getV(WARM_START_BUILD.misc1.item, WARM_START_BUILD.misc1.crystal);
   const m2v = getV(WARM_START_BUILD.misc2.item, WARM_START_BUILD.misc2.crystal);
-
-  const att = compileAttacker(plan, av, w1v, w2v, m1v, m2v);
-
-  const score = evalCandidateStaged({
-    att,
-    defenders: compiledDefenders,
-    maxTurns,
-    trialsGate: 0,
-    gatekeepers: 0,
-    trialsScreen: 0,
-    trialsConfirm,
-    floorWorst: null,
-    gateBailMargin: 0,
-    screenBailMargin: 0,
-    deterministic: true,
-    baseSeed: (Number(rngSeed) || 0) >>> 0,
-    candidateKey: 0xc0ffee,
-  });
-
-  return {
-    worstWin: score.worstWin,
-    avgWin: score.avgWin,
-    worstName: score.worstName,
-  };
+  let best = null;
+  for (let styleIdx = 0; styleIdx < ACTIVE_ATTACKER_ATTACK_TYPES.length; styleIdx++) {
+    const attackType = ACTIVE_ATTACKER_ATTACK_TYPES[styleIdx];
+    const att = compileAttacker(plan, av, w1v, w2v, m1v, m2v, attackType);
+    const score = evalCandidateStaged({
+      att,
+      defenders: compiledDefenders,
+      maxTurns,
+      trialsGate: 0,
+      gatekeepers: 0,
+      trialsScreen: 0,
+      trialsConfirm,
+      floorWorst: null,
+      gateBailMargin: 0,
+      screenBailMargin: 0,
+      deterministic: true,
+      baseSeed: (Number(rngSeed) || 0) >>> 0,
+      candidateKey: mix32(0xc0ffee ^ ((styleIdx + 1) * 0x9e3779b9)),
+    });
+    const row = {
+      worstWin: score.worstWin,
+      avgWin: score.avgWin,
+      worstName: score.worstName,
+      attackType,
+    };
+    if (!best || isBetterScore(row, best)) best = row;
+  }
+  return best;
 }
 
 // =====================
@@ -4228,7 +4388,8 @@ function confirmSpecAgainstDefenders({
   const m1v = getV(spec.misc1.item, partCrystalSpec(spec.misc1));
   const m2v = getV(spec.misc2.item, partCrystalSpec(spec.misc2));
 
-  const att = compileAttacker(plan, av, w1v, w2v, m1v, m2v);
+  const attackType = formatAttackStyleShort(spec.attackType);
+  const att = compileAttacker(plan, av, w1v, w2v, m1v, m2v, attackType);
 
   let sumWin = 0;
   let sumEx = 0;
@@ -4256,6 +4417,7 @@ function confirmSpecAgainstDefenders({
     avgEx: sumEx / compiledDef.length,
     stats: {
       hp: att.hp,
+      attackType: att.attackType,
       extraAcc: plan.extraAcc,
       extraDodge: plan.extraDodge,
       speed: att.speed,
@@ -4418,6 +4580,11 @@ async function main() {
     process.env.LEGACY_DETERMINISTIC === '1' || process.env.LEGACY_DETERMINISTIC === 'true';
 
   const pools = parsePoolsFromEnv();
+  if (DEFENDER_ATTACK_TYPE_ENV_IGNORED) {
+    console.warn(
+      `[WARN] LEGACY_DEFENDER_ATTACK_TYPE=${DEFENDER_ATTACK_TYPE_ENV_IGNORED} is ignored in brute-sim; defenders are always normal by product requirement.`,
+    );
+  }
 
   const debugMixed =
     process.env.LEGACY_DEBUG_MIXED === '1' || process.env.LEGACY_DEBUG_MIXED === 'true';
@@ -4507,7 +4674,7 @@ async function main() {
   const totalGearCandidates = useSuperset
     ? totalGearCandidatesSuperset
     : totalGearCandidatesEffective;
-  const totalCandidates = totalGearCandidates * plans.length;
+  const totalCandidates = totalGearCandidates * plans.length * ATTACK_STYLE_SWEEP_COUNT;
 
   const sanityDisabledCompat =
     process.env.LEGACY_SANITY_DISABLE === '1' || process.env.LEGACY_SANITY_DISABLE === 'true';
@@ -5040,7 +5207,7 @@ function printResults({
 }) {
   console.log(section('RUN COMPLETE', 'green'));
   console.log(
-    `${kv('tested', totalCandidates)} ${kv('elapsed', formatDuration(elapsedAll))} ${kv('kept/HP', SETTINGS.KEEP_TOP_N_PER_HP)} ${kv('catalogTrials', catalogConfirmTrials)}`,
+    `${kv('tested', totalCandidates)} ${kv('attack style', ATTACK_STYLE_MODE_LABEL)} ${kv('elapsed', formatDuration(elapsedAll))} ${kv('kept/HP', SETTINGS.KEEP_TOP_N_PER_HP)} ${kv('catalogTrials', catalogConfirmTrials)}`,
   );
   if (TERM_UI.detail !== 'quiet') {
     console.log(
@@ -5205,6 +5372,10 @@ function printResults({
       version: VERSION,
       totalCandidates,
       elapsedSec: Number(elapsedAll.toFixed(3)),
+      attackStyleMode: ATTACK_STYLE_MODE,
+      attackerAttackType: ATTACKER_ATTACK_TYPE,
+      attackStyleSet: ACTIVE_ATTACKER_ATTACK_TYPES.slice(),
+      attackStyleModeLabel: ATTACK_STYLE_MODE_LABEL,
       rngMode,
       rngSeed,
       catalogConfirmTrials,

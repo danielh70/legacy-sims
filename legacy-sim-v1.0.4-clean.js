@@ -27,6 +27,7 @@ const USER_CONFIG = {
     // Custom attacker build template (only used when mode='custom').
     // Tip: copy one of the ATTACKER_PRESETS below and paste it here to start.
     custom: {
+      attackType: 'normal',
       stats: { level: 80, hp: 650, speed: 60, dodge: 57, accuracy: 14 },
       armor: {
         name: 'Dark Legion Armor',
@@ -98,6 +99,9 @@ const __DEFAULT_ENV__ = {
   LEGACY_DIAG_RANGE_DEFENDER: '',
 
   LEGACY_ATTACKER_PRESET: 'MAUL_CSTAFF',
+  LEGACY_ATTACKER_ATTACK_TYPE: '',
+  LEGACY_DEFENDER_ATTACK_TYPE: '',
+  LEGACY_ATTACK_STYLE_ROUND: 'floor',
   LEGACY_DEFENDER_FILE: '', // optional override for defender payload file
   LEGACY_VERIFY_DEFENDERS:
     'SG1 Split Bombs T2,DL Gun Build,DL Gun Build 2,DL Gun Build 3,DL Gun Build 4,DL Gun Build 5,DL Gun Build 6,DL Gun Build 7,DL Gun Build 8,T2 Scythe Build,HF Core/Void,Core/Void Build 1,Dual Bow Build 1,Rift Bow Build 1,Armour stack Cores',
@@ -226,6 +230,66 @@ function stableStringify(x) {
   if (Array.isArray(x)) return '[' + x.map((v) => stableStringify(v)).join(',') + ']';
   const keys = Object.keys(x).sort();
   return '{' + keys.map((k) => JSON.stringify(k) + ':' + stableStringify(x[k])).join(',') + '}';
+}
+
+function normalizeResolvedBuildPartCrystal(part) {
+  if (!part) return '';
+  if (typeof part.crystal === 'string' && part.crystal) return String(part.crystal).trim();
+  if (typeof part.crystalName === 'string' && part.crystalName) return String(part.crystalName).trim();
+  if (Array.isArray(part.crystals) && part.crystals.length) return String(part.crystals[0] || '').trim();
+  if (Array.isArray(part.upgrades) && part.upgrades.length) return String(part.upgrades[0] || '').trim();
+  if (typeof part.upgrades === 'string' && part.upgrades) return String(part.upgrades).trim();
+  return '';
+}
+
+function normalizeResolvedBuildWeaponUpgrades(part) {
+  if (!part) return [];
+  let ups = [];
+  if (Array.isArray(part.weaponUpgrades)) {
+    ups = part.weaponUpgrades;
+  } else if (Array.isArray(part.upgrades) && part.crystal) {
+    ups = part.upgrades;
+  } else if (Array.isArray(part.upgrades) && !part.crystal) {
+    ups = part.upgrades.slice(1).filter((u) => !!UpgradeDefs[u]);
+  } else {
+    const u1 = typeof part.upgrade1 === 'string' ? part.upgrade1 : '';
+    const u2 = typeof part.upgrade2 === 'string' ? part.upgrade2 : '';
+    ups = [u1, u2].filter(Boolean);
+  }
+  const u1 = (typeof part.upgrade1 === 'string' && part.upgrade1) || ups[0] || '';
+  const u2 = (typeof part.upgrade2 === 'string' && part.upgrade2) || ups[1] || '';
+  return [u1, u2].map((u) => String(u || '').trim()).filter(Boolean);
+}
+
+function normalizeResolvedBuildPart(part, role) {
+  return {
+    name: String((part && part.name) || '').trim(),
+    crystal: normalizeResolvedBuildPartCrystal(part),
+    upgrades: normalizeResolvedBuildWeaponUpgrades(part),
+  };
+}
+
+function normalizeResolvedBuild(build, attackTypeRaw) {
+  const stats = (build && build.stats) || {};
+  return {
+    stats: {
+      level: Number(stats.level),
+      hp: Number(stats.hp),
+      speed: Number(stats.speed),
+      dodge: Number(stats.dodge),
+      accuracy: Number(stats.accuracy),
+    },
+    armor: normalizeResolvedBuildPart(build && build.armor, 'armor'),
+    weapon1: normalizeResolvedBuildPart(build && build.weapon1, 'weapon'),
+    weapon2: normalizeResolvedBuildPart(build && build.weapon2, 'weapon'),
+    misc1: normalizeResolvedBuildPart(build && build.misc1, 'misc'),
+    misc2: normalizeResolvedBuildPart(build && build.misc2, 'misc'),
+    attackType: normalizeAttackType(attackTypeRaw !== undefined ? attackTypeRaw : build && build.attackType),
+  };
+}
+
+function hashResolvedBuild(build) {
+  return hex8(hashStr32(stableStringify(build)));
 }
 
 function summarizeList(list, maxItems) {
@@ -1351,6 +1415,62 @@ function roundWeaponDmg(x, mode) {
   return Math.ceil(x); // default ceil
 }
 
+function normalizeAttackType(v) {
+  const s = String(v || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+  if (!s) return 'normal';
+  if (s === 'aimed' || s === 'aim' || s === 'aimed atk' || s === 'aimed attack') return 'aimed';
+  if (s === 'cover' || s === 'covered' || s === 'take cover' || s === 'cover attack')
+    return 'cover';
+  return 'normal';
+}
+
+function isQuickAttackType(v) {
+  const s = String(v || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+  return s === 'quick' || s === 'quick atk' || s === 'quick attack';
+}
+
+function resolveSupportedAttackType(v, label) {
+  if (isQuickAttackType(v)) {
+    throw new Error(
+      `Quick attack is not implemented in legacy-sim for ${label}. Use normal, aimed, or cover.`,
+    );
+  }
+  return normalizeAttackType(v);
+}
+
+function roundAttackStyleStat(x, mode) {
+  mode = String(mode || 'floor')
+    .trim()
+    .toLowerCase();
+  if (mode === 'round') return Math.round(x);
+  if (mode === 'ceil') return Math.ceil(x);
+  return Math.floor(x);
+}
+
+function applyAttackStyle(c, attackTypeRaw, roundMode) {
+  if (!c) return c;
+  const attackType = normalizeAttackType(attackTypeRaw);
+  c.attackType = attackType;
+
+  if (attackType === 'aimed') {
+    c.acc = Math.max(0, roundAttackStyleStat(c.acc * 1.2, roundMode));
+    c.dodge = Math.max(0, roundAttackStyleStat(c.dodge * 0.9, roundMode));
+    c.speed = Math.max(0, roundAttackStyleStat(c.speed * 0.9, roundMode));
+  } else if (attackType === 'cover') {
+    c.dodge = Math.max(0, roundAttackStyleStat(c.dodge * 1.2, roundMode));
+    c.acc = Math.max(0, roundAttackStyleStat(c.acc * 0.9, roundMode));
+    c.speed = Math.max(0, roundAttackStyleStat(c.speed * 0.9, roundMode));
+  }
+
+  return c;
+}
+
 function normalizeCrystalStackMode(m) {
   m = String(m || 'sum4')
     .trim()
@@ -1566,7 +1686,19 @@ function computeVariant(itemName, crystalName, upgrades = [], cfg, slotTag = 0) 
   };
 }
 
-function compileCombatantFromParts({ name, stats, armorV, w1V, w2V, m1V, m2V, cfg, role }) {
+function compileCombatantFromParts({
+  name,
+  stats,
+  armorV,
+  w1V,
+  w2V,
+  m1V,
+  m2V,
+  cfg,
+  role,
+  attackTypeRaw,
+  attackStyleRoundMode,
+}) {
   const level = Math.floor(Number(stats.level));
   const hp = Math.floor(Number(stats.hp));
 
@@ -1643,6 +1775,7 @@ function compileCombatantFromParts({ name, stats, armorV, w1V, w2V, m1V, m2V, cf
   }
 
   applyHiddenRoleBonuses(c, role, cfg);
+  applyAttackStyle(c, attackTypeRaw, attackStyleRoundMode);
   return c;
 }
 
@@ -2364,6 +2497,33 @@ if (!ATTACKER_BUILD) {
     );
   }
   process.exit(1);
+}
+
+const ATTACK_STYLE_ROUND_MODE = (() => {
+  const raw = String(pickEnv('LEGACY_ATTACK_STYLE_ROUND', 'floor'))
+    .trim()
+    .toLowerCase();
+  return raw === 'round' || raw === 'ceil' ? raw : 'floor';
+})();
+
+const ATTACKER_ATTACK_TYPE_OVERRIDE = (() => {
+  const raw = String(pickEnv('LEGACY_ATTACKER_ATTACK_TYPE', '')).trim();
+  return raw ? resolveSupportedAttackType(raw, 'LEGACY_ATTACKER_ATTACK_TYPE') : null;
+})();
+
+const DEFENDER_ATTACK_TYPE_OVERRIDE = (() => {
+  const raw = String(pickEnv('LEGACY_DEFENDER_ATTACK_TYPE', '')).trim();
+  return raw ? resolveSupportedAttackType(raw, 'LEGACY_DEFENDER_ATTACK_TYPE') : null;
+})();
+
+const ATTACKER_ATTACK_TYPE =
+  ATTACKER_ATTACK_TYPE_OVERRIDE || resolveSupportedAttackType(ATTACKER_BUILD.attackType, 'attacker build attackType');
+
+function resolveDefenderAttackType(payload) {
+  return (
+    DEFENDER_ATTACK_TYPE_OVERRIDE
+    || resolveSupportedAttackType(payload && payload.attackType, `defender "${payload && payload.name ? payload.name : 'payload'}" attackType`)
+  );
 }
 
 function makeCounters() {
@@ -3393,6 +3553,20 @@ function main() {
   const variants = makeVariantList();
   const variantCmpSummaries = [];
   const exportVariants = [];
+  const payloads = defenderNames.map((n) => ({
+    name: n,
+    payload: DEFENDER_PAYLOADS[n],
+  }));
+  const resolvedAttackerBuild = normalizeResolvedBuild(ATTACKER_BUILD, ATTACKER_ATTACK_TYPE);
+  const resolvedAttackerHash = hashResolvedBuild(resolvedAttackerBuild);
+  const resolvedDefenderBuildsByName = {};
+  const resolvedDefenderHashesByName = {};
+  for (const { name, payload } of payloads) {
+    const resolvedBuild = normalizeResolvedBuild(payload, resolveDefenderAttackType(payload));
+    resolvedDefenderBuildsByName[name] = resolvedBuild;
+    resolvedDefenderHashesByName[name] = hashResolvedBuild(resolvedBuild);
+  }
+  const resolvedDefendersHash = hex8(hashStr32(stableStringify(resolvedDefenderBuildsByName)));
 
   console.log('=== LEGACY VERIFY ===');
   // If you have exported any LEGACY_* variables in your shell, they'll silently override defaults.
@@ -3415,12 +3589,13 @@ function main() {
   const outTag = `${outputMode}${printExact ? '+exact' : ''}${printGame ? '+game' : ''}${compareBaselines ? '+cmp' : ''}`;
   let runLine = `RUN: trials/def=${trials} seed=${seed} det=${deterministic ? 'ON' : 'OFF'} rng=${rngMode} maxT=${maxTurns} defs=${defenderNames.length} out=${outTag}`;
   if (variants.length !== 1) runLine += ` vars=${variants.length}`;
+  runLine += ` style=A:${ATTACKER_ATTACK_TYPE} D:${DEFENDER_ATTACK_TYPE_OVERRIDE || 'payload'} round=${ATTACK_STYLE_ROUND_MODE}`;
   console.log(runLine);
 
   if (doctorOn) {
     const defFileDisp = DEFENDER_SOURCE_FILE ? path.basename(DEFENDER_SOURCE_FILE) : '(unknown)';
     console.log(
-      `CONFIG: attacker=${ATTACKER_PRESET} source=${ATTACKER_SOURCE} defs=${defenderNames.length} selector=${verifySelection.mode} file=${defFileDisp} compare=${compareBaselines ? 'on' : 'off'} exportJson=${exportJsonOn ? 'on' : 'off'}`,
+      `CONFIG: attacker=${ATTACKER_PRESET} source=${ATTACKER_SOURCE} defs=${defenderNames.length} selector=${verifySelection.mode} file=${defFileDisp} compare=${compareBaselines ? 'on' : 'off'} exportJson=${exportJsonOn ? 'on' : 'off'} style=A:${ATTACKER_ATTACK_TYPE} D:${DEFENDER_ATTACK_TYPE_OVERRIDE || 'payload'} round=${ATTACK_STYLE_ROUND_MODE}`,
     );
     if (legacyReportAliasUsed) {
       console.log(`CONFIG NOTE: LEGACY_REPORT is acting as LEGACY_OUTPUT=${outputMode}.`);
@@ -3428,6 +3603,9 @@ function main() {
     if (legacyProgressRaw) {
       console.log(`CONFIG NOTE: LEGACY_PROGRESS=${legacyProgressRaw} is ignored by legacy-sim.`);
     }
+    console.log(
+      `CONFIG HASH: attacker=${resolvedAttackerHash} defenders=${Object.keys(resolvedDefenderHashesByName).length} defsHash=${resolvedDefendersHash}`,
+    );
   }
 
   if (headerMode !== 'min') {
@@ -3436,12 +3614,6 @@ function main() {
     console.log(`DEFS: ${defLine}`);
   }
   console.log('');
-
-  const payloads = defenderNames.map((n) => ({
-    name: n,
-    payload: DEFENDER_PAYLOADS[n],
-  }));
-
   const defsSig = hashStr32(
     stableStringify(payloads.map((p) => ({ name: p.name, payload: p.payload }))),
   );
@@ -3450,6 +3622,7 @@ function main() {
     stableStringify({
       preset: ATTACKER_PRESET,
       build: ATTACKER_BUILD,
+      attackType: ATTACKER_ATTACK_TYPE,
       swapWeps: SWAP_ATTACKER_WEPS,
     }),
   );
@@ -3543,6 +3716,8 @@ function main() {
       m2V: getV(a.misc2.name, a.misc2.crystal, '', '', 2),
       cfg,
       role: 'A',
+      attackTypeRaw: ATTACKER_ATTACK_TYPE,
+      attackStyleRoundMode: ATTACK_STYLE_ROUND_MODE,
     });
 
     if (SWAP_ATTACKER_WEPS) swapWeaponsInPlace(attacker);
@@ -3584,7 +3759,7 @@ function main() {
       console.log(`${sGray('  Weps :')} ${w1Str}  +  ${w2Str}`);
       console.log(`${sGray('  Miscs:')} ${misc1Str}  +  ${misc2Str}`);
       console.log(
-        `${sGray('  Stats:')} HP=${attacker.hp} Spd=${attacker.speed} Acc=${attacker.acc} Dod=${attacker.dodge} ` +
+        `${sGray('  Stats:')} HP=${attacker.hp} Spd=${attacker.speed} Acc=${attacker.acc} Dod=${attacker.dodge} Style=${attacker.attackType} ` +
           `Arm=${attacker.armor} (armF=${attacker.armorFactor.toFixed(6)})`,
       );
       console.log(
@@ -3621,6 +3796,9 @@ function main() {
       tacticsVal: cfg.tacticsVal,
       sharedHit: cfg.sharedHit,
       sharedSkillMode: cfg.sharedSkillMode,
+      attackerAttackType: ATTACKER_ATTACK_TYPE,
+      defenderAttackType: DEFENDER_ATTACK_TYPE_OVERRIDE || 'payload',
+      attackStyleRoundMode: ATTACK_STYLE_ROUND_MODE,
 
       crystalStackStats: cfg.crystalStackStats,
       crystalStackDmg: cfg.crystalStackDmg,
@@ -3657,6 +3835,7 @@ function main() {
       `DMG_ROLL=${cfg.dmgRoll} | CRYS=${cfg.crystalStackStats}/${cfg.crystalStackDmg}${armStatTag} | PROJ_DEF_MULT=${cfg.projDefMult} | ` +
       `SHARED_HIT=${cfg.sharedHit ? 'ON' : 'OFF'} | SHARED_SKILL=${cfg.sharedSkillMode} | ` +
       `SPEED_TIE=${cfg.speedTieMode} | HIDDEN=${cfg.hiddenPreset} | ` +
+      `STYLE=A:${ATTACKER_ATTACK_TYPE} D:${DEFENDER_ATTACK_TYPE_OVERRIDE || 'payload'}@${ATTACK_STYLE_ROUND_MODE} | ` +
       `TACTICS=${tactTag} | ARMOR_K=${cfg.armorK} | ARMOR_APPLY=${cfg.armorApply} ARMOR_ROUND=${cfg.armorRound} | ` +
       `KEY=${logicKeyHex} ===`;
 
@@ -3666,7 +3845,7 @@ function main() {
       `SKILL=${cfg.skillRollMode}${cfg.skillGe ? '+GE' : ''}/${cfg.skillQround} ` +
       `DMG=${cfg.dmgRoll} CRYS=${cfg.crystalStackStats}/${cfg.crystalStackDmg}${armStatTag} ARMOR=K${cfg.armorK} ${cfg.armorApply}/${cfg.armorRound} ` +
       `SHIT=${cfg.sharedHit ? 1 : 0} SSK=${cfg.sharedSkillMode} ` +
-      `TIE=${cfg.speedTieMode} HIDDEN=${cfg.hiddenPreset} TACT=${tactTag} ` +
+      `TIE=${cfg.speedTieMode} HIDDEN=${cfg.hiddenPreset} STYLE=A:${ATTACKER_ATTACK_TYPE} D:${DEFENDER_ATTACK_TYPE_OVERRIDE || 'payload'}@${ATTACK_STYLE_ROUND_MODE} TACT=${tactTag} ` +
       `MISC=${MISC_NO_CRYSTAL_SKILL_TWEAK_TAG} KEY=${logicKeyHex}`;
 
     console.log(outputVerbose ? variantLineVerbose : variantLineCompact);
@@ -3710,6 +3889,8 @@ function main() {
       logicKey: logicKeyHex,
       runKey: runKeyHex,
       baselineKey: baselineKeyHex,
+      attackerAttackType: ATTACKER_ATTACK_TYPE,
+      defenderAttackType: DEFENDER_ATTACK_TYPE_OVERRIDE || 'payload',
       config: cfgSigObj,
       defenders: [],
     };
@@ -3780,6 +3961,8 @@ function main() {
         m2V: getV(payload.misc2.name, partCrystal(payload.misc2), '', '', 2),
         cfg,
         role: 'D',
+        attackTypeRaw: resolveDefenderAttackType(payload),
+        attackStyleRoundMode: ATTACK_STYLE_ROUND_MODE,
       });
 
       if (SWAP_DEFENDER_WEPS) swapWeaponsInPlace(defender);
@@ -3804,9 +3987,9 @@ function main() {
         const dArmorCr = (payload && payload.armor ? partCrystal(payload.armor) : '') || '';
         console.log(
           `  DBG: ` +
-            `A(Spd=${attacker.speed} Acc=${attacker.acc} Dod=${attacker.dodge} Arm=${attacker.armor} f=${attacker.armorFactor.toFixed(6)} ` +
+            `A(Style=${attacker.attackType} Spd=${attacker.speed} Acc=${attacker.acc} Dod=${attacker.dodge} Arm=${attacker.armor} f=${attacker.armorFactor.toFixed(6)} ` +
             `Gun=${attacker.gun} Mel=${attacker.mel} Prj=${attacker.prj} Def=${attacker.defSk}) | ` +
-            `D(Spd=${defender.speed} Acc=${defender.acc} Dod=${defender.dodge} Arm=${defender.armor} f=${defender.armorFactor.toFixed(6)} ` +
+            `D(Style=${defender.attackType} Spd=${defender.speed} Acc=${defender.acc} Dod=${defender.dodge} Arm=${defender.armor} f=${defender.armorFactor.toFixed(6)} ` +
             `Gun=${defender.gun} Mel=${defender.mel} Prj=${defender.prj} Def=${defender.defSk}) | ` +
             (aArmorName ? `A_armor=${aArmorName}${aArmorCr ? ` [${aArmorCr}]` : ''} | ` : '') +
             (dArmorName ? `D_armor=${dArmorName}${dArmorCr ? ` [${dArmorCr}]` : ''} | ` : '') +
@@ -3989,6 +4172,8 @@ function main() {
         exportVariant.defenders.push({
           name,
           first: firstDisp,
+          attackerAttackType: attacker.attackType,
+          defenderAttackType: defender.attackType,
           winPct,
           avgTurns: avgT,
           turnsMin: stats.turnsMin,
@@ -4605,16 +4790,31 @@ function main() {
       createdUtc: new Date().toISOString(),
       script: path.basename(__filename),
       cwd: process.cwd(),
+      resolvedConfig: {
+        attackerPreset: ATTACKER_PRESET,
+        attackerSource: ATTACKER_SOURCE,
+        defenderSourceFile: DEFENDER_SOURCE_FILE,
+      },
+      resolvedBuilds: {
+        attacker: resolvedAttackerBuild,
+        defendersByName: resolvedDefenderBuildsByName,
+      },
+      resolvedHashes: {
+        attacker: resolvedAttackerHash,
+        defendersByName: resolvedDefenderHashesByName,
+      },
       attacker: {
         name: ATTACKER_PRESET,
         source: ATTACKER_SOURCE,
         raw: ATTACKER_PRESET_RAW,
+        attackType: ATTACKER_ATTACK_TYPE,
       },
       defenders: {
         sourceFile: DEFENDER_SOURCE_FILE,
         requested: verifySelection.raw,
         selector: verifySelection.mode,
         names: defenderNames,
+        attackTypeOverride: DEFENDER_ATTACK_TYPE_OVERRIDE,
       },
       run: {
         trials,
@@ -4626,6 +4826,7 @@ function main() {
         compareBaselines,
         baselineFile: baselinesFile,
         baselineKeyOverride,
+        attackStyleRoundMode: ATTACK_STYLE_ROUND_MODE,
       },
       variants: exportVariants,
     };
