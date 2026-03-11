@@ -58,6 +58,14 @@ const USER_CONFIG = {
   defenders: {
     file: 'data/legacy-defenders.js',
   },
+
+  // Normal default: edit this block for routine runs.
+  // One-off runs can still override these values with LEGACY_* env vars.
+  style: {
+    attackerAttackType: '', // '' = use attacker build attackType
+    defenderAttackType: '', // '' = use each defender payload attackType
+    roundMode: 'floor', // 'floor' | 'round' | 'ceil'
+  },
 };
 // === END USER CONFIG =========================================================
 
@@ -99,9 +107,12 @@ const __DEFAULT_ENV__ = {
   LEGACY_DIAG_RANGE_DEFENDER: '',
 
   LEGACY_ATTACKER_PRESET: 'MAUL_CSTAFF',
-  LEGACY_ATTACKER_ATTACK_TYPE: '',
-  LEGACY_DEFENDER_ATTACK_TYPE: '',
-  LEGACY_ATTACK_STYLE_ROUND: 'floor',
+  LEGACY_ATTACKER_ATTACK_TYPE:
+    USER_CONFIG && USER_CONFIG.style ? String(USER_CONFIG.style.attackerAttackType || '') : '',
+  LEGACY_DEFENDER_ATTACK_TYPE:
+    USER_CONFIG && USER_CONFIG.style ? String(USER_CONFIG.style.defenderAttackType || '') : '',
+  LEGACY_ATTACK_STYLE_ROUND:
+    USER_CONFIG && USER_CONFIG.style ? String(USER_CONFIG.style.roundMode || 'floor') : 'floor',
   LEGACY_DEFENDER_FILE: '', // optional override for defender payload file
   LEGACY_VERIFY_DEFENDERS:
     'SG1 Split Bombs T2,DL Gun Build,DL Gun Build 2,DL Gun Build 3,DL Gun Build 4,DL Gun Build 5,DL Gun Build 6,DL Gun Build 7,DL Gun Build 8,T2 Scythe Build,HF Core/Void,Core/Void Build 1,Dual Bow Build 1,Rift Bow Build 1,Armour stack Cores',
@@ -235,9 +246,12 @@ function stableStringify(x) {
 function normalizeResolvedBuildPartCrystal(part) {
   if (!part) return '';
   if (typeof part.crystal === 'string' && part.crystal) return String(part.crystal).trim();
-  if (typeof part.crystalName === 'string' && part.crystalName) return String(part.crystalName).trim();
-  if (Array.isArray(part.crystals) && part.crystals.length) return String(part.crystals[0] || '').trim();
-  if (Array.isArray(part.upgrades) && part.upgrades.length) return String(part.upgrades[0] || '').trim();
+  if (typeof part.crystalName === 'string' && part.crystalName)
+    return String(part.crystalName).trim();
+  if (Array.isArray(part.crystals) && part.crystals.length)
+    return String(part.crystals[0] || '').trim();
+  if (Array.isArray(part.upgrades) && part.upgrades.length)
+    return String(part.upgrades[0] || '').trim();
   if (typeof part.upgrades === 'string' && part.upgrades) return String(part.upgrades).trim();
   return '';
 }
@@ -284,7 +298,9 @@ function normalizeResolvedBuild(build, attackTypeRaw) {
     weapon2: normalizeResolvedBuildPart(build && build.weapon2, 'weapon'),
     misc1: normalizeResolvedBuildPart(build && build.misc1, 'misc'),
     misc2: normalizeResolvedBuildPart(build && build.misc2, 'misc'),
-    attackType: normalizeAttackType(attackTypeRaw !== undefined ? attackTypeRaw : build && build.attackType),
+    attackType: normalizeAttackType(
+      attackTypeRaw !== undefined ? attackTypeRaw : build && build.attackType,
+    ),
   };
 }
 
@@ -2500,9 +2516,7 @@ if (!ATTACKER_BUILD) {
 }
 
 const ATTACK_STYLE_ROUND_MODE = (() => {
-  const raw = String(pickEnv('LEGACY_ATTACK_STYLE_ROUND', 'floor'))
-    .trim()
-    .toLowerCase();
+  const raw = String(pickEnv('LEGACY_ATTACK_STYLE_ROUND', 'floor')).trim().toLowerCase();
   return raw === 'round' || raw === 'ceil' ? raw : 'floor';
 })();
 
@@ -2517,12 +2531,16 @@ const DEFENDER_ATTACK_TYPE_OVERRIDE = (() => {
 })();
 
 const ATTACKER_ATTACK_TYPE =
-  ATTACKER_ATTACK_TYPE_OVERRIDE || resolveSupportedAttackType(ATTACKER_BUILD.attackType, 'attacker build attackType');
+  ATTACKER_ATTACK_TYPE_OVERRIDE ||
+  resolveSupportedAttackType(ATTACKER_BUILD.attackType, 'attacker build attackType');
 
 function resolveDefenderAttackType(payload) {
   return (
-    DEFENDER_ATTACK_TYPE_OVERRIDE
-    || resolveSupportedAttackType(payload && payload.attackType, `defender "${payload && payload.name ? payload.name : 'payload'}" attackType`)
+    DEFENDER_ATTACK_TYPE_OVERRIDE ||
+    resolveSupportedAttackType(
+      payload && payload.attackType,
+      `defender "${payload && payload.name ? payload.name : 'payload'}" attackType`,
+    )
   );
 }
 

@@ -132,6 +132,15 @@ const PLAN_SWEEP_CONFIG = {
   },
 };
 
+// Normal default: edit this block for routine runs.
+// One-off runs can still override these values with LEGACY_* env vars.
+const ATTACK_STYLE_CONFIG = {
+  mode: 'lock', // 'lock' | 'sweep'
+  attackerAttackType: 'normal', // 'normal' | 'aimed' | 'cover'
+  attackStyleSet: ['normal', 'aimed', 'cover'],
+  roundMode: 'floor', // 'floor' | 'round' | 'ceil'
+};
+
 // =====================
 // POOLS
 // =====================
@@ -1902,18 +1911,20 @@ const VARIANT_CFG = (() => {
 })();
 
 const ATTACK_STYLE_ROUND_MODE = (() => {
-  const raw = _envStr('LEGACY_ATTACK_STYLE_ROUND', 'floor').trim().toLowerCase();
+  const raw = _envStr('LEGACY_ATTACK_STYLE_ROUND', ATTACK_STYLE_CONFIG.roundMode)
+    .trim()
+    .toLowerCase();
   return raw === 'round' || raw === 'ceil' ? raw : 'floor';
 })();
 const ATTACK_STYLE_MODE = (() => {
-  const raw = _envStr('LEGACY_ATTACK_STYLE_MODE', 'lock').trim().toLowerCase();
+  const raw = _envStr('LEGACY_ATTACK_STYLE_MODE', ATTACK_STYLE_CONFIG.mode).trim().toLowerCase();
   return raw === 'sweep' ? 'sweep' : 'lock';
 })();
 const ATTACKER_ATTACK_TYPE = normalizeBruteAttackType(
-  _envStr('LEGACY_ATTACKER_ATTACK_TYPE', 'normal'),
+  _envStr('LEGACY_ATTACKER_ATTACK_TYPE', ATTACK_STYLE_CONFIG.attackerAttackType),
 );
 const ATTACK_STYLE_SET = parseAttackStyleSet(
-  _envStr('LEGACY_ATTACK_STYLE_SET', 'normal,aimed,cover'),
+  _envStr('LEGACY_ATTACK_STYLE_SET', ATTACK_STYLE_CONFIG.attackStyleSet.join(',')),
 );
 const ACTIVE_ATTACKER_ATTACK_TYPES =
   ATTACK_STYLE_MODE === 'sweep' ? ATTACK_STYLE_SET.slice() : [ATTACKER_ATTACK_TYPE];
