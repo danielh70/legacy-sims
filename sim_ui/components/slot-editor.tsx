@@ -1,15 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 
 import { LegacyIcon } from '@/components/legacy-icon';
 import { type BuildPart, type ItemCatalogEntry, type SimCatalog } from '@/lib/engine/types';
 import {
   buttonClass,
+  chipClass,
   compactButtonClass,
-  innerSurfaceClass,
+  controlClass,
+  iconTileClass,
   labelClass,
   panelCardClass,
+  socketIconTileClass,
   twoLineClampClass,
 } from '@/lib/ui/layout-system';
 import {
@@ -17,21 +20,29 @@ import {
   buildFastCrystalList,
   getBuildPartSocketCrystals,
   getSlotPreview,
+  type SlotKey,
 } from '@/lib/ui/build-ux';
 import { getLegacyIconUrl } from '@/lib/ui/legacy-icons';
 
-interface SlotEditorProps {
+interface SlotEditorSlot {
+  key: SlotKey;
   label: string;
-  tint: 'attacker' | 'defender';
   value: BuildPart;
   items: ItemCatalogEntry[];
-  catalog: SimCatalog;
   errors?: string[];
-  onChange: (next: BuildPart) => void;
+}
+
+interface SlotEditorProps {
+  title: string;
+  tint: 'attacker' | 'defender';
+  slots: SlotEditorSlot[];
+  activeSlot: SlotKey;
+  catalog: SimCatalog;
+  onActiveSlotChange: (slot: SlotKey) => void;
+  onChange: (slot: SlotKey, next: BuildPart) => void;
   onClose: () => void;
 }
 
-const helperTextClass = 'text-xs text-ink/55';
 const baseButtonClass =
   'transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30';
 
@@ -40,16 +51,20 @@ function crystalLabel(name: string) {
 }
 
 export function SlotEditor({
-  label,
+  title,
   tint,
-  value,
-  items,
+  slots,
+  activeSlot,
   catalog,
-  errors = [],
+  onActiveSlotChange,
   onChange,
   onClose,
 }: SlotEditorProps) {
   const [activeSocket, setActiveSocket] = useState(0);
+  const [itemQuery, setItemQuery] = useState('');
+  const deferredItemQuery = useDeferredValue(itemQuery.trim().toLowerCase());
+  const currentSlot = slots.find((slot) => slot.key === activeSlot) || slots[0];
+  const { label, value, items, errors = [] } = currentSlot;
   const socketCrystals = useMemo(() => getBuildPartSocketCrystals(value), [value]);
   const crystalChoices = useMemo(() => buildFastCrystalList(value.crystal, catalog), [value.crystal, catalog]);
   const [paletteCrystal, setPaletteCrystal] = useState<string>(value.crystal || crystalChoices[0] || '');
@@ -59,21 +74,39 @@ export function SlotEditor({
   const compactStatLines = preview.statLines.slice(0, 3);
   const selectedSocketCrystal = socketCrystals[activeSocket] || '';
   const accentTone = tint === 'attacker' ? 'text-accent' : 'text-steel';
-  const accentBorder = tint === 'attacker' ? 'border-accent/20' : 'border-steel/20';
+  const accentSurfaceClass =
+    tint === 'attacker'
+      ? 'border-accent/18 bg-gradient-to-br from-panel/96 via-white/80 to-orange-50/74'
+      : 'border-steel/18 bg-gradient-to-br from-panel/96 via-white/80 to-sky-50/74';
   const activeItemClass =
     tint === 'attacker'
-      ? 'border-accent/45 bg-accent/10 text-accent'
-      : 'border-steel/45 bg-steel/10 text-steel';
+      ? 'border-accent/55 bg-accent/10 text-accent shadow-[0_12px_26px_rgba(180,90,47,0.14)]'
+      : 'border-steel/55 bg-steel/10 text-steel shadow-[0_12px_26px_rgba(44,73,84,0.14)]';
   const activeSocketClass =
     tint === 'attacker'
-      ? 'border-accent bg-accent/10 ring-2 ring-accent/25 shadow-[0_10px_24px_rgba(219,117,36,0.14)]'
-      : 'border-steel bg-steel/10 ring-2 ring-steel/25 shadow-[0_10px_24px_rgba(66,118,161,0.14)]';
+      ? 'border-accent bg-accent/10 shadow-[0_14px_28px_rgba(180,90,47,0.14)]'
+      : 'border-steel bg-steel/10 shadow-[0_14px_28px_rgba(44,73,84,0.14)]';
   const emphasisChipClass =
     tint === 'attacker'
       ? 'border-accent/20 bg-accent/10 text-accent'
       : 'border-steel/20 bg-steel/10 text-steel';
   const crystalComposition = socketCrystals.filter(Boolean).map(crystalLabel).join(' / ');
   const activeSocketSummary = selectedSocketCrystal ? crystalLabel(selectedSocketCrystal) : 'Empty';
+  const filledSocketCount = socketCrystals.filter(Boolean).length;
+
+  const filteredItems = useMemo(() => {
+    const sortedItems = [...items].sort((left, right) => {
+      if (left.name === value.name) return -1;
+      if (right.name === value.name) return 1;
+      return left.name.localeCompare(right.name);
+    });
+
+    if (!deferredItemQuery) return sortedItems;
+
+    return sortedItems.filter((entry) =>
+      entry.name.toLowerCase().includes(deferredItemQuery),
+    );
+  }, [deferredItemQuery, items, value.name]);
 
   useEffect(() => {
     if (selectedSocketCrystal) {
@@ -92,10 +125,15 @@ export function SlotEditor({
     value.crystal,
   ]);
 
+  useEffect(() => {
+    setActiveSocket(0);
+    setItemQuery('');
+  }, [activeSlot, title]);
+
   function commitSockets(nextSockets: string[]) {
     const normalized = Array.from({ length: BUILD_PART_SOCKET_COUNT }, (_, index) => nextSockets[index] || '');
     const primaryCrystal = normalized.find(Boolean) || '';
-    onChange({
+    onChange(currentSlot.key, {
       ...value,
       crystal: primaryCrystal,
       crystals: normalized,
@@ -107,6 +145,14 @@ export function SlotEditor({
     nextSockets[socketIndex] = nextCrystal;
     setPaletteCrystal(nextCrystal);
     commitSockets(nextSockets);
+    const nextEmptySocket = nextSockets.findIndex((crystal, index) => index > socketIndex && !crystal);
+    if (nextEmptySocket !== -1) {
+      setActiveSocket(nextEmptySocket);
+      return;
+    }
+    if (socketIndex < BUILD_PART_SOCKET_COUNT - 1) {
+      setActiveSocket(socketIndex + 1);
+    }
   }
 
   function clearSocket(socketIndex = activeSocket) {
@@ -139,7 +185,7 @@ export function SlotEditor({
   function updateUpgrade(slotIndex: number, nextValue: string) {
     const nextUpgrades = [...value.upgrades];
     nextUpgrades[slotIndex] = nextValue;
-    onChange({
+    onChange(currentSlot.key, {
       ...value,
       upgrades: nextUpgrades.filter(Boolean),
     });
@@ -147,45 +193,67 @@ export function SlotEditor({
 
   function updateItem(nextName: string) {
     const nextItem = catalog.itemsByName[nextName];
-    onChange({
+    onChange(currentSlot.key, {
       ...value,
       name: nextName,
-      upgrades: nextItem?.upgradeSlots?.length
-        ? value.upgrades.slice(0, nextItem.upgradeSlots.length)
-        : [],
+      upgrades: nextItem?.upgradeSlots?.length ? value.upgrades.slice(0, nextItem.upgradeSlots.length) : [],
     });
   }
 
   return (
-    <div className={`${panelCardClass} ${accentBorder} p-3.5`}>
-      <div className="flex items-start justify-between gap-3">
+    <section className={`${panelCardClass} ${accentSurfaceClass} w-full max-w-[1280px] p-5 md:p-6`}>
+      <div className="flex flex-col gap-4 border-b border-line/40 pb-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0">
-          <div className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${accentTone}`}>
-            Editing {label}
+          <div className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${accentTone}`}>
+            {title} Equipment
           </div>
-          <div className="mt-2 flex min-w-0 items-center gap-3">
+
+          <div className="mt-3 flex items-start gap-3">
             {getLegacyIconUrl(value.name) ? (
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-panel/55 ring-1 ring-line/10">
+              <div className={iconTileClass}>
                 <LegacyIcon name={value.name} size={30} />
               </div>
             ) : null}
+
             <div className="min-w-0">
-              <div className={twoLineClampClass} title={value.name}>
-                {value.name}
+              <div className="flex flex-wrap gap-1.5">
+                <span
+                  className={`inline-flex h-7 items-center rounded-full border px-3 text-[10px] font-semibold uppercase tracking-[0.14em] ${emphasisChipClass}`}
+                >
+                  {label}
+                </span>
+                <span className="inline-flex h-7 items-center rounded-full border border-line/50 bg-white/90 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/58">
+                  Sockets {filledSocketCount}/4
+                </span>
+                {upgradeSlots.length ? (
+                  <span className="inline-flex h-7 items-center rounded-full border border-line/50 bg-white/90 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/58">
+                    Upgrades {upgradeSlots.length}
+                  </span>
+                ) : null}
               </div>
-              {compactStatLines.length || preview.damageLine ? (
-                <div className="mt-1 flex flex-wrap gap-1.5">
+
+              <h2 className="mt-2 font-display text-[28px] font-semibold tracking-[-0.02em] text-ink">
+                {value.name}
+              </h2>
+
+              {(compactStatLines.length || preview.damageLine || crystalComposition) ? (
+                <div className="mt-2 flex flex-wrap gap-1.5">
                   {compactStatLines.map((line) => (
                     <span
                       key={`${label}-${line}`}
-                      className="inline-flex h-6 items-center rounded-full border border-line/50 bg-white/92 px-2.5 text-[11px] font-semibold text-ink/65"
+                      className={`${chipClass} bg-white/90`}
                     >
                       {line}
                     </span>
                   ))}
                   {preview.damageLine ? (
-                    <span className="inline-flex h-6 items-center rounded-full border border-accent/20 bg-accent/10 px-2.5 text-[11px] font-semibold text-accent">
+                    <span className={`${chipClass} border-accent/20 bg-accent/10 text-accent`}>
                       {preview.damageLine}
+                    </span>
+                  ) : null}
+                  {crystalComposition ? (
+                    <span className={`${chipClass} bg-white/90`}>
+                      {crystalComposition}
                     </span>
                   ) : null}
                 </div>
@@ -196,242 +264,317 @@ export function SlotEditor({
 
         <button
           type="button"
-          className={`${buttonClass} px-3 text-ink/70`}
+          className={buttonClass}
           onClick={onClose}
         >
-          Close
+          Done
         </button>
       </div>
 
       {errors.length ? (
-        <div className="mt-3 rounded-2xl border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700">
+        <div className="mt-4 rounded-[20px] border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
           {errors.join(' ')}
         </div>
       ) : null}
 
-      <div className="mt-3.5 grid gap-3.5 border-t border-line/35 pt-3.5">
-        <div className={`${innerSurfaceClass} bg-white/72 px-3 py-3`}>
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <div>
-              <div className={labelClass}>Item Picker</div>
-              <div className={helperTextClass}>Choose the equipped item for this slot.</div>
-            </div>
-            <div className="text-[11px] text-ink/40">{items.length} options</div>
-          </div>
-
-          <div className="grid max-h-[16rem] gap-2 overflow-auto pr-1 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-            {items.map((entry) => {
-              const active = entry.name === value.name;
-              const itemIconUrl = getLegacyIconUrl(entry.name);
-
-              return (
-                <button
-                  key={`${label}-${entry.name}`}
-                  type="button"
-                  className={`${baseButtonClass} rounded-2xl border bg-white/92 p-2.5 text-left ring-1 ring-line/10 hover:border-line/80 ${
-                    active ? activeItemClass : 'border-transparent text-ink'
-                  }`}
-                  onClick={() => updateItem(entry.name)}
-                  title={entry.name}
-                >
-                  <div className="flex items-start gap-2.5">
-                    {itemIconUrl ? (
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-panel/55 ring-1 ring-line/10">
-                        <LegacyIcon name={entry.name} size={24} />
-                      </div>
-                    ) : null}
-                    <div className="min-w-0 flex-1">
-                      <div className={twoLineClampClass}>{entry.name}</div>
-                      {entry.baseWeaponDamage ? (
-                        <div className="mt-1 text-[11px] text-ink/55">
-                          Damage {entry.baseWeaponDamage.min}-{entry.baseWeaponDamage.max}
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className={`${innerSurfaceClass} bg-white/72 px-3 py-3`}>
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <div>
-              <div className={labelClass}>Crystal Editor</div>
-              <div className={helperTextClass}>Choose socket, then crystal. Bulk fill and clear stay close by.</div>
-            </div>
-            <div className={`inline-flex h-8 items-center rounded-full border px-2.5 text-[11px] font-semibold ${emphasisChipClass}`}>
-              Socket {activeSocket + 1} · {activeSocketSummary}
-            </div>
-          </div>
-
-          <div className="grid gap-3">
-            <div className="grid gap-2.5">
-              <div className="grid grid-cols-4 gap-2">
-                {socketCrystals.map((crystal, index) => {
-                  const active = index === activeSocket;
-                  return (
-                    <button
-                      key={`${label}-socket-${index}`}
-                      type="button"
-                      className={`${baseButtonClass} rounded-2xl border bg-white/92 p-2.5 text-center ring-1 ring-line/10 hover:border-line/80 ${
-                        active ? activeSocketClass : 'border-transparent'
-                      }`}
-                      onClick={() => setActiveSocket(index)}
-                      title={crystal || `Socket ${index + 1}`}
-                    >
-                      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink/40">
-                        {index + 1}
-                      </div>
-                      <div className="mt-1 flex h-10 items-center justify-center">
-                        {crystal ? (
-                          <LegacyIcon name={crystal} size={22} />
-                        ) : (
-                          <span className="text-lg font-semibold text-ink/25">+</span>
-                        )}
-                      </div>
-                      <div className="mt-1 truncate text-[11px] font-medium text-ink/60">
-                        {crystal ? crystalLabel(crystal) : 'Empty'}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  type="button"
-                  className={`${baseButtonClass} ${compactButtonClass} ${emphasisChipClass}`}
-                  onClick={fillAll}
-                >
-                  Fill All 4
-                </button>
-                <button
-                  type="button"
-                  className={`${baseButtonClass} ${compactButtonClass} ${emphasisChipClass}`}
-                  onClick={fillRemaining}
-                >
-                  Fill Remaining
-                </button>
-                <button
-                  type="button"
-                  className={`${baseButtonClass} ${compactButtonClass} border-line/50 bg-white/92 text-ink/70 hover:border-accent hover:text-accent`}
-                  onClick={() => clearSocket()}
-                >
-                  Clear Socket
-                </button>
-                <button
-                  type="button"
-                  className={`${baseButtonClass} ${compactButtonClass} border-line/50 bg-white/92 text-ink/70 hover:border-accent hover:text-accent`}
-                  onClick={copyFirstToAll}
-                >
-                  Copy 1st to All
-                </button>
-                <button
-                  type="button"
-                  className={`${baseButtonClass} ${compactButtonClass} border-line/50 bg-white/92 text-ink/70 hover:border-accent hover:text-accent`}
-                  onClick={clearAll}
-                >
-                  Clear All
-                </button>
-              </div>
-
-              <div className="rounded-2xl bg-white/92 px-3 py-2 ring-1 ring-line/10">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/40">
-                  Current Composition
-                </div>
-                <div className="mt-1 text-sm font-medium text-ink/75">
-                  {crystalComposition || 'No crystals selected'}
-                </div>
-              </div>
+      <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)]">
+        <div className="grid gap-5">
+          <section>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className={labelClass}>Choose Slot</div>
+              <div className="text-sm text-ink/52">Five slots, one editor.</div>
             </div>
 
-            <div>
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <div className={labelClass}>Crystal Palette</div>
-                <div className="inline-flex h-7 items-center rounded-full border border-line/50 bg-white/92 px-2.5 text-[11px] font-semibold text-ink/65">
-                  Palette · {paletteCrystal ? crystalLabel(paletteCrystal) : 'Choose'}
-                </div>
-              </div>
-
-              <div className="grid max-h-[15rem] gap-2 overflow-auto pr-1 grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3">
-                {crystalChoices.map((crystal) => {
-                  const active = crystal === paletteCrystal;
-                  return (
-                    <button
-                      key={`${label}-${crystal}`}
-                      type="button"
-                      className={`${baseButtonClass} flex min-h-[84px] flex-col items-center justify-center gap-2 rounded-2xl border bg-white/92 px-2 py-3 text-center ring-1 ring-line/10 hover:border-line/80 ${
-                        active ? activeItemClass : 'border-transparent text-ink'
-                      }`}
-                      onClick={() => assignCrystalToSocket(crystal)}
-                      title={crystal}
-                    >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-panel/55 ring-1 ring-line/10">
-                        <LegacyIcon name={crystal} size={24} />
-                      </div>
-                      <span className="min-w-0 break-words text-[11px] font-semibold leading-4">
-                        {crystalLabel(crystal)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {upgradeSlots.length ? (
-          <div>
-            <div className="mb-2">
-              <div className={labelClass}>Upgrades</div>
-              <div className={helperTextClass}>Only shown for items that support weapon upgrades.</div>
-            </div>
-
-            <div className="grid gap-2">
-              {upgradeSlots.map((slotOptions, slotIndex) => {
-                const options = [
-                  'None',
-                  ...slotOptions.filter((option) => catalog.upgrades.includes(option)),
-                ];
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 2xl:grid-cols-5">
+              {slots.map((slot) => {
+                const active = slot.key === currentSlot.key;
+                const slotPreview = getSlotPreview(slot.value, catalog);
+                const slotCrystals = getBuildPartSocketCrystals(slot.value);
 
                 return (
-                  <div
-                    key={`${label}-upgrade-${slotIndex}`}
-                    className="rounded-2xl bg-white/92 px-3 py-2 ring-1 ring-line/10"
+                  <button
+                    key={`${title}-${slot.key}`}
+                    type="button"
+                    className={`${baseButtonClass} rounded-[20px] border p-3 text-left ${
+                      active ? activeItemClass : 'border-line/55 bg-white/76 text-ink hover:border-line/80'
+                    }`}
+                    onClick={() => onActiveSlotChange(slot.key)}
                   >
-                    <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/45">
-                      Upgrade {slotIndex + 1}
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {options.map((option) => {
-                        const active = (value.upgrades[slotIndex] || 'None') === option;
+                    <div className="flex items-start gap-3">
+                      {getLegacyIconUrl(slot.value.name) ? (
+                        <div className={iconTileClass}>
+                          <LegacyIcon name={slot.value.name} size={24} />
+                        </div>
+                      ) : null}
 
-                        return (
-                          <button
-                            key={`${label}-upgrade-${slotIndex}-${option}`}
-                            type="button"
-                            className={`${baseButtonClass} inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[11px] font-semibold ${
-                              active
-                                ? activeItemClass
-                                : 'border-line/50 bg-white text-ink/70 hover:border-accent hover:text-accent'
-                            }`}
-                            onClick={() => updateUpgrade(slotIndex, option === 'None' ? '' : option)}
-                          >
-                            {option !== 'None' ? <LegacyIcon name={option} size={14} /> : null}
-                            <span>{option}</span>
-                          </button>
-                        );
-                      })}
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/48">
+                          {slot.label}
+                        </div>
+                        <div className="truncate text-sm font-semibold text-ink" title={slot.value.name}>
+                          {slot.value.name}
+                        </div>
+                        <div className="mt-1 text-xs text-ink/54">
+                          {slotPreview.damageLine || slotPreview.statLines[0] || 'No preview'}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+
+                    <div className="mt-3 grid grid-cols-4 gap-1.5">
+                      {slotCrystals.map((crystal, index) => (
+                        <span
+                          key={`${slot.key}-${index}`}
+                          className={`${socketIconTileClass} h-9 w-full rounded-xl ${
+                            crystal ? 'bg-white/92' : 'bg-panel/45'
+                          }`}
+                          title={crystal || `Socket ${index + 1}`}
+                        >
+                          {crystal ? (
+                            getLegacyIconUrl(crystal) ? (
+                              <LegacyIcon name={crystal} size={18} />
+                            ) : (
+                              <span className="text-[10px] font-semibold text-ink/60">
+                                {crystalLabel(crystal).slice(0, 2)}
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-xs font-semibold text-ink/25">+</span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  </button>
                 );
               })}
             </div>
-          </div>
-        ) : null}
+          </section>
+
+          <section className="border-t border-line/40 pt-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <div className={labelClass}>Choose Item</div>
+                <div className="mt-1 text-sm text-ink/52">
+                  {filteredItems.length} option{filteredItems.length === 1 ? '' : 's'} visible
+                </div>
+              </div>
+
+              <label className="grid gap-1 text-sm md:w-[280px]">
+                <span className={labelClass}>Search</span>
+                <input
+                  className={controlClass}
+                  type="search"
+                  value={itemQuery}
+                  onChange={(event) => setItemQuery(event.target.value)}
+                  placeholder={`Find ${label.toLowerCase()}`}
+                />
+              </label>
+            </div>
+
+            <div className="mt-3 grid max-h-[34rem] gap-2 overflow-auto pr-1 sm:grid-cols-2">
+              {filteredItems.map((entry) => {
+                const active = entry.name === value.name;
+                const itemIconUrl = getLegacyIconUrl(entry.name);
+
+                return (
+                  <button
+                    key={`${label}-${entry.name}`}
+                    type="button"
+                    className={`${baseButtonClass} rounded-[20px] border p-3 text-left ${
+                      active ? activeItemClass : 'border-line/55 bg-white/76 text-ink hover:border-line/80'
+                    }`}
+                    onClick={() => updateItem(entry.name)}
+                    title={entry.name}
+                  >
+                    <div className="flex items-start gap-3">
+                      {itemIconUrl ? (
+                        <div className={iconTileClass}>
+                          <LegacyIcon name={entry.name} size={26} />
+                        </div>
+                      ) : null}
+                      <div className="min-w-0 flex-1">
+                        <div className={twoLineClampClass}>{entry.name}</div>
+                        {entry.baseWeaponDamage ? (
+                          <div className="mt-1 text-sm text-ink/56">
+                            Damage {entry.baseWeaponDamage.min}-{entry.baseWeaponDamage.max}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+
+        <div className="grid gap-5">
+          <section className="rounded-[22px] border border-line/55 bg-white/76 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className={labelClass}>Socket Focus</div>
+              <span
+                className={`inline-flex h-7 items-center rounded-full border px-3 text-[10px] font-semibold uppercase tracking-[0.14em] ${emphasisChipClass}`}
+              >
+                Socket {activeSocket + 1} · {activeSocketSummary}
+              </span>
+            </div>
+
+            <div className="mt-3 grid grid-cols-4 gap-2">
+              {socketCrystals.map((crystal, index) => {
+                const active = index === activeSocket;
+                return (
+                  <button
+                    key={`${label}-socket-${index}`}
+                    type="button"
+                    className={`${baseButtonClass} min-h-[104px] rounded-[20px] border bg-white/88 p-3 text-center ${
+                      active ? activeSocketClass : 'border-line/50 hover:border-line/80'
+                    }`}
+                    onClick={() => setActiveSocket(index)}
+                    title={crystal || `Socket ${index + 1}`}
+                  >
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink/40">
+                      {index + 1}
+                    </div>
+                    <div className="mt-2 flex h-10 items-center justify-center">
+                      {crystal ? (
+                        <LegacyIcon name={crystal} size={24} />
+                      ) : (
+                        <span className="text-lg font-semibold text-ink/25">+</span>
+                      )}
+                    </div>
+                    <div className="mt-2 truncate text-xs font-medium text-ink/58">
+                      {crystal ? crystalLabel(crystal) : 'Empty'}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                className={`${baseButtonClass} ${compactButtonClass} ${emphasisChipClass}`}
+                onClick={fillAll}
+              >
+                Fill All 4
+              </button>
+              <button
+                type="button"
+                className={`${baseButtonClass} ${compactButtonClass} ${emphasisChipClass}`}
+                onClick={fillRemaining}
+              >
+                Fill Remaining
+              </button>
+              <button
+                type="button"
+                className={`${baseButtonClass} ${compactButtonClass} border-line/50 bg-white text-ink/70 hover:border-accent hover:text-accent`}
+                onClick={() => clearSocket()}
+              >
+                Clear Socket
+              </button>
+              <button
+                type="button"
+                className={`${baseButtonClass} ${compactButtonClass} border-line/50 bg-white text-ink/70 hover:border-accent hover:text-accent`}
+                onClick={copyFirstToAll}
+              >
+                Copy 1st to All
+              </button>
+              <button
+                type="button"
+                className={`${baseButtonClass} ${compactButtonClass} border-line/50 bg-white text-ink/70 hover:border-accent hover:text-accent`}
+                onClick={clearAll}
+              >
+                Clear All
+              </button>
+            </div>
+
+            <div className="mt-3 rounded-[18px] border border-line/45 bg-white/88 px-3 py-3">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/42">
+                Current Composition
+              </div>
+              <div className="mt-1 text-sm font-medium text-ink/72">
+                {crystalComposition || 'No crystals selected'}
+              </div>
+            </div>
+          </section>
+
+          {upgradeSlots.length ? (
+            <section className="rounded-[22px] border border-line/55 bg-white/76 p-4">
+              <div className={labelClass}>Upgrades</div>
+              <div className="mt-3 grid gap-2">
+                {upgradeSlots.map((slotOptions, slotIndex) => {
+                  const options = ['None', ...slotOptions.filter((option) => catalog.upgrades.includes(option))];
+
+                  return (
+                    <div
+                      key={`${label}-upgrade-${slotIndex}`}
+                      className="rounded-[18px] border border-line/45 bg-white/88 px-3 py-3"
+                    >
+                      <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/42">
+                        Upgrade {slotIndex + 1}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {options.map((option) => {
+                          const active = (value.upgrades[slotIndex] || 'None') === option;
+
+                          return (
+                            <button
+                              key={`${label}-upgrade-${slotIndex}-${option}`}
+                              type="button"
+                              className={`${baseButtonClass} ${compactButtonClass} gap-1.5 ${
+                                active
+                                  ? activeItemClass
+                                  : 'border-line/50 bg-white text-ink/70 hover:border-accent hover:text-accent'
+                              }`}
+                              onClick={() => updateUpgrade(slotIndex, option === 'None' ? '' : option)}
+                            >
+                              {option !== 'None' ? <LegacyIcon name={option} size={14} /> : null}
+                              <span>{option}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+
+          <section className="rounded-[22px] border border-line/55 bg-white/76 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className={labelClass}>Crystal Palette</div>
+              <span className="inline-flex h-7 items-center rounded-full border border-line/50 bg-white/90 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/58">
+                Click to apply · {paletteCrystal ? crystalLabel(paletteCrystal) : 'Choose'}
+              </span>
+            </div>
+
+            <div className="mt-3 grid max-h-[34rem] grid-cols-2 gap-2 overflow-auto pr-1">
+              {crystalChoices.map((crystal) => {
+                const active = crystal === paletteCrystal;
+
+                return (
+                  <button
+                    key={`${label}-${crystal}`}
+                    type="button"
+                    className={`${baseButtonClass} flex min-h-[104px] flex-col items-center justify-center gap-2 rounded-[20px] border p-3 text-center ${
+                      active ? activeItemClass : 'border-line/55 bg-white/88 text-ink hover:border-line/80'
+                    }`}
+                    onClick={() => assignCrystalToSocket(crystal)}
+                    title={crystal}
+                  >
+                    <div className={iconTileClass}>
+                      <LegacyIcon name={crystal} size={26} />
+                    </div>
+                    <span className="text-xs font-semibold leading-4 text-ink">
+                      {crystalLabel(crystal)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

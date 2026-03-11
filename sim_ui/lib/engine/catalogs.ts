@@ -3,6 +3,7 @@ import 'server-only';
 import { loadLegacyModules } from '@/lib/engine/legacy-source';
 import {
   cloneBuild,
+  normalizeAttackStyle,
   type CrystalCatalogEntry,
   type ItemCatalogEntry,
   type NamedBuildPreset,
@@ -62,6 +63,7 @@ function normalizePart(part: any) {
 
 function normalizeBuild(build: SimBuild): SimBuild {
   return cloneBuild({
+    attackStyle: normalizeAttackStyle((build as SimBuild & { attackType?: string }).attackStyle ?? (build as SimBuild & { attackType?: string }).attackType),
     stats: {
       level: Number(build.stats.level),
       hp: Number(build.stats.hp),

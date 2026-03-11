@@ -1,6 +1,7 @@
 export type BuildSide = 'attacker' | 'defender';
 export type ItemType = 'Armor' | 'Weapon' | 'Misc';
 export type SkillType = 'gunSkill' | 'meleeSkill' | 'projSkill';
+export type AttackStyle = 'normal' | 'aimed' | 'cover';
 export type StatModifierKey =
   | 'armor'
   | 'speed'
@@ -28,6 +29,7 @@ export interface BuildPart {
 }
 
 export interface SimBuild {
+  attackStyle: AttackStyle;
   stats: BuildStats;
   armor: BuildPart;
   weapon1: BuildPart;
@@ -119,6 +121,7 @@ export interface SideSummary {
 }
 
 export interface CompiledCombatant {
+  attackType?: AttackStyle;
   hp: number;
   level: number;
   speed: number;
@@ -160,6 +163,77 @@ export function cloneBuild<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+export function normalizeAttackStyle(value: unknown): AttackStyle {
+  const token = String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+
+  if (token === 'aimed' || token === 'aim' || token === 'aimed attack' || token === 'aimed atk') {
+    return 'aimed';
+  }
+
+  if (
+    token === 'cover' ||
+    token === 'covered' ||
+    token === 'take cover' ||
+    token === 'cover attack'
+  ) {
+    return 'cover';
+  }
+
+  return 'normal';
+}
+
+export function normalizeBuildPart(value: unknown): BuildPart {
+  const part = (value && typeof value === 'object' ? value : {}) as Partial<BuildPart> & {
+    crystalName?: unknown;
+    upgrade1?: unknown;
+    upgrade2?: unknown;
+  };
+
+  const upgrades = Array.isArray(part.upgrades)
+    ? part.upgrades.filter((entry): entry is string => typeof entry === 'string')
+    : [part.upgrade1, part.upgrade2].filter((entry): entry is string => typeof entry === 'string' && Boolean(entry));
+  const crystals = Array.isArray(part.crystals)
+    ? part.crystals.filter((entry): entry is string => typeof entry === 'string')
+    : undefined;
+
+  return {
+    name: typeof part.name === 'string' ? part.name : '',
+    crystal:
+      (typeof part.crystal === 'string' && part.crystal) ||
+      (typeof part.crystalName === 'string' && part.crystalName) ||
+      crystals?.[0] ||
+      '',
+    upgrades,
+    crystals,
+  };
+}
+
+export function normalizeSimBuild(value: unknown): SimBuild {
+  const build = (value && typeof value === 'object' ? value : {}) as Partial<SimBuild> & {
+    attackType?: unknown;
+  };
+  const stats = (build.stats && typeof build.stats === 'object' ? build.stats : {}) as Partial<BuildStats>;
+
+  return {
+    attackStyle: normalizeAttackStyle(build.attackStyle ?? build.attackType),
+    stats: {
+      level: Math.max(0, Math.floor(Number(stats.level) || 0)),
+      hp: Math.max(0, Math.floor(Number(stats.hp) || 0)),
+      speed: Math.max(0, Math.floor(Number(stats.speed) || 0)),
+      dodge: Math.max(0, Math.floor(Number(stats.dodge) || 0)),
+      accuracy: Math.max(0, Math.floor(Number(stats.accuracy) || 0)),
+    },
+    armor: normalizeBuildPart(build.armor),
+    weapon1: normalizeBuildPart(build.weapon1),
+    weapon2: normalizeBuildPart(build.weapon2),
+    misc1: normalizeBuildPart(build.misc1),
+    misc2: normalizeBuildPart(build.misc2),
+  };
+}
+
 export function isBuildPart(value: unknown): value is BuildPart {
   if (!value || typeof value !== 'object') return false;
   const item = value as BuildPart;
@@ -168,8 +242,9 @@ export function isBuildPart(value: unknown): value is BuildPart {
 
 export function isSimBuild(value: unknown): value is SimBuild {
   if (!value || typeof value !== 'object') return false;
-  const build = value as SimBuild;
+  const build = value as SimBuild & { attackType?: unknown };
   return Boolean(
+    (typeof build.attackStyle === 'string' || typeof build.attackType === 'string') &&
     build.stats &&
       typeof build.stats.level === 'number' &&
       typeof build.stats.hp === 'number' &&

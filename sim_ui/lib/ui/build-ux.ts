@@ -31,7 +31,7 @@ export const FAST_CRYSTAL_ORDER = [
   'Berserker Crystal',
 ];
 
-export type SlotKey = keyof Omit<SimBuild, 'stats'>;
+export type SlotKey = keyof Omit<SimBuild, 'stats' | 'attackStyle'>;
 
 export interface SlotPreview {
   statLines: string[];

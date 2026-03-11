@@ -21,41 +21,41 @@ const path = require('path');
 // You can also override the file at runtime with LEGACY_DEFENDER_FILE.
 const USER_CONFIG = {
   attacker: {
-    mode: "custom", // env | preset | custom
-    preset: "MAUL_CSTAFF",
+    mode: 'custom', // env | preset | custom
+    preset: 'MAUL_CSTAFF',
 
     // Custom attacker build template (only used when mode='custom').
     // Tip: copy one of the ATTACKER_PRESETS below and paste it here to start.
     custom: {
-      stats: { level: 80, hp: 595, speed: 60, dodge: 68, accuracy: 14 },
+      stats: { level: 80, hp: 650, speed: 60, dodge: 57, accuracy: 14 },
       armor: {
-        name: "SG1 Armor",
-        crystal: "Abyss Crystal",
+        name: 'SG1 Armor',
+        crystal: 'Abyss Crystal',
         upgrades: [],
       },
 
       weapon1: {
-        name: "Crystal Maul",
-        crystal: "Perfect Fire Crystal",
+        name: 'Crystal Maul',
+        crystal: 'Perfect Fire Crystal',
         upgrades: [],
       },
-      weapon2: { name: "Core Staff", crystal: "Amulet Crystal", upgrades: [] },
+      weapon2: { name: 'Core Staff', crystal: 'Amulet Crystal', upgrades: [] },
 
       misc1: {
-        name: "Bio Spinal Enhancer",
-        crystal: "Perfect Pink Crystal",
+        name: 'Bio Spinal Enhancer',
+        crystal: 'Perfect Pink Crystal',
         upgrades: [],
       },
       misc2: {
-        name: "Bio Spinal Enhancer",
-        crystal: "Perfect Pink Crystal",
+        name: 'Bio Spinal Enhancer',
+        crystal: 'Perfect Pink Crystal',
         upgrades: [],
       },
     },
   },
 
   defenders: {
-    file: "../data/legacy-defenders.js",
+    file: '../data/legacy-defenders.js',
   },
 };
 // === END USER CONFIG =========================================================
@@ -1334,6 +1334,42 @@ function roundWeaponDmg(x, mode) {
   if (mode === 'round') return Math.round(x);
   return Math.ceil(x); // default ceil
 }
+function normalizeAttackType(v) {
+  const s = String(v || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+  if (!s) return 'normal';
+  if (s === 'aimed' || s === 'aim' || s === 'aimed attack' || s === 'aimed atk') return 'aimed';
+  if (s === 'cover' || s === 'covered' || s === 'take cover' || s === 'cover attack')
+    return 'cover';
+  return 'normal';
+}
+function roundAttackStyleStat(v, mode) {
+  mode = String(mode || 'floor')
+    .trim()
+    .toLowerCase();
+  if (mode === 'round') return Math.round(v);
+  if (mode === 'ceil') return Math.ceil(v);
+  return Math.floor(v);
+}
+function applyAttackStyle(c, attackTypeRaw, roundMode = 'floor') {
+  if (!c) return c;
+  const attackType = normalizeAttackType(attackTypeRaw);
+  c.attackType = attackType;
+
+  if (attackType === 'aimed') {
+    c.acc = Math.max(0, roundAttackStyleStat(c.acc * 1.2, roundMode));
+    c.dodge = Math.max(0, roundAttackStyleStat(c.dodge * 0.9, roundMode));
+    c.speed = Math.max(0, roundAttackStyleStat(c.speed * 0.9, roundMode));
+  } else if (attackType === 'cover') {
+    c.dodge = Math.max(0, roundAttackStyleStat(c.dodge * 1.2, roundMode));
+    c.acc = Math.max(0, roundAttackStyleStat(c.acc * 0.9, roundMode));
+    c.speed = Math.max(0, roundAttackStyleStat(c.speed * 0.9, roundMode));
+  }
+
+  return c;
+}
 
 function normalizeCrystalStackMode(m) {
   m = String(m || 'sum4')
@@ -1550,7 +1586,18 @@ function computeVariant(itemName, crystalName, upgrades = [], cfg, slotTag = 0) 
   };
 }
 
-function compileCombatantFromParts({ name, stats, armorV, w1V, w2V, m1V, m2V, cfg, role }) {
+function compileCombatantFromParts({
+  name,
+  stats,
+  armorV,
+  w1V,
+  w2V,
+  m1V,
+  m2V,
+  cfg,
+  role,
+  attackTypeRaw,
+}) {
   const level = Math.floor(Number(stats.level));
   const hp = Math.floor(Number(stats.hp));
 
@@ -1627,6 +1674,7 @@ function compileCombatantFromParts({ name, stats, armorV, w1V, w2V, m1V, m2V, cf
   }
 
   applyHiddenRoleBonuses(c, role, cfg);
+  applyAttackStyle(c, attackTypeRaw, 'floor');
   return c;
 }
 
@@ -3335,17 +3383,15 @@ function variantToCfg(v, overrides = {}) {
         : Number.isFinite(Number(v.crystalSlots))
           ? Number(v.crystalSlots)
           : 4,
-    sharedHit: overrides.sharedHit !== undefined ? !!overrides.sharedHit : Number(v.sharedHit) === 1,
-    sharedSkillMode: overrides.sharedSkillMode || overrides.sharedSkill || v.sharedSkillMode || 'none',
-    exactVerbose:
-      overrides.exactVerbose !== undefined ? !!overrides.exactVerbose : EXACT_VERBOSE,
+    sharedHit:
+      overrides.sharedHit !== undefined ? !!overrides.sharedHit : Number(v.sharedHit) === 1,
+    sharedSkillMode:
+      overrides.sharedSkillMode || overrides.sharedSkill || v.sharedSkillMode || 'none',
+    exactVerbose: overrides.exactVerbose !== undefined ? !!overrides.exactVerbose : EXACT_VERBOSE,
     exactSwap: overrides.exactSwap !== undefined ? !!overrides.exactSwap : EXACT_SWAP,
-    gameTrials:
-      overrides.gameTrials !== undefined ? Number(overrides.gameTrials) : GAME_TRIALS,
+    gameTrials: overrides.gameTrials !== undefined ? Number(overrides.gameTrials) : GAME_TRIALS,
     actionStopOnKill:
-      overrides.actionStopOnKill !== undefined
-        ? !!overrides.actionStopOnKill
-        : ACTION_STOP_ON_KILL,
+      overrides.actionStopOnKill !== undefined ? !!overrides.actionStopOnKill : ACTION_STOP_ON_KILL,
   };
 }
 
@@ -3404,7 +3450,16 @@ function compileBuild(name, payload, cfg, role) {
     m2V: getV(partName(payload.misc2), partCrystal(payload.misc2), '', '', 2),
     cfg,
     role,
+    attackTypeRaw: payload && (payload.attackStyle || payload.attackType),
   });
+}
+
+function normalizeSignatureBuild(build) {
+  if (!build || typeof build !== 'object') return build;
+  const next = JSON.parse(JSON.stringify(build));
+  next.attackType = normalizeAttackType(next.attackStyle || next.attackType);
+  delete next.attackStyle;
+  return next;
 }
 
 function buildCfgSignatureObject(cfg, rngMode = 'fast') {
@@ -3451,12 +3506,12 @@ function buildSimulationSignature({
   swapAttackerWeps = false,
 }) {
   const defsSig = hashStr32(
-    stableStringify([{ name: defenderName, payload: defenderBuild }]),
+    stableStringify([{ name: defenderName, payload: normalizeSignatureBuild(defenderBuild) }]),
   );
   const attSig = hashStr32(
     stableStringify({
       preset: attackerKey,
-      build: attackerBuild,
+      build: normalizeSignatureBuild(attackerBuild),
       swapWeps: !!swapAttackerWeps,
     }),
   );

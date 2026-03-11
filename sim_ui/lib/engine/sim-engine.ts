@@ -1,10 +1,11 @@
 import 'server-only';
 
 import { loadLegacyModules } from '@/lib/engine/legacy-source';
-import { cloneBuild, isSimBuild, type CompiledCombatant, type SimRequest, type SimResponse } from '@/lib/engine/types';
+import { normalizeSimBuild, type CompiledCombatant, type SimRequest, type SimResponse } from '@/lib/engine/types';
 
 function toCompiledCombatant(value: any): CompiledCombatant {
   return {
+    attackType: value.attackType,
     hp: value.hp,
     level: value.level,
     speed: value.speed,
@@ -27,10 +28,10 @@ function validateRequest(input: unknown): SimRequest {
   }
 
   const request = input as SimRequest;
-  if (!isSimBuild(request.attacker?.build)) {
+  if (!request.attacker?.build) {
     throw new Error('Invalid attacker build.');
   }
-  if (!isSimBuild(request.defender?.build)) {
+  if (!request.defender?.build) {
     throw new Error('Invalid defender build.');
   }
 
@@ -43,12 +44,12 @@ function validateRequest(input: unknown): SimRequest {
     attacker: {
       key: request.attacker.key || 'CUSTOM',
       label: request.attacker.label || 'Attacker',
-      build: cloneBuild(request.attacker.build),
+      build: normalizeSimBuild(request.attacker.build),
     },
     defender: {
       key: request.defender.key || 'CUSTOM',
       label: request.defender.label || 'Defender',
-      build: cloneBuild(request.defender.build),
+      build: normalizeSimBuild(request.defender.build),
     },
     trials,
     maxTurns: request.maxTurns ? Math.max(1, Math.floor(Number(request.maxTurns) || 0)) : undefined,

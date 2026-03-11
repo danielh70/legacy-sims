@@ -3,19 +3,31 @@
 import { useEffect, useMemo, useState, useTransition } from 'react';
 
 import { BuildPanel } from '@/components/build-panel';
-import { ResultCard } from '@/components/result-card';
-import { SlotEditor } from '@/components/slot-editor';
-import { cloneBuild, type NamedBuildPreset, type SimBuild, type SimCatalog, type SimRequest, type SimResponse } from '@/lib/engine/types';
+import { ResultCard, ResultSummaryCard } from '@/components/result-card';
+import { Workbench, type WorkbenchState, type WorkbenchTab } from '@/components/workbench';
 import {
-  buttonClass,
+  cloneBuild,
+  normalizeSimBuild,
+  type NamedBuildPreset,
+  type SimBuild,
+  type SimCatalog,
+  type SimRequest,
+  type SimResponse,
+} from '@/lib/engine/types';
+import {
+  compactNumericControlClass,
   labelClass,
-  numericControlClass,
-  pageGridClass,
   pageShellClass,
   panelCardClass,
   railClass,
 } from '@/lib/ui/layout-system';
-import { swapBuildWeapons, type SlotKey, validateBuild } from '@/lib/ui/build-ux';
+import {
+  BUILD_PART_SOCKET_COUNT,
+  getBuildPartSocketCrystals,
+  swapBuildWeapons,
+  type SlotKey,
+  validateBuild,
+} from '@/lib/ui/build-ux';
 
 interface SimWorkbenchProps {
   catalog: SimCatalog;
@@ -32,31 +44,42 @@ interface PersistedWorkbenchState {
   includeTrace: boolean;
 }
 
-interface ActiveEditorState {
-  side: 'attacker' | 'defender';
-  slot: SlotKey;
-}
-
 const STORAGE_KEY = 'legacy-sim-ui-state-v1';
+
+const toolbarPrimaryButtonClass =
+  'inline-flex h-11 items-center justify-center rounded-2xl border border-steel/10 bg-steel px-5 text-sm font-semibold text-white transition hover:bg-steel/92';
+const toolbarToggleOffClass =
+  'inline-flex h-11 items-center justify-center rounded-2xl border border-line/60 bg-white/88 px-4 text-sm font-semibold text-ink/72 transition hover:border-accent hover:text-accent';
+const toolbarToggleOnClass =
+  'inline-flex h-11 items-center justify-center rounded-2xl border border-accent/40 bg-accent/10 px-4 text-sm font-semibold text-accent transition';
 
 function presetMap(list: NamedBuildPreset[]) {
   return new Map(list.map((preset) => [preset.key, preset]));
 }
 
-const SLOT_LABELS: Record<SlotKey, string> = {
-  armor: 'Armor',
-  weapon1: 'Weapon 1',
-  weapon2: 'Weapon 2',
-  misc1: 'Misc 1',
-  misc2: 'Misc 2',
-};
+function slotTab(slot: SlotKey): WorkbenchTab {
+  if (slot === 'armor') return 'armors';
+  if (slot === 'weapon1' || slot === 'weapon2') return 'weapons';
+  return 'miscs';
+}
 
-const toolbarPrimaryButtonClass =
-  'inline-flex h-10 items-center justify-center rounded-xl border border-steel/20 bg-steel px-4 text-sm font-semibold text-white transition hover:bg-steel/90';
-const toolbarToggleOffClass =
-  'inline-flex h-10 items-center justify-center rounded-xl border border-line/60 bg-white/90 px-3 text-sm font-semibold text-ink/70 transition hover:border-accent hover:text-accent';
-const toolbarToggleOnClass =
-  'inline-flex h-10 items-center justify-center rounded-xl border border-accent/40 bg-accent/10 px-3 text-sm font-semibold text-accent transition';
+function defaultSlotForTab(tab: WorkbenchTab, currentSlot: SlotKey | null): SlotKey | null {
+  if (tab === 'builds') return null;
+  if (tab === 'armors') return 'armor';
+  if (tab === 'weapons') {
+    return currentSlot === 'weapon1' || currentSlot === 'weapon2' ? currentSlot : 'weapon1';
+  }
+  if (tab === 'miscs') {
+    return currentSlot === 'misc1' || currentSlot === 'misc2' ? currentSlot : 'misc1';
+  }
+  if (tab === 'upgrades') {
+    if (currentSlot === 'weapon1' || currentSlot === 'weapon2' || currentSlot === 'misc1' || currentSlot === 'misc2') {
+      return currentSlot;
+    }
+    return 'weapon1';
+  }
+  return currentSlot ? currentSlot : 'armor';
+}
 
 export function SimWorkbench({ catalog }: SimWorkbenchProps) {
   const attackerPresets = presetMap(catalog.attackerPresets);
@@ -77,9 +100,16 @@ export function SimWorkbench({ catalog }: SimWorkbenchProps) {
   const [result, setResult] = useState<SimResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [statusText, setStatusText] = useState<string>('Idle');
-  const [activeEditor, setActiveEditor] = useState<ActiveEditorState | null>(null);
+  const [isResultInspectorOpen, setResultInspectorOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
-  const [isPending, useServerTransition] = useTransition();
+  const [workbenchState, setWorkbenchState] = useState<WorkbenchState>({
+    side: 'attacker',
+    tab: 'builds',
+    slot: null,
+    socketIndex: null,
+    upgradeIndex: 0,
+  });
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     try {
@@ -90,15 +120,15 @@ export function SimWorkbench({ catalog }: SimWorkbenchProps) {
       }
 
       const saved = JSON.parse(raw) as Partial<PersistedWorkbenchState>;
-      if (saved.attackerBuild) setAttackerBuild(cloneBuild(saved.attackerBuild));
-      if (saved.defenderBuild) setDefenderBuild(cloneBuild(saved.defenderBuild));
+      if (saved.attackerBuild) setAttackerBuild(normalizeSimBuild(saved.attackerBuild));
+      if (saved.defenderBuild) setDefenderBuild(normalizeSimBuild(saved.defenderBuild));
       if (saved.attackerPresetKey) setAttackerPresetKey(saved.attackerPresetKey);
       if (saved.defenderPresetKey) setDefenderPresetKey(saved.defenderPresetKey);
       if (saved.attackerReferenceBuild) {
-        setAttackerReferenceBuild(cloneBuild(saved.attackerReferenceBuild));
+        setAttackerReferenceBuild(normalizeSimBuild(saved.attackerReferenceBuild));
       }
       if (saved.defenderReferenceBuild) {
-        setDefenderReferenceBuild(cloneBuild(saved.defenderReferenceBuild));
+        setDefenderReferenceBuild(normalizeSimBuild(saved.defenderReferenceBuild));
       }
       if (typeof saved.trials === 'number') setTrials(saved.trials);
       if (typeof saved.includeTrace === 'boolean') setIncludeTrace(saved.includeTrace);
@@ -146,44 +176,79 @@ export function SimWorkbench({ catalog }: SimWorkbenchProps) {
   );
   const validationErrors = [...attackerValidation.summary, ...defenderValidation.summary];
   const canRun = !isPending && validationErrors.length === 0;
-  const panelEditor = useMemo(() => {
-    if (!activeEditor) return null;
+  const statusToneChipClass = error
+    ? 'border-red-300 bg-red-50 text-red-700'
+    : isPending
+      ? 'border-accent/30 bg-accent/10 text-accent'
+      : 'border-line/55 bg-white/88 text-ink/68';
 
-    const sideLabel = activeEditor.side === 'attacker' ? 'Attacker' : 'Defender';
-    const tint = activeEditor.side === 'attacker' ? 'attacker' : 'defender';
-    const build = activeEditor.side === 'attacker' ? attackerBuild : defenderBuild;
-    const slotLabel = SLOT_LABELS[activeEditor.slot];
-    const items =
-      activeEditor.slot === 'armor'
-        ? catalog.armors
-        : activeEditor.slot === 'weapon1' || activeEditor.slot === 'weapon2'
-          ? catalog.weapons
-          : catalog.miscs;
-    const errors =
-      activeEditor.side === 'attacker'
-        ? attackerValidation.slotErrors[activeEditor.slot]
-        : defenderValidation.slotErrors[activeEditor.slot];
+  function buildForSide(side: 'attacker' | 'defender') {
+    return side === 'attacker' ? attackerBuild : defenderBuild;
+  }
 
-    return {
-      side: activeEditor.side,
-      sideLabel,
-      tint,
-      slot: activeEditor.slot,
-      slotLabel,
-      value: build[activeEditor.slot],
-      items,
-      errors,
-    } as const;
-  }, [
-    activeEditor,
-    attackerBuild,
-    attackerValidation.slotErrors,
-    catalog.armors,
-    catalog.miscs,
-    catalog.weapons,
-    defenderBuild,
-    defenderValidation.slotErrors,
-  ]);
+  function focusBuilds(side: 'attacker' | 'defender') {
+    setWorkbenchState({
+      side,
+      tab: 'builds',
+      slot: null,
+      socketIndex: null,
+      upgradeIndex: 0,
+    });
+  }
+
+  function switchWorkbenchSide(side: 'attacker' | 'defender') {
+    setWorkbenchState((current) => ({
+      ...current,
+      side,
+    }));
+  }
+
+  function switchWorkbenchTab(tab: WorkbenchTab) {
+    setWorkbenchState((current) => {
+      if (tab === 'builds') {
+        return {
+          side: current.side,
+          tab,
+          slot: null,
+          socketIndex: null,
+          upgradeIndex: 0,
+        };
+      }
+
+      return {
+        ...current,
+        tab,
+        slot: defaultSlotForTab(tab, current.slot),
+        socketIndex: tab === 'crystals' ? current.socketIndex ?? 0 : null,
+        upgradeIndex: tab === 'upgrades' ? current.upgradeIndex : 0,
+      };
+    });
+  }
+
+  function focusSlot(side: 'attacker' | 'defender', slot: SlotKey) {
+    setWorkbenchState({
+      side,
+      tab: slotTab(slot),
+      slot,
+      socketIndex: null,
+      upgradeIndex: 0,
+    });
+  }
+
+  function focusSocket(side: 'attacker' | 'defender', slot: SlotKey, socketIndex: number) {
+    const socketCrystal = getBuildPartSocketCrystals(buildForSide(side)[slot])[socketIndex] || '';
+    if (socketCrystal) {
+      clearCrystal(side, slot, socketIndex);
+    }
+
+    setWorkbenchState({
+      side,
+      tab: 'crystals',
+      slot,
+      socketIndex,
+      upgradeIndex: 0,
+    });
+  }
 
   function assignPreset(
     side: 'attacker' | 'defender',
@@ -220,8 +285,82 @@ export function SimWorkbench({ catalog }: SimWorkbenchProps) {
     setDefenderPresetKey('__custom__');
   }
 
-  function swapWeapons(build: SimBuild): SimBuild {
-    return swapBuildWeapons(build);
+  function mutateSlot(
+    side: 'attacker' | 'defender',
+    slot: SlotKey,
+    mutate: (part: SimBuild[SlotKey]) => SimBuild[SlotKey],
+  ) {
+    const nextBuild = cloneBuild(buildForSide(side));
+    nextBuild[slot] = mutate(cloneBuild(nextBuild[slot]));
+    markCustom(side, nextBuild);
+  }
+
+  function commitSockets(side: 'attacker' | 'defender', slot: SlotKey, nextSockets: string[]) {
+    mutateSlot(side, slot, (part) => {
+      const normalized = Array.from({ length: BUILD_PART_SOCKET_COUNT }, (_, index) => nextSockets[index] || '');
+      const primaryCrystal = normalized.find(Boolean) || '';
+      return {
+        ...part,
+        crystal: primaryCrystal,
+        crystals: normalized,
+      };
+    });
+  }
+
+  function clearCrystal(side: 'attacker' | 'defender', slot: SlotKey, socketIndex: number) {
+    const nextSockets = [...getBuildPartSocketCrystals(buildForSide(side)[slot])];
+    nextSockets[socketIndex] = '';
+    commitSockets(side, slot, nextSockets);
+  }
+
+  function applyItem(side: 'attacker' | 'defender', slot: SlotKey, itemName: string) {
+    const nextItem = catalog.itemsByName[itemName];
+
+    mutateSlot(side, slot, (part) => ({
+      ...part,
+      name: itemName,
+      upgrades: nextItem?.upgradeSlots?.length ? part.upgrades.slice(0, nextItem.upgradeSlots.length) : [],
+    }));
+  }
+
+  function applyCrystal(
+    side: 'attacker' | 'defender',
+    slot: SlotKey,
+    socketIndex: number,
+    crystalName: string,
+  ) {
+    const nextSockets = [...getBuildPartSocketCrystals(buildForSide(side)[slot])];
+    nextSockets[socketIndex] = crystalName;
+    commitSockets(side, slot, nextSockets);
+  }
+
+  function fillAllCrystals(side: 'attacker' | 'defender', slot: SlotKey, crystalName: string) {
+    commitSockets(side, slot, Array.from({ length: BUILD_PART_SOCKET_COUNT }, () => crystalName));
+  }
+
+  function fillRemainingCrystals(side: 'attacker' | 'defender', slot: SlotKey, crystalName: string) {
+    const currentSockets = getBuildPartSocketCrystals(buildForSide(side)[slot]);
+    commitSockets(side, slot, currentSockets.map((crystal) => crystal || crystalName));
+  }
+
+  function clearAllCrystals(side: 'attacker' | 'defender', slot: SlotKey) {
+    commitSockets(side, slot, Array.from({ length: BUILD_PART_SOCKET_COUNT }, () => ''));
+  }
+
+  function applyUpgrade(
+    side: 'attacker' | 'defender',
+    slot: SlotKey,
+    upgradeIndex: number,
+    upgradeName: string,
+  ) {
+    mutateSlot(side, slot, (part) => {
+      const nextUpgrades = [...part.upgrades];
+      nextUpgrades[upgradeIndex] = upgradeName;
+      return {
+        ...part,
+        upgrades: nextUpgrades.filter(Boolean),
+      };
+    });
   }
 
   function swapSides() {
@@ -238,15 +377,27 @@ export function SimWorkbench({ catalog }: SimWorkbenchProps) {
     setDefenderPresetKey(nextDefenderPreset);
     setAttackerReferenceBuild(nextAttackerReference);
     setDefenderReferenceBuild(nextDefenderReference);
+    setWorkbenchState((current) => ({
+      ...current,
+      side: current.side === 'attacker' ? 'defender' : 'attacker',
+    }));
   }
 
-  function updateEditorSlot(nextSlotBuild: SimBuild[SlotKey]) {
-    if (!activeEditor) return;
+  function handlePresetSelection(side: 'attacker' | 'defender', presetKey: string) {
+    if (presetKey === '__custom__') {
+      assignPreset(side, presetKey, buildForSide(side));
+    } else {
+      assignPreset(side, presetKey);
+    }
 
-    const sourceBuild = activeEditor.side === 'attacker' ? attackerBuild : defenderBuild;
-    const nextBuild = cloneBuild(sourceBuild);
-    nextBuild[activeEditor.slot] = nextSlotBuild;
-    markCustom(activeEditor.side, nextBuild);
+    setWorkbenchState((current) => ({
+      ...current,
+      side,
+      tab: 'builds',
+      slot: null,
+      socketIndex: null,
+      upgradeIndex: 0,
+    }));
   }
 
   async function runSimulation() {
@@ -300,35 +451,34 @@ export function SimWorkbench({ catalog }: SimWorkbenchProps) {
 
   return (
     <main className={pageShellClass}>
-      <section className={`${panelCardClass} px-4`}>
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      <section className={`${panelCardClass} bg-panel/94`}>
+        <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
           <div className="min-w-0">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">
               Legacy Combat Simulator
             </div>
-            <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-ink">
-              Fast loadout editor and match summary
-            </h1>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              <span className="rounded-full border border-line/70 bg-white/80 px-3 py-1 text-[11px] font-medium text-ink/65">
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <h1 className="font-display text-[30px] font-semibold tracking-[-0.04em] text-ink">
+                Two-build sandbox
+              </h1>
+              <span
+                className={`inline-flex h-8 items-center rounded-full border px-3 text-[11px] font-semibold ${statusToneChipClass}`}
+              >
                 {statusText}
               </span>
-              <span className="rounded-full border border-line/70 bg-white/80 px-3 py-1 text-[11px] font-medium text-ink/55">
-                {hydrated ? 'Autosaved' : 'Loading saved state'}
-              </span>
               {validationErrors.length ? (
-                <span className="rounded-full border border-red-300 bg-red-50 px-3 py-1 text-[11px] font-medium text-red-700">
-                  {validationErrors.length} validation issue{validationErrors.length === 1 ? '' : 's'}
+                <span className="inline-flex h-8 items-center rounded-full border border-red-300 bg-red-50 px-3 text-[11px] font-semibold text-red-700">
+                  Resolve {validationErrors.length} issue{validationErrors.length === 1 ? '' : 's'}
                 </span>
               ) : null}
             </div>
           </div>
 
-          <div className="flex flex-wrap items-end justify-end gap-2.5 xl:max-w-[520px]">
+          <div className="grid gap-2 sm:grid-cols-[120px_repeat(3,auto)] sm:items-end">
             <label className="grid gap-1 text-sm">
               <span className={labelClass}>Trials</span>
               <input
-                className={`${numericControlClass} w-28 bg-white`}
+                className={`${compactNumericControlClass} bg-white text-left`}
                 type="number"
                 min={1}
                 step={100}
@@ -347,14 +497,10 @@ export function SimWorkbench({ catalog }: SimWorkbenchProps) {
 
             <button
               type="button"
-              className={
-                canRun
-                  ? toolbarPrimaryButtonClass
-                  : 'inline-flex h-10 items-center justify-center rounded-xl border border-line/60 bg-line/50 px-4 text-sm font-semibold text-ink/45'
-              }
+              className={canRun ? toolbarPrimaryButtonClass : 'inline-flex h-11 items-center justify-center rounded-2xl border border-line/60 bg-line/45 px-5 text-sm font-semibold text-ink/40'}
               disabled={!canRun}
               onClick={() =>
-                useServerTransition(() => {
+                startTransition(() => {
                   void runSimulation();
                 })
               }
@@ -364,7 +510,7 @@ export function SimWorkbench({ catalog }: SimWorkbenchProps) {
 
             <button
               type="button"
-              className={buttonClass}
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-line/60 bg-white/90 px-4 text-sm font-semibold text-ink transition hover:border-accent hover:text-accent"
               disabled={isPending}
               onClick={swapSides}
             >
@@ -374,72 +520,97 @@ export function SimWorkbench({ catalog }: SimWorkbenchProps) {
         </div>
       </section>
 
-      <section className={pageGridClass}>
-        <BuildPanel
-          title="Attacker"
-          tint="attacker"
-          build={attackerBuild}
-          referenceBuild={attackerReferenceBuild}
-          selectedPresetKey={attackerPresetKey}
-          presets={catalog.attackerPresets}
-          featuredPresetKeys={catalog.featuredAttackerPresetKeys}
-          catalog={catalog}
-          validationSummary={attackerValidation.summary}
-          slotErrors={attackerValidation.slotErrors}
-          activeSlot={activeEditor?.side === 'attacker' ? activeEditor.slot : null}
-          onPresetChange={(presetKey) => assignPreset('attacker', presetKey)}
-          onBuildChange={(next) => markCustom('attacker', next)}
-          onSwapWeapons={() => markCustom('attacker', swapWeapons(attackerBuild))}
-          onSlotFocus={(slot) =>
-            setActiveEditor((current) =>
-              slot ? { side: 'attacker', slot } : current?.side === 'attacker' ? null : current,
-            )
-          }
+      {isResultInspectorOpen ? (
+        <ResultCard
+          result={result}
+          isPending={isPending}
+          error={error}
+          statusText={statusText}
+          showDebug={includeTrace}
         />
-        <BuildPanel
-          title="Defender"
-          tint="defender"
-          build={defenderBuild}
-          referenceBuild={defenderReferenceBuild}
-          selectedPresetKey={defenderPresetKey}
-          presets={catalog.defenderPresets}
-          featuredPresetKeys={catalog.featuredDefenderPresetKeys}
-          catalog={catalog}
-          validationSummary={defenderValidation.summary}
-          slotErrors={defenderValidation.slotErrors}
-          activeSlot={activeEditor?.side === 'defender' ? activeEditor.slot : null}
-          onPresetChange={(presetKey) => assignPreset('defender', presetKey)}
-          onBuildChange={(next) => markCustom('defender', next)}
-          onSwapWeapons={() => markCustom('defender', swapWeapons(defenderBuild))}
-          onSlotFocus={(slot) =>
-            setActiveEditor((current) =>
-              slot ? { side: 'defender', slot } : current?.side === 'defender' ? null : current,
-            )
-          }
-        />
-        <div className={railClass}>
-          {panelEditor ? (
-            <SlotEditor
-              key={`${panelEditor.side}-${panelEditor.slot}-${panelEditor.value.name}`}
-              label={`${panelEditor.sideLabel} -> ${panelEditor.slotLabel}`}
-              tint={panelEditor.tint}
-              value={panelEditor.value}
-              items={panelEditor.items}
+      ) : null}
+
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_384px]">
+        <section className="grid gap-4 xl:grid-cols-2">
+          <BuildPanel
+            title="Attacker"
+            tint="attacker"
+            build={attackerBuild}
+            referenceBuild={attackerReferenceBuild}
+            selectedPresetKey={attackerPresetKey}
+            presets={catalog.attackerPresets}
+            catalog={catalog}
+            validationSummary={attackerValidation.summary}
+            slotErrors={attackerValidation.slotErrors}
+            activeSlot={workbenchState.side === 'attacker' ? workbenchState.slot : null}
+            activeSocketIndex={workbenchState.side === 'attacker' ? workbenchState.socketIndex : null}
+            onBuildFocus={() => focusBuilds('attacker')}
+            onBuildChange={(next) => markCustom('attacker', next)}
+            onSwapWeapons={() => markCustom('attacker', swapBuildWeapons(attackerBuild))}
+            onSlotFocus={(slot) => focusSlot('attacker', slot)}
+            onSocketInteract={(slot, socketIndex) => focusSocket('attacker', slot, socketIndex)}
+          />
+
+          <BuildPanel
+            title="Defender"
+            tint="defender"
+            build={defenderBuild}
+            referenceBuild={defenderReferenceBuild}
+            selectedPresetKey={defenderPresetKey}
+            presets={catalog.defenderPresets}
+            catalog={catalog}
+            validationSummary={defenderValidation.summary}
+            slotErrors={defenderValidation.slotErrors}
+            activeSlot={workbenchState.side === 'defender' ? workbenchState.slot : null}
+            activeSocketIndex={workbenchState.side === 'defender' ? workbenchState.socketIndex : null}
+            onBuildFocus={() => focusBuilds('defender')}
+            onBuildChange={(next) => markCustom('defender', next)}
+            onSwapWeapons={() => markCustom('defender', swapBuildWeapons(defenderBuild))}
+            onSlotFocus={(slot) => focusSlot('defender', slot)}
+            onSocketInteract={(slot, socketIndex) => focusSocket('defender', slot, socketIndex)}
+          />
+        </section>
+
+        <aside className={`${railClass} order-first grid gap-4 xl:order-none xl:h-[calc(100vh-2.5rem)] xl:grid-rows-[auto_minmax(0,1fr)]`}>
+          <ResultSummaryCard
+            result={result}
+            isPending={isPending}
+            error={error}
+            statusText={statusText}
+            inspectOpen={isResultInspectorOpen}
+            onInspect={() => setResultInspectorOpen((current) => !current)}
+          />
+
+          <div className="min-h-[34rem] xl:min-h-0">
+            <Workbench
               catalog={catalog}
-              errors={panelEditor.errors}
-              onChange={updateEditorSlot}
-              onClose={() => setActiveEditor(null)}
+              attackerBuild={attackerBuild}
+              defenderBuild={defenderBuild}
+              attackerPresetKey={attackerPresetKey}
+              defenderPresetKey={defenderPresetKey}
+              attackerPresets={catalog.attackerPresets}
+              defenderPresets={catalog.defenderPresets}
+              featuredAttackerPresetKeys={catalog.featuredAttackerPresetKeys}
+              featuredDefenderPresetKeys={catalog.featuredDefenderPresetKeys}
+              state={workbenchState}
+              onSideChange={switchWorkbenchSide}
+              onTabChange={switchWorkbenchTab}
+              onPresetSelect={handlePresetSelection}
+              onSocketFocus={(socketIndex) =>
+                setWorkbenchState((current) => ({ ...current, tab: 'crystals', socketIndex }))
+              }
+              onUpgradeIndexChange={(upgradeIndex) =>
+                setWorkbenchState((current) => ({ ...current, tab: 'upgrades', upgradeIndex }))
+              }
+              onItemApply={applyItem}
+              onCrystalApply={applyCrystal}
+              onFillAllCrystals={fillAllCrystals}
+              onFillRemainingCrystals={fillRemainingCrystals}
+              onClearAllCrystals={clearAllCrystals}
+              onUpgradeApply={applyUpgrade}
             />
-          ) : (
-            <ResultCard
-              result={result}
-              isPending={isPending}
-              error={error}
-              statusText={statusText}
-              showDebug={includeTrace}
-            />
-          )}
-        </div>
+          </div>
+        </aside>
       </section>
     </main>
   );

@@ -4,18 +4,38 @@
 
 :root {
   color-scheme: light;
+  --canvas-top: #fbf7ef;
+  --canvas-bottom: #efe6d7;
+  --canvas-line: rgba(205, 187, 164, 0.22);
+  --canvas-warm: rgba(180, 90, 47, 0.12);
+  --canvas-cool: rgba(44, 73, 84, 0.08);
 }
 
 html {
   min-height: 100%;
+  background: var(--canvas-bottom);
 }
 
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(180, 90, 47, 0.18), transparent 28%),
-    radial-gradient(circle at top right, rgba(112, 143, 108, 0.2), transparent 22%),
-    linear-gradient(180deg, #f8f3e7 0%, #f1eadc 100%);
+    radial-gradient(circle at top left, var(--canvas-warm), transparent 26%),
+    radial-gradient(circle at top right, var(--canvas-cool), transparent 30%),
+    linear-gradient(180deg, var(--canvas-top) 0%, var(--canvas-bottom) 100%);
+  background-attachment: fixed;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0)),
+    linear-gradient(0deg, transparent 23px, var(--canvas-line) 24px);
+  background-size: 100% 100%, 100% 24px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.8), transparent 78%);
 }
 
 ::selection {
