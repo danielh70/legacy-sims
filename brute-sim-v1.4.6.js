@@ -56,7 +56,7 @@
  *   LEGACY_REPORT=quiet|compact|verbose  # default: compact
  *   LEGACY_PROGRESS=single|checkpoints|lines|off
  *   LEGACY_SANITY=auto|always|never
- *   LEGACY_SHOW_TOP=5                    # finalists shown per HP block
+ *   LEGACY_SHOW_TOP=10                   # finalists shown per HP block
  *   LEGACY_SHOW_REFINE_TOP=6             # meaningful refine rows shown
  */
 
@@ -292,7 +292,7 @@ const TERM_UI = {
 const REPORT_CFG = {
   finalistsTopN: (() => {
     const n = parseInt(process.env.LEGACY_SHOW_TOP || '', 10);
-    return Number.isFinite(n) && n > 0 ? n : 5;
+    return Number.isFinite(n) && n > 0 ? n : 10;
   })(),
   refineChangesTopN: (() => {
     const n = parseInt(process.env.LEGACY_SHOW_REFINE_TOP || '', 10);
@@ -791,13 +791,24 @@ function formatAttackStyleShort(attackTypeRaw) {
   return normalizeBruteAttackType(attackTypeRaw);
 }
 
+function partKeyForSpec(part) {
+  const u1 = part && part.u1 ? part.u1 : '';
+  const u2 = part && part.u2 ? part.u2 : '';
+  return `${part.item}|${crystalSpecKey(partCrystalSpec(part))}|${u1}|${u2}`;
+}
+
 function specKey(spec) {
   const plan = spec.plan || {};
-  const parts = [spec.armor, spec.weapon1, spec.weapon2, spec.misc1, spec.misc2].map((part) => {
-    const u1 = part && part.u1 ? part.u1 : '';
-    const u2 = part && part.u2 ? part.u2 : '';
-    return `${part.item}|${crystalSpecKey(partCrystalSpec(part))}|${u1}|${u2}`;
-  });
+  const miscParts =
+    spec.misc1.item === spec.misc2.item
+      ? [partKeyForSpec(spec.misc1), partKeyForSpec(spec.misc2)].sort()
+      : [partKeyForSpec(spec.misc1), partKeyForSpec(spec.misc2)];
+  const parts = [
+    partKeyForSpec(spec.armor),
+    partKeyForSpec(spec.weapon1),
+    partKeyForSpec(spec.weapon2),
+    ...miscParts,
+  ];
   const attackType = formatAttackStyleShort(spec.attackType);
   return `HP${plan.hp}|A${plan.extraAcc}|D${plan.extraDodge}|S${attackType}|${parts.join('|')}`;
 }
@@ -5378,6 +5389,24 @@ function printResults({
     }
     return hit;
   }
+
+  function pickDisplayTop(refinedTop, confirmedTop, lb, wantN) {
+    const out = [];
+    const seen = new Set();
+
+    for (const arr of [refinedTop || [], confirmedTop || [], lb || []]) {
+      for (const e of arr) {
+        const key = specKey(e.spec);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(e);
+        if (out.length >= wantN) return out;
+      }
+    }
+
+    return out;
+  }
+
   const exportPayload = {
     meta: {
       version: VERSION,
@@ -5497,7 +5526,7 @@ function printResults({
       .map((t) => ({ type: t, ...bestTypes[t] }))
       .sort((a, b) => b.worstWin - a.worstWin || b.avgWin - a.avgWin);
 
-    const displayTop = refinedTop.length ? refinedTop : confirmedTop.length ? confirmedTop : lb;
+    const displayTop = pickDisplayTop(refinedTop, confirmedTop, lb, REPORT_CFG.finalistsTopN);
     const displayTypes = refinedTypes.length
       ? refinedTypes
       : confirmedTypes.length
