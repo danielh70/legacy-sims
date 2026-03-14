@@ -24,38 +24,45 @@ const path = require('path');
 // You can also override the file at runtime with LEGACY_DEFENDER_FILE.
 const USER_CONFIG = {
   attacker: {
-    label: 'CUSTOM',
+    label: 'CUSTOM_MAUL_A3F',
     attackType: 'normal',
     stats: { level: 80, hp: 650, speed: 60, dodge: 57, accuracy: 14 },
     armor: {
       name: 'Dark Legion Armor',
-      crystal: 'Abyss Crystal',
-      upgrades: [],
+      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
     },
 
     weapon1: {
       name: 'Reaper Axe',
-      crystal: 'Amulet Crystal',
-      upgrades: [],
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
     },
     weapon2: {
       name: 'Crystal Maul',
-      crystalCounts: {
-        'Amulet Crystal': 3,
-        'Perfect Fire Crystal': 1,
-      },
-      upgrades: [],
+      upgrades: [
+        'Amulet Crystal',
+        'Amulet Crystal',
+        'Amulet Crystal',
+        'Perfect Fire Crystal',
+      ],
     },
 
     misc1: {
       name: 'Bio Spinal Enhancer',
-      crystal: 'Perfect Pink Crystal',
-      upgrades: [],
+      upgrades: [
+        'Perfect Pink Crystal',
+        'Perfect Pink Crystal',
+        'Perfect Pink Crystal',
+        'Perfect Pink Crystal',
+      ],
     },
     misc2: {
       name: 'Bio Spinal Enhancer',
-      crystal: 'Perfect Orange Crystal',
-      upgrades: [],
+      upgrades: [
+        'Perfect Orange Crystal',
+        'Perfect Orange Crystal',
+        'Perfect Orange Crystal',
+        'Perfect Orange Crystal',
+      ],
     },
   },
 
@@ -697,6 +704,7 @@ const MISC_NO_CRYSTAL_SKILL_TWEAK_TAG = (() => {
 const PRINT_WEAPON_RNG = yn(String(pickEnv('LEGACY_PRINT_WEAPON_RNG', '0')));
 const SWAP_ATTACKER_WEPS = yn(String(pickEnv('LEGACY_SWAP_ATTACKER_WEPS', '0')));
 const SWAP_DEFENDER_WEPS = yn(String(pickEnv('LEGACY_SWAP_DEFENDER_WEPS', '0')));
+const PRINT_COMPILED_SNAPSHOT = yn(String(pickEnv('LEGACY_PRINT_COMPILED_SNAPSHOT', '0')));
 
 const MISC_NO_CRYSTAL_SKILL_ZERO_DEF = yn(
   String(pickEnv('LEGACY_MISC_NO_CRYSTAL_SKILL_ZERO_DEF', '0')),
@@ -2234,7 +2242,7 @@ function computeVariant(itemName, crystalName, upgrades = [], cfg, slotTag = 0) 
     weapon,
   };
 
-  if (cfg && cfg.diag) {
+  if (cfg && (cfg.diag || PRINT_COMPILED_SNAPSHOT)) {
     result.debugMath = buildVariantDebugMath({
       itemName,
       idef,
@@ -2425,7 +2433,7 @@ function computeVariantFromCrystalSpec(itemName, crystalSpec, upgrades = [], cfg
     weapon,
   };
 
-  if (cfg && cfg.diag) {
+  if (cfg && (cfg.diag || PRINT_COMPILED_SNAPSHOT)) {
     result.debugMath = buildVariantDebugMath({
       itemName,
       idef,
@@ -2520,7 +2528,8 @@ function compileCombatantFromParts({
 
   c.weapon1 = c.w1;
   c.weapon2 = c.w2;
-  const preHiddenEffective = cfg && cfg.diag ? captureCombatantEffectiveStats(c) : null;
+  const preHiddenEffective =
+    cfg && (cfg.diag || PRINT_COMPILED_SNAPSHOT) ? captureCombatantEffectiveStats(c) : null;
 
   if (cfg && cfg.diagArmor) {
     c.__meta = {
@@ -2533,10 +2542,11 @@ function compileCombatantFromParts({
   }
 
   applyHiddenRoleBonuses(c, role, cfg);
-  const postHiddenEffective = cfg && cfg.diag ? captureCombatantEffectiveStats(c) : null;
+  const postHiddenEffective =
+    cfg && (cfg.diag || PRINT_COMPILED_SNAPSHOT) ? captureCombatantEffectiveStats(c) : null;
   applyAttackStyle(c, attackTypeRaw, attackStyleRoundMode);
 
-  if (cfg && cfg.diag) {
+  if (cfg && (cfg.diag || PRINT_COMPILED_SNAPSHOT)) {
     c.__debug = buildCombatantDebugInfo({
       stats,
       role,
@@ -3966,14 +3976,7 @@ function attemptWeapon(
     }
   }
 
-  const postArmorPerWeapon =
-    cfg.armorApply === 'per_weapon'
-      ? applyArmorAndRound(
-          raw,
-          armorFactorForArmorValue(BASE.level, def.armor, cfg.armorK),
-          cfg.armorRound,
-        )
-      : applyArmorAndRound(raw, def.armorFactor, cfg.armorRound);
+  const postArmorPerWeapon = applyArmorAndRound(raw, def.armorFactor, cfg.armorRound);
   if (raw > 0) {
     counters.rawDamageTotal += raw;
     if (raw < counters.rawDamageMin) counters.rawDamageMin = raw;
@@ -5316,6 +5319,47 @@ function main() {
       });
 
       if (SWAP_DEFENDER_WEPS) swapWeaponsInPlace(defender);
+
+      if (PRINT_COMPILED_SNAPSHOT) {
+        const attackerSnapshot = buildCompiledCombatSnapshot(
+          attacker,
+          defender,
+          cfg,
+          ATTACK_STYLE_ROUND_MODE,
+        );
+        const defenderSnapshot = buildCompiledCombatSnapshot(
+          defender,
+          attacker,
+          cfg,
+          ATTACK_STYLE_ROUND_MODE,
+        );
+        console.log(
+          `COMPILED_SNAPSHOT:${JSON.stringify({
+            attackerLabel: ATTACKER_LABEL,
+            defenderName: name,
+            attackerEffective: attackerSnapshot ? attackerSnapshot.effective : null,
+            defenderEffective: defenderSnapshot ? defenderSnapshot.effective : null,
+            attackerWeapon1Math:
+              attackerSnapshot && attackerSnapshot.debugMathBreakdown
+                ? attackerSnapshot.debugMathBreakdown.weapon1
+                : null,
+            attackerWeapon2Math:
+              attackerSnapshot && attackerSnapshot.debugMathBreakdown
+                ? attackerSnapshot.debugMathBreakdown.weapon2
+                : null,
+            defenderWeapon1Math:
+              defenderSnapshot && defenderSnapshot.debugMathBreakdown
+                ? defenderSnapshot.debugMathBreakdown.weapon1
+                : null,
+            defenderWeapon2Math:
+              defenderSnapshot && defenderSnapshot.debugMathBreakdown
+                ? defenderSnapshot.debugMathBreakdown.weapon2
+                : null,
+            attackerWeaponSourceMapping: attackerSnapshot ? attackerSnapshot.weaponSourceMapping : null,
+            defenderWeaponSourceMapping: defenderSnapshot ? defenderSnapshot.weaponSourceMapping : null,
+          })}`,
+        );
+      }
 
       const aFirst = attacker.speed >= defender.speed ? 'yes' : 'no';
 

@@ -30,6 +30,27 @@ const saveJson = /^(1|true|yes|on)$/i.test(
 const saveIntermediate = /^(1|true|yes|on)$/i.test(
   String(process.env.LEGACY_REPLAY_SAVE_INTERMEDIATE || '0'),
 );
+const debugIdentity = /^(1|true|yes|on)$/i.test(
+  String(process.env.LEGACY_REPLAY_DEBUG_IDENTITY || '0'),
+);
+const replayDebugMatchupsRaw = String(process.env.LEGACY_REPLAY_DEBUG_MATCHUPS || '').trim();
+const replayDebugTraceFights = Math.max(
+  0,
+  Number(process.env.LEGACY_REPLAY_DEBUG_TRACE_FIGHTS || '3') || 3,
+);
+const replayDebugRollDumpFights = Math.max(
+  0,
+  Number(process.env.LEGACY_REPLAY_DEBUG_ROLL_DUMP_FIGHTS || String(replayDebugTraceFights)) ||
+    replayDebugTraceFights,
+);
+const replayDebugRollDumpMaxTurns = Math.max(
+  0,
+  Number(process.env.LEGACY_REPLAY_DEBUG_ROLL_DUMP_MAX_TURNS || '8') || 8,
+);
+const replayDebugRollDumpMaxLines = Math.max(
+  50,
+  Number(process.env.LEGACY_REPLAY_DEBUG_ROLL_DUMP_MAX_LINES || '400') || 400,
+);
 const WORST_MISMATCH_LIMIT = 15;
 
 const NUMERIC_FIELDS = {
@@ -97,13 +118,1007 @@ function groupBy(xs, keyFn) {
   return m;
 }
 
+const LEGACY_CRYSTAL_NAMES = new Set([
+  'Amulet Crystal',
+  'Perfect Pink Crystal',
+  'Perfect Orange Crystal',
+  'Perfect Green Crystal',
+  'Perfect Yellow Crystal',
+  'Perfect Fire Crystal',
+  'Abyss Crystal',
+  'Cabrusion Crystal',
+  'Berserker Crystal',
+]);
+const LEGACY_CRYSTAL_SORT_ORDER = [
+  'Amulet Crystal',
+  'Perfect Pink Crystal',
+  'Perfect Orange Crystal',
+  'Perfect Green Crystal',
+  'Perfect Yellow Crystal',
+  'Perfect Fire Crystal',
+  'Abyss Crystal',
+  'Cabrusion Crystal',
+  'Berserker Crystal',
+];
+const LEGACY_CRYSTAL_SORT_RANK = new Map(
+  LEGACY_CRYSTAL_SORT_ORDER.map((name, idx) => [name, idx]),
+);
+
+function stableStringify(x) {
+  if (x === null) return 'null';
+  const t = typeof x;
+  if (t === 'number' || t === 'boolean') return String(x);
+  if (t === 'string') return JSON.stringify(x);
+  if (t !== 'object') return JSON.stringify(String(x));
+  if (Array.isArray(x)) return '[' + x.map((v) => stableStringify(v)).join(',') + ']';
+  const keys = Object.keys(x).sort();
+  return '{' + keys.map((k) => JSON.stringify(k) + ':' + stableStringify(x[k])).join(',') + '}';
+}
+
+function hashStr32(str) {
+  str = String(str);
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function hex8(u32) {
+  return (u32 >>> 0).toString(16).padStart(8, '0');
+}
+
+function normalizeStringArray(values) {
+  return Array.isArray(values)
+    ? values.map((value) => String(value || '').trim()).filter(Boolean)
+    : [];
+}
+
+function crystalSortNames(names) {
+  return Array.from(new Set((Array.isArray(names) ? names : []).filter(Boolean))).sort((a, b) => {
+    const ra = LEGACY_CRYSTAL_SORT_RANK.has(a) ? LEGACY_CRYSTAL_SORT_RANK.get(a) : 999;
+    const rb = LEGACY_CRYSTAL_SORT_RANK.has(b) ? LEGACY_CRYSTAL_SORT_RANK.get(b) : 999;
+    if (ra !== rb) return ra - rb;
+    return String(a).localeCompare(String(b));
+  });
+}
+
+function crystalCountsFromEntries(entries) {
+  const counts = {};
+  for (const entry of entries || []) {
+    const name = String(entry || '').trim();
+    if (!name) continue;
+    counts[name] = (counts[name] || 0) + 1;
+  }
+  return counts;
+}
+
 function collapseCrystal(part) {
   const ups = Array.isArray(part && part.upgrades)
     ? part.upgrades.filter(Boolean)
     : [];
-  const crystal = ups.length ? ups[0] : '';
-  const other = ups.filter((u) => u !== crystal);
-  return { name: part.name, crystal, upgrades: other };
+  return {
+    name: part && part.name ? part.name : '',
+    crystal: part && typeof part.crystal === 'string' ? part.crystal : '',
+    upgrades: ups,
+  };
+}
+
+function crystalEntriesFromCounts(counts) {
+  const out = [];
+  for (const name of crystalSortNames(Object.keys(counts || {}))) {
+    const n = Math.max(0, Math.floor(Number(counts[name]) || 0));
+    for (let i = 0; i < n; i += 1) out.push(name);
+  }
+  return out;
+}
+
+function resolveSlotCrystalEntries(slot) {
+  if (!slot || typeof slot !== 'object') return [];
+
+  const directCrystals = normalizeStringArray(slot.crystals);
+  if (directCrystals.length) return directCrystals;
+
+  if (slot.crystalSpec && typeof slot.crystalSpec === 'object') {
+    return crystalEntriesFromCounts(slot.crystalSpec);
+  }
+  if (slot.crystalCounts && typeof slot.crystalCounts === 'object') {
+    return crystalEntriesFromCounts(slot.crystalCounts);
+  }
+  if (Array.isArray(slot.crystalMix) && slot.crystalMix.length) {
+    return normalizeStringArray(slot.crystalMix);
+  }
+  if (slot.crystalMix && typeof slot.crystalMix === 'object') {
+    return crystalEntriesFromCounts(slot.crystalMix);
+  }
+
+  const crystal = String(
+    (slot.crystal != null ? slot.crystal : slot.crystalName != null ? slot.crystalName : '') || '',
+  ).trim();
+  if (crystal) return [crystal, crystal, crystal, crystal];
+  return [];
+}
+
+function normalizeTruthIdentitySlot(slot) {
+  const crystalEntries = resolveSlotCrystalEntries(slot);
+  const inlineUpgrades = normalizeStringArray(slot && slot.upgrades);
+  const fieldUpgrades = normalizeStringArray([slot && slot.upgrade1, slot && slot.upgrade2]);
+  let upgrades = inlineUpgrades.length ? inlineUpgrades : fieldUpgrades;
+
+  if (
+    crystalEntries.length &&
+    upgrades.length >= crystalEntries.length &&
+    stableStringify(upgrades.slice(0, crystalEntries.length)) === stableStringify(crystalEntries)
+  ) {
+    upgrades = upgrades.slice();
+  } else if (crystalEntries.length) {
+    upgrades = crystalEntries.concat(upgrades);
+  }
+
+  return {
+    name: String((slot && slot.name) || '').trim(),
+    upgrades,
+  };
+}
+
+function normalizeTruthIdentityBuild(build) {
+  const stats = (build && build.stats) || {};
+  return {
+    stats: {
+      level: Number(stats.level),
+      hp: Number(stats.hp),
+      speed: Number(stats.speed),
+      dodge: Number(stats.dodge),
+      accuracy: Number(stats.accuracy),
+    },
+    armor: normalizeTruthIdentitySlot(build && build.armor),
+    weapon1: normalizeTruthIdentitySlot(build && build.weapon1),
+    weapon2: normalizeTruthIdentitySlot(build && build.weapon2),
+    misc1: normalizeTruthIdentitySlot(build && build.misc1),
+    misc2: normalizeTruthIdentitySlot(build && build.misc2),
+  };
+}
+
+function truthIdentityHash(build) {
+  return hex8(hashStr32(stableStringify(normalizeTruthIdentityBuild(build))));
+}
+
+function buildHashPair(attackerBuild, defenderBuild) {
+  return {
+    attacker: attackerBuild ? truthIdentityHash(attackerBuild) : null,
+    defender: defenderBuild ? truthIdentityHash(defenderBuild) : null,
+  };
+}
+
+function buildIdentityHashPairFromPageBuilds(pageBuilds) {
+  return buildHashPair(
+    pageBuilds && pageBuilds.attacker ? pageBuilds.attacker : null,
+    pageBuilds && pageBuilds.defender ? pageBuilds.defender : null,
+  );
+}
+
+function hasMixedCrystals(build) {
+  for (const key of ['armor', 'weapon1', 'weapon2', 'misc1', 'misc2']) {
+    const crystals = resolveSlotCrystalEntries(build && build[key]);
+    if (new Set(crystals).size > 1) return true;
+  }
+  return false;
+}
+
+function buildReplayIdentityInfo(row, attackerBuild, defenderBuild) {
+  return {
+    expectedHashes:
+      row && row.verifiedHashes
+        ? { ...row.verifiedHashes }
+        : row && row.requestedHashes
+          ? { ...row.requestedHashes }
+          : buildIdentityHashPairFromPageBuilds(row && row.verifiedPageBuilds
+            ? row.verifiedPageBuilds
+            : row && row.pageBuilds
+              ? row.pageBuilds
+              : null),
+    normalizedBuilds: {
+      attacker: normalizeTruthIdentityBuild(attackerBuild),
+      defender: normalizeTruthIdentityBuild(defenderBuild),
+    },
+    hashes: buildHashPair(attackerBuild, defenderBuild),
+    mixedCrystalsPreserved: {
+      attacker: hasMixedCrystals(attackerBuild),
+      defender: hasMixedCrystals(defenderBuild),
+    },
+  };
+}
+
+function collapseResolvedIdentity(exportPayload, defenderName) {
+  const resolvedBuildsRoot = exportPayload && exportPayload.resolvedBuilds ? exportPayload.resolvedBuilds : null;
+  const resolvedHashesRoot = exportPayload && exportPayload.resolvedHashes ? exportPayload.resolvedHashes : null;
+  const defendersByName =
+    resolvedBuildsRoot && resolvedBuildsRoot.defendersByName && typeof resolvedBuildsRoot.defendersByName === 'object'
+      ? resolvedBuildsRoot.defendersByName
+      : {};
+  const resolvedDefender =
+    defenderName && defendersByName[defenderName]
+      ? defendersByName[defenderName]
+      : defendersByName[Object.keys(defendersByName)[0]] || null;
+  const exportDefenderHash =
+    defenderName &&
+    resolvedHashesRoot &&
+    resolvedHashesRoot.defendersByName &&
+    resolvedHashesRoot.defendersByName[defenderName]
+      ? resolvedHashesRoot.defendersByName[defenderName]
+      : resolvedHashesRoot &&
+          resolvedHashesRoot.defendersByName &&
+          resolvedHashesRoot.defendersByName[Object.keys(resolvedHashesRoot.defendersByName || {})[0]]
+        ? resolvedHashesRoot.defendersByName[Object.keys(resolvedHashesRoot.defendersByName || {})[0]]
+        : null;
+
+  return {
+    resolvedBuilds: {
+      attacker: resolvedBuildsRoot && resolvedBuildsRoot.attacker ? resolvedBuildsRoot.attacker : null,
+      defender: resolvedDefender,
+    },
+    exportResolvedHashes: {
+      attacker: resolvedHashesRoot && resolvedHashesRoot.attacker ? resolvedHashesRoot.attacker : null,
+      defender: exportDefenderHash,
+    },
+    resolvedHashes: buildHashPair(
+      resolvedBuildsRoot && resolvedBuildsRoot.attacker ? resolvedBuildsRoot.attacker : null,
+      resolvedDefender,
+    ),
+  };
+}
+
+function evaluateExactReplayIdentity(row, simIdentity, replayIdentity) {
+  const expected = replayIdentity && replayIdentity.expectedHashes ? replayIdentity.expectedHashes : null;
+  const replayHashes = replayIdentity && replayIdentity.hashes ? replayIdentity.hashes : null;
+  const simHashes = simIdentity && simIdentity.resolvedHashes ? simIdentity.resolvedHashes : null;
+  const reasons = [];
+
+  function comparePair(label, left, right) {
+    if (!left || !right) return;
+    for (const side of ['attacker', 'defender']) {
+      if (left[side] == null || right[side] == null) continue;
+      if (String(left[side]) !== String(right[side])) {
+        reasons.push(`${label} ${side} hash ${left[side]} != ${right[side]}`);
+      }
+    }
+  }
+
+  if (!expected || expected.attacker == null || expected.defender == null) {
+    reasons.push('missing truth verified/requested hashes');
+  }
+  if (!replayHashes || replayHashes.attacker == null || replayHashes.defender == null) {
+    reasons.push('missing replay payload hashes');
+  }
+  if (!simHashes || simHashes.attacker == null || simHashes.defender == null) {
+    reasons.push('missing sim resolved hashes');
+  }
+
+  comparePair('replay payload vs truth', replayHashes, expected);
+  comparePair('sim resolved vs truth', simHashes, expected);
+
+  return {
+    identityMatch: reasons.length === 0,
+    identityMismatchReason: reasons.length ? reasons.join(' | ') : null,
+  };
+}
+
+function maybePrintIdentityDebug(row, replayIdentity, simIdentity) {
+  if (!debugIdentity || row.replaySource !== 'pageBuilds-exact') return;
+  console.log('[LEGACY_REPLAY_DEBUG_IDENTITY]', JSON.stringify({
+    label: row.label,
+    truthRequestedHashes: row.requestedHashes || null,
+    truthVerifiedHashes: row.verifiedHashes || null,
+    replayHashes: replayIdentity ? replayIdentity.hashes : null,
+    simResolvedHashes: simIdentity ? simIdentity.resolvedHashes : null,
+    simExportResolvedHashes: simIdentity ? simIdentity.exportResolvedHashes : null,
+    replayNormalizedBuilds: replayIdentity ? replayIdentity.normalizedBuilds : null,
+    simResolvedBuilds: simIdentity ? simIdentity.resolvedBuilds : null,
+    mixedCrystalsPreserved: replayIdentity ? replayIdentity.mixedCrystalsPreserved : null,
+    identityMatch: simIdentity ? simIdentity.identityMatch : null,
+    identityMismatchReason: simIdentity ? simIdentity.identityMismatchReason : null,
+  }, null, 2));
+}
+
+function normalizeDebugMatchupKey(attacker, defender) {
+  const a = String(attacker || '').trim();
+  const d = String(defender || '').trim();
+  return a && d ? `${a}|${d}` : '';
+}
+
+const replayDebugMatchupKeys = new Set(
+  parseCsv(replayDebugMatchupsRaw)
+    .map((entry) => {
+      const pipeIndex = entry.indexOf('|');
+      if (pipeIndex < 0) return '';
+      return normalizeDebugMatchupKey(entry.slice(0, pipeIndex), entry.slice(pipeIndex + 1));
+    })
+    .filter(Boolean),
+);
+
+function wantsReplayDebugMatchup(row) {
+  return replayDebugMatchupKeys.has(normalizeDebugMatchupKey(row.attacker, row.defender));
+}
+
+function trimIndentedSection(lines) {
+  return lines.map((line) => line.replace(/^\s{2}/, '')).filter((line) => line !== '');
+}
+
+function extractTraceSection(stdout, defenderName) {
+  const lines = String(stdout || '').split(/\r?\n/);
+  const startNeedle = `=== TRACE`;
+  const defenderNeedle = `for "${defenderName}"`;
+  const start = lines.findIndex((line) => line.includes(startNeedle) && line.includes(defenderNeedle));
+  if (start < 0) return [];
+  const out = [];
+  for (let i = start; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (i > start && line.startsWith('  === ROLL_DUMP')) break;
+    if (i > start && line.startsWith('SUMMARY:')) break;
+    if (i > start && line.startsWith('COMPARE:')) break;
+    if (i > start && line.startsWith('=== END OUTPUT ===')) break;
+    out.push(line);
+  }
+  return trimIndentedSection(out);
+}
+
+function extractRollDumpSection(stdout, defenderName) {
+  const lines = String(stdout || '').split(/\r?\n/);
+  const startNeedle = `=== ROLL_DUMP for "${defenderName}"`;
+  const start = lines.findIndex((line) => line.includes(startNeedle));
+  if (start < 0) return [];
+  const out = [];
+  for (let i = start; i < lines.length; i += 1) {
+    const line = lines[i];
+    out.push(line);
+    if (line.includes('=== END ROLL_DUMP ===')) break;
+  }
+  return trimIndentedSection(out);
+}
+
+function buildSanityFingerprint(exportPayload, simIdentity) {
+  const variant = exportPayload && Array.isArray(exportPayload.variants) ? exportPayload.variants[0] : null;
+  const fingerprint = exportPayload && exportPayload.fingerprint ? exportPayload.fingerprint : null;
+  const critical = fingerprint && fingerprint.critical ? fingerprint.critical : variant && variant.config ? variant.config : null;
+  return {
+    sourceSimFile:
+      fingerprint && fingerprint.sourceSimFile ? fingerprint.sourceSimFile : null,
+    sourceDefsFile:
+      exportPayload &&
+      exportPayload.resolvedConfig &&
+      exportPayload.resolvedConfig.sharedDefsFile
+        ? exportPayload.resolvedConfig.sharedDefsFile
+        : fingerprint && fingerprint.sharedDefsFile
+          ? fingerprint.sharedDefsFile
+          : null,
+    sourceDefenderFile:
+      exportPayload &&
+      exportPayload.resolvedConfig &&
+      exportPayload.resolvedConfig.defenderSourceFile
+        ? exportPayload.resolvedConfig.defenderSourceFile
+        : exportPayload && exportPayload.defenders && exportPayload.defenders.sourceFile
+          ? exportPayload.defenders.sourceFile
+          : null,
+    attackerHash: simIdentity && simIdentity.resolvedHashes ? simIdentity.resolvedHashes.attacker : null,
+    defenderHash: simIdentity && simIdentity.resolvedHashes ? simIdentity.resolvedHashes.defender : null,
+    logicKey:
+      fingerprint && fingerprint.logicKey ? fingerprint.logicKey : variant && variant.logicKey ? variant.logicKey : null,
+    configKey:
+      fingerprint && fingerprint.configKey ? fingerprint.configKey : variant && variant.configKey ? variant.configKey : null,
+    runKey:
+      fingerprint && fingerprint.runKey ? fingerprint.runKey : variant && variant.runKey ? variant.runKey : null,
+    critical: critical
+      ? {
+          hitRollMode: critical.hitRollMode,
+          hitGe: critical.hitGe,
+          hitQround: critical.hitQround,
+          skillRollMode: critical.skillRollMode,
+          skillGe: critical.skillGe,
+          skillQround: critical.skillQround,
+          dmgRoll: critical.dmgRoll,
+          armorK: critical.armorK,
+          armorApply: critical.armorApply,
+          armorRound: critical.armorRound,
+          sharedHit: critical.sharedHit,
+          sharedSkillMode: critical.sharedSkillMode,
+          actionStopOnKill: critical.actionStopOnKill,
+          speedTieMode: critical.speedTieMode,
+          roundResolveMode: critical.roundResolveMode,
+          crystalStackStats: critical.crystalStackStats,
+          crystalStackDmg: critical.crystalStackDmg,
+          crystalSlots: critical.crystalSlots,
+          attackerAttackType: critical.attackerAttackType,
+          defenderAttackType: critical.defenderAttackType,
+          attackStyleRoundMode: critical.attackStyleRoundMode,
+        }
+      : null,
+  };
+}
+
+function ratioOrNull(n, d, digits = 4) {
+  if (!Number.isFinite(n) || !Number.isFinite(d) || d === 0) return null;
+  return Number((n / d).toFixed(digits));
+}
+
+function buildDebugActionCounterDiagnosis(actionCounters, row, simRow) {
+  if (!actionCounters || !actionCounters.attacker || !actionCounters.defender) return [];
+
+  const attacker = actionCounters.attacker;
+  const defender = actionCounters.defender;
+  const hints = [];
+
+  const attackerAppliedRaw = ratioOrNull(attacker.appliedDamageTotal, attacker.rawDamageTotal);
+  const defenderAppliedRaw = ratioOrNull(defender.appliedDamageTotal, defender.rawDamageTotal);
+  const attackerW2OnDeadRate = ratioOrNull(attacker.w2OnDeadCount, attacker.turnsTaken);
+  const defenderW2OnDeadRate = ratioOrNull(defender.w2OnDeadCount, defender.turnsTaken);
+  const attackerOverkillRate = ratioOrNull(
+    attacker.w1OverkillCount + attacker.w2OverkillCount,
+    attacker.turnsTaken,
+  );
+  const defenderOverkillRate = ratioOrNull(
+    defender.w1OverkillCount + defender.w2OverkillCount,
+    defender.turnsTaken,
+  );
+  const defenderW2KillRate = ratioOrNull(defender.killsByW2, defender.totalKills);
+  const defenderW1FinishRate = ratioOrNull(defender.killsByW1, defender.weapon1DamageEvents);
+  const defenderW2FinishRate = ratioOrNull(defender.killsByW2, defender.weapon2DamageEvents);
+
+  const truthA = row && row.truth ? row.truth.A_damagePerFight : null;
+  const truthD = row && row.truth ? row.truth.D_damagePerFight : null;
+  const simA = simRow ? simRow.A_damagePerFight : null;
+  const simD = simRow ? simRow.D_damagePerFight : null;
+  if (
+    Number.isFinite(truthA) &&
+    Number.isFinite(truthD) &&
+    Number.isFinite(simA) &&
+    Number.isFinite(simD)
+  ) {
+    const deltaA = Number((simA - truthA).toFixed(1));
+    const deltaD = Number((simD - truthD).toFixed(1));
+    if (Math.abs(deltaD) > Math.abs(deltaA) + 20) {
+      hints.push(
+        `throughput gap is defender-skewed (A dmg/f Δ=${deltaA}, D dmg/f Δ=${deltaD})`,
+      );
+    }
+  }
+
+  if (
+    defenderW2OnDeadRate != null &&
+    (
+      defenderW2OnDeadRate >= 0.08 ||
+      (
+        attackerW2OnDeadRate != null &&
+        defender.w2OnDeadCount >= attacker.w2OnDeadCount + 5 &&
+        defenderW2OnDeadRate >= attackerW2OnDeadRate * 1.5
+      )
+    )
+  ) {
+    hints.push(
+      `defender w2OnDead is elevated (${defender.w2OnDeadCount}/${defender.turnsTaken}, rate=${defenderW2OnDeadRate})`,
+    );
+  }
+
+  if (
+    defenderAppliedRaw != null &&
+    attackerAppliedRaw != null &&
+    defenderAppliedRaw + 0.01 < attackerAppliedRaw
+  ) {
+    hints.push(
+      `defender applied/raw is materially lower than attacker (${defenderAppliedRaw} vs ${attackerAppliedRaw})`,
+    );
+  }
+
+  if (
+    attackerAppliedRaw != null &&
+    defenderAppliedRaw != null &&
+    attackerAppliedRaw >= defenderAppliedRaw + 0.01
+  ) {
+    hints.push(
+      `attacker applied/raw looks unusually favorable (${attackerAppliedRaw} vs ${defenderAppliedRaw})`,
+    );
+  }
+
+  if (
+    defender.weapon2DamageEvents > 0 &&
+    (
+      defender.killsByW2 === 0 ||
+      (defenderW2KillRate != null && defenderW2KillRate <= 0.15)
+    )
+  ) {
+    hints.push(
+      `defender weapon2 lands damage but rarely closes kills (w2DamageEvents=${defender.weapon2DamageEvents}, killsByW2=${defender.killsByW2}, totalKills=${defender.totalKills})`,
+    );
+  }
+
+  if (
+    defenderW1FinishRate != null &&
+    defenderW2FinishRate != null &&
+    defenderW2FinishRate + 0.02 < defenderW1FinishRate
+  ) {
+    hints.push(
+      `defender weapon2 converts damage events into kills less often than weapon1 (${defenderW2FinishRate} vs ${defenderW1FinishRate})`,
+    );
+  }
+
+  if (
+    defenderOverkillRate != null &&
+    attackerOverkillRate != null &&
+    defenderOverkillRate >= attackerOverkillRate + 0.05
+  ) {
+    hints.push(
+      `defender overkill/dead-target behavior is more asymmetric than attacker (${defenderOverkillRate} vs ${attackerOverkillRate})`,
+    );
+  }
+
+  if (!hints.length) {
+    hints.push(
+      'aggregate counters do not show a large overkill/dead-target asymmetry by themselves; inspect broader action distribution and turn sequencing next',
+    );
+  }
+
+  return hints;
+}
+
+function buildRangeMismatchHints(compiledSnapshot, row) {
+  if (!compiledSnapshot || !row || !row.truth) return [];
+  const hints = [];
+
+  function maybeRangeNote(label, predicted, truthRange) {
+    if (!predicted || !Array.isArray(truthRange) || truthRange.length < 2) return;
+    const dMin = Number(predicted.min || 0) - Number(truthRange[0] || 0);
+    const dMax = Number(predicted.max || 0) - Number(truthRange[1] || 0);
+    if (dMin >= 4 || dMax >= 8) {
+      hints.push(
+        `${label} compiled action range looks inflated vs truth (${predicted.min}-${predicted.max} vs ${truthRange[0]}-${truthRange[1]})`,
+      );
+      return;
+    }
+    if (dMin <= -4 || dMax <= -8) {
+      hints.push(
+        `${label} compiled action range looks compressed/capped vs truth (${predicted.min}-${predicted.max} vs ${truthRange[0]}-${truthRange[1]})`,
+      );
+    }
+  }
+
+  maybeRangeNote('attacker', compiledSnapshot.attacker && compiledSnapshot.attacker.compiledActionRange, row.truth.A_rng);
+  maybeRangeNote('defender', compiledSnapshot.defender && compiledSnapshot.defender.compiledActionRange, row.truth.D_rng);
+
+  return hints;
+}
+
+function buildRangeDiffHint(compiledSnapshot, row) {
+  if (!compiledSnapshot || !row || !row.truth) return null;
+
+  function buildSide(sideKey, truthRange, truthLabel) {
+    const sideSnapshot = compiledSnapshot && compiledSnapshot[sideKey] ? compiledSnapshot[sideKey] : null;
+    const simRange = sideSnapshot && sideSnapshot.compiledActionRange ? sideSnapshot.compiledActionRange : null;
+    if (!simRange || !Array.isArray(truthRange) || truthRange.length < 2) return null;
+
+    const math = sideSnapshot && sideSnapshot.debugMathBreakdown ? sideSnapshot.debugMathBreakdown : null;
+    const weaponMath = math ? [math.weapon1, math.weapon2].filter(Boolean) : [];
+    const crystalActive = weaponMath.some((weapon) => {
+      const contrib = weapon && weapon.crystalDamageContribution;
+      return !!(contrib && ((contrib.totalDelta && (contrib.totalDelta.min || contrib.totalDelta.max)) || (contrib.aggregatePct && (contrib.aggregatePct.min || contrib.aggregatePct.max))));
+    });
+    const upgradeActive = weaponMath.some((weapon) => {
+      const upgrade = weapon && weapon.upgrade;
+      return !!(upgrade && (upgrade.pct || (upgrade.delta && (upgrade.delta.min || upgrade.delta.max))));
+    });
+
+    const deltaMin = Number(simRange.min || 0) - Number(truthRange[0] || 0);
+    const deltaMax = Number(simRange.max || 0) - Number(truthRange[1] || 0);
+    const activeDamageSources = ['base weapon defs'];
+    if (crystalActive) activeDamageSources.push('weapon crystal damage contribution');
+    if (upgradeActive) activeDamageSources.push('weapon upgrade damage contribution');
+
+    return {
+      truthLabel,
+      truthRange: [Number(truthRange[0] || 0), Number(truthRange[1] || 0)],
+      simRange: [Number(simRange.min || 0), Number(simRange.max || 0)],
+      delta: {
+        min: deltaMin,
+        max: deltaMax,
+      },
+      activeDamageSources,
+      unlikelySources: ['attack-style rounding', 'stat-derived damage bonus'],
+      summary:
+        `${sideKey} range ${deltaMin >= 0 || deltaMax >= 0 ? 'inflated' : 'compressed'} vs truth ` +
+        `by ${formatSigned(deltaMin, 2)}/${formatSigned(deltaMax, 2)}; current sim damage range comes from ` +
+        `${activeDamageSources.join(' + ')}.`,
+    };
+  }
+
+  return {
+    attacker: buildSide('attacker', row.truth.A_rng, 'A_rng'),
+    defender: buildSide('defender', row.truth.D_rng, 'D_rng'),
+  };
+}
+
+function buildRangeSourceAudit(exportRow, compiledSnapshot, simRow) {
+  function buildSide(sideKey, runtimeNode, compiledNode, replayRange, label) {
+    const observedRange = runtimeNode && Array.isArray(runtimeNode.range) ? runtimeNode.range.slice(0, 2) : null;
+    const compiledRange =
+      compiledNode && compiledNode.compiledActionRange
+        ? [Number(compiledNode.compiledActionRange.min || 0), Number(compiledNode.compiledActionRange.max || 0)]
+        : null;
+    const replayFieldRange = Array.isArray(replayRange) ? replayRange.slice(0, 2) : null;
+    const observedMatchesReplay =
+      observedRange &&
+      replayFieldRange &&
+      observedRange[0] === replayFieldRange[0] &&
+      observedRange[1] === replayFieldRange[1];
+    const differ =
+      observedRange &&
+      compiledRange &&
+      (observedRange[0] !== compiledRange[0] || observedRange[1] !== compiledRange[1]);
+
+    return {
+      label,
+      observedRangeReporter: {
+        value: observedRange,
+        replayFieldValue: replayFieldRange,
+        sourceField: sideKey === 'attacker' ? 'exportRow.a.range' : 'exportRow.d.range',
+        replayField: sideKey === 'attacker' ? 'sim.A_rng' : 'sim.D_rng',
+        formulaPath:
+          'doAction() updates stats.{side}.minActionDmg/maxActionDmg from realized actionRaw across sampled trials',
+        concept: 'observed realized positive action range before HP-cap application',
+        matchesReplayField: !!observedMatchesReplay,
+      },
+      compiledRangeReporter: {
+        value: compiledRange,
+        sourceField:
+          sideKey === 'attacker'
+            ? 'compiledSnapshot.attacker.compiledActionRange'
+            : 'compiledSnapshot.defender.compiledActionRange',
+        formulaPath:
+          'predictPosActionRangeFromWeaponMinMax(compiled weapon min/max, target armor, armor config)',
+        concept: 'compiled theoretical positive action envelope',
+      },
+      expectedToMatchExactly: false,
+      differ: !!differ,
+      differenceReason: differ
+        ? 'observedRangeReporter is sample-based runtime output; compiledRangeReporter is a theoretical predictor, so they can disagree without implying a runtime combat-path mismatch'
+        : 'runtime observed range and compiled predicted range agree for this matchup at the current trial set',
+    };
+  }
+
+  return {
+    attacker: buildSide(
+      'attacker',
+      exportRow && exportRow.a ? exportRow.a : null,
+      compiledSnapshot && compiledSnapshot.attacker ? compiledSnapshot.attacker : null,
+      simRow ? simRow.A_rng : null,
+      'A_rng',
+    ),
+    defender: buildSide(
+      'defender',
+      exportRow && exportRow.d ? exportRow.d : null,
+      compiledSnapshot && compiledSnapshot.defender ? compiledSnapshot.defender : null,
+      simRow ? simRow.D_rng : null,
+      'D_rng',
+    ),
+  };
+}
+
+function buildRuntimeVsCompiledComparison(runtimeCombatAudit, compiledSnapshot) {
+  function eq(a, b, epsilon = 1e-9) {
+    if (a == null && b == null) return true;
+    if (typeof a === 'number' && typeof b === 'number') return Math.abs(a - b) <= epsilon;
+    return a === b;
+  }
+
+  function compareWeapon(runtimeSide, compiledSide, weaponKey) {
+    const runtime = runtimeSide ? runtimeSide[weaponKey] : null;
+    const compiled = compiledSide ? compiledSide[weaponKey] : null;
+    if (!runtime || !compiled) return null;
+
+    const comparisons = {
+      hitOffenseStatUsed: {
+        runtime: runtime.hitOffenseStatUsed ? runtime.hitOffenseStatUsed.value : null,
+        compiled: compiled.hitCheckUsed && compiled.hitCheckUsed.offense ? compiled.hitCheckUsed.offense.value : null,
+      },
+      hitDefenseStatUsed: {
+        runtime: runtime.hitDefenseStatUsed ? runtime.hitDefenseStatUsed.value : null,
+        compiled: compiled.hitCheckUsed && compiled.hitCheckUsed.defense ? compiled.hitCheckUsed.defense.value : null,
+      },
+      skillOffenseStatUsed: {
+        runtime: runtime.skillOffenseStatUsed ? runtime.skillOffenseStatUsed.value : null,
+        compiled: compiled.skillCheckUsed && compiled.skillCheckUsed.offense ? compiled.skillCheckUsed.offense.value : null,
+      },
+      skillDefenseStatUsed: {
+        runtime: runtime.skillDefenseStatUsed ? runtime.skillDefenseStatUsed.value : null,
+        compiled: compiled.skillCheckUsed && compiled.skillCheckUsed.defense ? compiled.skillCheckUsed.defense.value : null,
+      },
+      projectileDefenseMultiplierUsed: {
+        runtime: runtime.projectileDefenseMultiplierUsed,
+        compiled: compiled.projectileDefenseMultiplier,
+      },
+      damageMinUsed: {
+        runtime: runtime.damageMinMaxUsed ? runtime.damageMinMaxUsed.min : null,
+        compiled: compiled.preArmorRange ? compiled.preArmorRange.min : null,
+      },
+      damageMaxUsed: {
+        runtime: runtime.damageMinMaxUsed ? runtime.damageMinMaxUsed.max : null,
+        compiled: compiled.preArmorRange ? compiled.preArmorRange.max : null,
+      },
+      armorFactorUsed: {
+        runtime: runtime.armorFactorUsed,
+        compiled: compiled.armorReduction ? compiled.armorReduction.targetArmorFactor : null,
+      },
+      tacticsValueUsed: {
+        runtime: runtime.tacticsRuntime ? runtime.tacticsRuntime.value : null,
+        compiled:
+          compiled.sourceMapping && compiled.sourceMapping.damagePipeline
+            ? compiled.sourceMapping.damagePipeline.tacticsValue
+            : null,
+      },
+    };
+
+    for (const entry of Object.values(comparisons)) entry.equal = eq(entry.runtime, entry.compiled, 1e-6);
+    const mismatchFields = Object.entries(comparisons)
+      .filter(([, entry]) => entry.equal === false)
+      .map(([field]) => field);
+
+    return {
+      runtime,
+      compiled: {
+        hitCheckUsed: compiled.hitCheckUsed || null,
+        skillCheckUsed: compiled.skillCheckUsed || null,
+        damageMinMaxUsed: compiled.preArmorRange || null,
+        armorFactorUsed: compiled.armorReduction ? compiled.armorReduction.targetArmorFactor : null,
+        tacticsRuntime:
+          compiled.sourceMapping && compiled.sourceMapping.damagePipeline
+            ? compiled.sourceMapping.damagePipeline
+            : null,
+      },
+      comparisons,
+      equal: mismatchFields.length === 0,
+      mismatchFields,
+    };
+  }
+
+  function compareSide(sideKey) {
+    const runtimeSide = runtimeCombatAudit ? runtimeCombatAudit[sideKey] : null;
+    const compiledSide = compiledSnapshot ? compiledSnapshot[sideKey] : null;
+    const weapon1 = compareWeapon(runtimeSide, compiledSide, 'weapon1');
+    const weapon2 = compareWeapon(runtimeSide, compiledSide, 'weapon2');
+    const mismatchFields = []
+      .concat(weapon1 && !weapon1.equal ? weapon1.mismatchFields.map((field) => `weapon1.${field}`) : [])
+      .concat(weapon2 && !weapon2.equal ? weapon2.mismatchFields.map((field) => `weapon2.${field}`) : []);
+    return {
+      weapon1,
+      weapon2,
+      equal: mismatchFields.length === 0,
+      mismatchFields,
+    };
+  }
+
+  const attacker = compareSide('attacker');
+  const defender = compareSide('defender');
+  return {
+    attacker,
+    defender,
+    equal: attacker.equal && defender.equal,
+    mismatchFields: attacker.mismatchFields.concat(defender.mismatchFields),
+  };
+}
+
+function buildWeaponSuccessFlowAudit(weaponCounters) {
+  function summarize(counter) {
+    if (!counter) return null;
+    return {
+      hitRate: ratioOrNull(counter.hits, counter.attempts),
+      skillRateGivenHit: ratioOrNull(counter.skillSuccesses, counter.hits),
+      damageEventRatePerAttempt: ratioOrNull(counter.damageEvents || counter.skillSuccesses, counter.attempts),
+      averageAppliedDamagePerAttempt: ratioOrNull(counter.appliedDamageTotal, counter.attempts),
+      averageAppliedDamagePerHit: ratioOrNull(counter.appliedDamageTotal, counter.hits),
+      averageAppliedDamagePerSuccessfulSkill: ratioOrNull(counter.appliedDamageTotal, counter.skillSuccesses),
+    };
+  }
+
+  return weaponCounters
+    ? {
+        attacker: {
+          weapon1: summarize(weaponCounters.attacker && weaponCounters.attacker.weapon1),
+          weapon2: summarize(weaponCounters.attacker && weaponCounters.attacker.weapon2),
+        },
+        defender: {
+          weapon1: summarize(weaponCounters.defender && weaponCounters.defender.weapon1),
+          weapon2: summarize(weaponCounters.defender && weaponCounters.defender.weapon2),
+        },
+      }
+    : null;
+}
+
+function buildDebugDiagnosisBucket({
+  rangeSourceAudit,
+  runtimeVsCompiledComparison,
+  actionCounters,
+  weaponSuccessFlowAudit,
+  row,
+  simRow,
+}) {
+  const reasons = [];
+
+  if (runtimeVsCompiledComparison && runtimeVsCompiledComparison.equal === false) {
+    reasons.push(`runtime/compiled mismatches: ${runtimeVsCompiledComparison.mismatchFields.join(', ')}`);
+    return {
+      likelyBucket: 'runtime stat-source mismatch',
+      reasons,
+    };
+  }
+
+  const rangeDisagreement =
+    rangeSourceAudit &&
+    ((rangeSourceAudit.attacker && rangeSourceAudit.attacker.differ) ||
+      (rangeSourceAudit.defender && rangeSourceAudit.defender.differ));
+  if (rangeDisagreement) {
+    reasons.push('runtime inputs match compiled snapshot, but observed A_rng/D_rng and compiledActionRange come from different reporter concepts');
+    reasons.push('this explains part of the earlier range signal, but not by itself the remaining win-rate gap');
+    return {
+      likelyBucket: 'stale/incorrect range reporter',
+      reasons,
+    };
+  }
+
+  const defenderW2 =
+    weaponSuccessFlowAudit &&
+    weaponSuccessFlowAudit.defender &&
+    weaponSuccessFlowAudit.defender.weapon2
+      ? weaponSuccessFlowAudit.defender.weapon2
+      : null;
+  const defenderW1 =
+    weaponSuccessFlowAudit &&
+    weaponSuccessFlowAudit.defender &&
+    weaponSuccessFlowAudit.defender.weapon1
+      ? weaponSuccessFlowAudit.defender.weapon1
+      : null;
+  if (
+    defenderW1 &&
+    defenderW2 &&
+    defenderW2.averageAppliedDamagePerSuccessfulSkill != null &&
+    defenderW1.averageAppliedDamagePerSuccessfulSkill != null &&
+    defenderW2.averageAppliedDamagePerSuccessfulSkill + 0.02 < defenderW1.averageAppliedDamagePerSuccessfulSkill
+  ) {
+    reasons.push(
+      `defender weapon2 converts successful skills into less applied damage than weapon1 (${defenderW2.averageAppliedDamagePerSuccessfulSkill} vs ${defenderW1.averageAppliedDamagePerSuccessfulSkill})`,
+    );
+    return {
+      likelyBucket: 'defender successful-skill conversion problem',
+      reasons,
+    };
+  }
+
+  if (
+    actionCounters &&
+    actionCounters.attacker &&
+    actionCounters.defender &&
+    actionCounters.defender.turnsTaken + 50000 < actionCounters.attacker.turnsTaken
+  ) {
+    reasons.push(
+      `defender takes materially fewer actions than attacker (${actionCounters.defender.turnsTaken} vs ${actionCounters.attacker.turnsTaken})`,
+    );
+    return {
+      likelyBucket: 'defender turn-throughput problem',
+      reasons,
+    };
+  }
+
+  if (row && row.truth && simRow && Number.isFinite(row.truth.D_damagePerFight) && Number.isFinite(simRow.D_damagePerFight)) {
+    reasons.push(
+      `defender damage/fight remains low vs truth (${simRow.D_damagePerFight} vs ${row.truth.D_damagePerFight}) even after the range-reporter split is accounted for`,
+    );
+  }
+  return {
+    likelyBucket: 'still ambiguous',
+    reasons,
+  };
+}
+
+function buildReplayDebugAudit({
+  row,
+  defenderKey,
+  replayIdentity,
+  simIdentity,
+  exportPayload,
+  exportRow,
+  simRow,
+  stdout,
+}) {
+  const firstMove = exportRow && exportRow.firstMove ? exportRow.firstMove : null;
+  const aNode = exportRow && exportRow.a ? exportRow.a : null;
+  const dNode = exportRow && exportRow.d ? exportRow.d : null;
+  const actionCounters = exportRow && exportRow.actionCounters ? exportRow.actionCounters : null;
+  const weaponCounters = exportRow && exportRow.weaponCounters ? exportRow.weaponCounters : null;
+  const runtimeCombatAudit = exportRow && exportRow.runtimeCombatAudit ? exportRow.runtimeCombatAudit : null;
+  const compiledSnapshot = exportRow && exportRow.compiledSnapshot ? exportRow.compiledSnapshot : null;
+  const sanityFingerprint = buildSanityFingerprint(exportPayload, simIdentity);
+  const rangeMismatchHints = buildRangeMismatchHints(compiledSnapshot, row);
+  const rangeDiffHint = buildRangeDiffHint(compiledSnapshot, row);
+  const rangeSourceAudit = buildRangeSourceAudit(exportRow, compiledSnapshot, simRow);
+  const runtimeVsCompiledComparison = buildRuntimeVsCompiledComparison(runtimeCombatAudit, compiledSnapshot);
+  const weaponSuccessFlowAudit = buildWeaponSuccessFlowAudit(weaponCounters);
+  const diagnosisBucket = buildDebugDiagnosisBucket({
+    rangeSourceAudit,
+    runtimeVsCompiledComparison,
+    actionCounters,
+    weaponSuccessFlowAudit,
+    row,
+    simRow,
+  });
+  return {
+    verification: {
+      truthRequestedHashes: row.requestedHashes || null,
+      truthVerifiedHashes: row.verifiedHashes || null,
+      simResolvedHashes: simIdentity ? simIdentity.resolvedHashes : null,
+      simExportResolvedHashes: simIdentity ? simIdentity.exportResolvedHashes : null,
+      identityMatch: simIdentity ? simIdentity.identityMatch : null,
+      identityMismatchReason: simIdentity ? simIdentity.identityMismatchReason : null,
+      normalizedAttackerBuild: replayIdentity ? replayIdentity.normalizedBuilds.attacker : null,
+      normalizedDefenderBuild: replayIdentity ? replayIdentity.normalizedBuilds.defender : null,
+      mixedCrystalsPreserved: replayIdentity ? replayIdentity.mixedCrystalsPreserved : null,
+      sourceDefenderFile: sanityFingerprint.sourceDefenderFile,
+      sourceDefsFile: sanityFingerprint.sourceDefsFile,
+    },
+    combatSummary: {
+      truth: row.truth,
+      sim: simRow,
+      firstMove,
+      simSkillGivenHit: {
+        attacker: aNode && aNode.skillGivenHit ? aNode.skillGivenHit : null,
+        defender: dNode && dNode.skillGivenHit ? dNode.skillGivenHit : null,
+      },
+      activeFlags: sanityFingerprint.critical,
+    },
+    sampledFightDiagnostics: {
+      trace: extractTraceSection(stdout, defenderKey),
+      rollDump: extractRollDumpSection(stdout, defenderKey),
+    },
+    compiledCombatSnapshot: compiledSnapshot,
+    rangeSourceAudit,
+    runtimeCombatAudit,
+    runtimeVsCompiledComparison,
+    debugStatBreakdown: compiledSnapshot
+      ? {
+          attacker: compiledSnapshot.attacker ? compiledSnapshot.attacker.debugStatBreakdown : null,
+          defender: compiledSnapshot.defender ? compiledSnapshot.defender.debugStatBreakdown : null,
+        }
+      : null,
+    debugMathBreakdown: compiledSnapshot
+      ? {
+          attacker: compiledSnapshot.attacker ? compiledSnapshot.attacker.debugMathBreakdown : null,
+          defender: compiledSnapshot.defender ? compiledSnapshot.defender.debugMathBreakdown : null,
+        }
+      : null,
+    weaponSourceMapping: compiledSnapshot
+      ? {
+          attacker: compiledSnapshot.attacker ? compiledSnapshot.attacker.weaponSourceMapping : null,
+          defender: compiledSnapshot.defender ? compiledSnapshot.defender.weaponSourceMapping : null,
+        }
+      : null,
+    debugActionCounters: actionCounters,
+    debugWeaponCounters: weaponCounters,
+    weaponSuccessFlowAudit,
+    rangeDiffHint,
+    rangeMismatchHints,
+    diagnosisBucket,
+    diagnosisHints: [
+      ...(diagnosisBucket && diagnosisBucket.likelyBucket
+        ? [`diagnosis bucket: ${diagnosisBucket.likelyBucket}`]
+        : []),
+      ...(diagnosisBucket && Array.isArray(diagnosisBucket.reasons) ? diagnosisBucket.reasons : []),
+      ...(rangeDiffHint && rangeDiffHint.attacker && rangeDiffHint.attacker.summary
+        ? [rangeDiffHint.attacker.summary]
+        : []),
+      ...(rangeDiffHint && rangeDiffHint.defender && rangeDiffHint.defender.summary
+        ? [rangeDiffHint.defender.summary]
+        : []),
+      ...rangeMismatchHints,
+      ...buildDebugActionCounterDiagnosis(actionCounters, row, simRow),
+    ],
+    sanityFingerprint,
+  };
 }
 
 function pageBuildToLegacyBuild(pageBuild) {
@@ -148,7 +1163,63 @@ function findMatchingBrace(text, openIndex) {
   return -1;
 }
 
-function patchSimToCustom(simText, customBuild) {
+function findUserConfigBounds(simText) {
+  const userConfigMatch = /const USER_CONFIG = \{/.exec(simText);
+  if (!userConfigMatch) {
+    throw new Error('Could not find const USER_CONFIG = {');
+  }
+  const userConfigBraceIndex = simText.indexOf('{', userConfigMatch.index);
+  const userConfigBraceEnd = findMatchingBrace(simText, userConfigBraceIndex);
+  if (userConfigBraceEnd < 0) {
+    throw new Error('Could not find the end of USER_CONFIG');
+  }
+  return {
+    userConfigBraceIndex,
+    userConfigBraceEnd,
+  };
+}
+
+function patchSimToCustomNewShape(simText, customBuild) {
+  const { userConfigBraceIndex, userConfigBraceEnd } = findUserConfigBounds(simText);
+  const userConfigBody = simText.slice(userConfigBraceIndex + 1, userConfigBraceEnd);
+  const attackerMatch = /(^[ \t]*)attacker:\s*\{/m.exec(userConfigBody);
+  if (!attackerMatch) {
+    throw new Error('Could not find USER_CONFIG.attacker block in new layout');
+  }
+
+  const attackerLineIndent = attackerMatch[1];
+  const attackerLineStart = userConfigBraceIndex + 1 + attackerMatch.index;
+  const attackerBraceIndex = simText.indexOf('{', attackerLineStart);
+  const attackerBraceEnd = findMatchingBrace(simText, attackerBraceIndex);
+  if (attackerBraceEnd < 0) {
+    throw new Error('Could not find the end of USER_CONFIG.attacker block in new layout');
+  }
+
+  const attackerBlockText = simText.slice(attackerLineStart, attackerBraceEnd + 1);
+  if (
+    /(^[ \t]*)mode:\s*['"](?:env|preset|custom)['"]/m.test(attackerBlockText) ||
+    /(^[ \t]*)custom:\s*\{/m.test(attackerBlockText)
+  ) {
+    throw new Error('USER_CONFIG.attacker looks like the old mode/custom layout');
+  }
+
+  const defendersMatch = new RegExp(`\\n${attackerLineIndent}defenders:\\s*\\{`).exec(
+    simText.slice(attackerBraceEnd + 1, userConfigBraceEnd + 1),
+  );
+  if (!defendersMatch) {
+    throw new Error('Could not find USER_CONFIG.defenders block after USER_CONFIG.attacker');
+  }
+
+  const defendersLineStart = attackerBraceEnd + 1 + defendersMatch.index + 1;
+  const attackerJson = JSON.stringify(customBuild, null, 2)
+    .split('\n')
+    .map((line, idx) => (idx === 0 ? line : `${attackerLineIndent}${line}`))
+    .join('\n');
+  const replacement = `${attackerLineIndent}attacker: ${attackerJson},\n\n`;
+  return simText.slice(0, attackerLineStart) + replacement + simText.slice(defendersLineStart);
+}
+
+function patchSimToCustomOldShape(simText, customBuild) {
   const modePat = /mode:\s*['"](?:env|preset|custom)['"]\s*,\s*\/\/ env \| preset \| custom/;
   if (!modePat.test(simText)) {
     throw new Error('Could not find USER_CONFIG attacker mode line to patch');
@@ -187,6 +1258,26 @@ function patchSimToCustom(simText, customBuild) {
   return out;
 }
 
+function patchSimToCustom(simText, customBuild) {
+  const errors = [];
+
+  try {
+    return patchSimToCustomNewShape(simText, customBuild);
+  } catch (err) {
+    errors.push(`new layout: ${err && err.message ? err.message : String(err)}`);
+  }
+
+  try {
+    return patchSimToCustomOldShape(simText, customBuild);
+  } catch (err) {
+    errors.push(`old layout: ${err && err.message ? err.message : String(err)}`);
+  }
+
+  throw new Error(
+    `Could not patch USER_CONFIG.attacker. Supported layouts: new always-active attacker block and old mode/custom block. ${errors.join(' | ')}`,
+  );
+}
+
 function isUsablePageBuild(pageBuild) {
   if (!pageBuild || typeof pageBuild !== 'object') return false;
   const stats = pageBuild.stats || {};
@@ -210,8 +1301,8 @@ function buildExactReplayError(message) {
   return `exact replay requires truth.pageBuilds.attacker and truth.pageBuilds.defender (${message})`;
 }
 
-function writeExactDefenderPayloadFile(filePath, defenderKey, pageBuild) {
-  const payload = { [defenderKey]: pageBuildToLegacyDefenderPayload(pageBuild) };
+function writeExactDefenderPayloadFile(filePath, defenderKey, defenderPayload) {
+  const payload = { [defenderKey]: defenderPayload };
   fs.writeFileSync(filePath, `module.exports = ${JSON.stringify(payload, null, 2)};\n`);
 }
 
@@ -390,8 +1481,10 @@ function parseExportRows(exportPath) {
   if (!fs.existsSync(exportPath)) {
     return {
       rows: {},
+      payload: null,
       resolvedBuilds: null,
       resolvedHashes: null,
+      exportResolvedHashes: null,
       resolvedConfig: null,
     };
   }
@@ -404,8 +1497,10 @@ function parseExportRows(exportPath) {
   }
   return {
     rows,
+    payload,
     resolvedBuilds: payload && payload.resolvedBuilds ? payload.resolvedBuilds : null,
-    resolvedHashes: payload && payload.resolvedHashes ? payload.resolvedHashes : null,
+    resolvedHashes: null,
+    exportResolvedHashes: payload && payload.resolvedHashes ? payload.resolvedHashes : null,
     resolvedConfig: payload && payload.resolvedConfig ? payload.resolvedConfig : null,
   };
 }
@@ -416,8 +1511,16 @@ function buildIdentitySection(row, simIdentity) {
     truthBuildVerified: typeof row.buildVerified === 'boolean' ? row.buildVerified : null,
     truthRequestedHashes: row.requestedHashes || null,
     truthVerifiedHashes: row.verifiedHashes || null,
+    identityMatch:
+      simIdentity && typeof simIdentity.identityMatch === 'boolean' ? simIdentity.identityMatch : null,
+    identityMismatchReason:
+      simIdentity && Object.prototype.hasOwnProperty.call(simIdentity, 'identityMismatchReason')
+        ? simIdentity.identityMismatchReason
+        : null,
     simResolvedHashes:
       simIdentity && simIdentity.resolvedHashes ? simIdentity.resolvedHashes : null,
+    simExportResolvedHashes:
+      simIdentity && simIdentity.exportResolvedHashes ? simIdentity.exportResolvedHashes : null,
   };
 }
 
@@ -429,7 +1532,18 @@ function attachIdentityFields(out, row, simIdentity) {
   out.buildVerified = typeof row.buildVerified === 'boolean' ? row.buildVerified : null;
   out.resolvedBuilds = simIdentity && simIdentity.resolvedBuilds ? simIdentity.resolvedBuilds : null;
   out.resolvedHashes = simIdentity && simIdentity.resolvedHashes ? simIdentity.resolvedHashes : null;
+  out.exportResolvedHashes =
+    simIdentity && simIdentity.exportResolvedHashes ? simIdentity.exportResolvedHashes : null;
   out.resolvedConfig = simIdentity && simIdentity.resolvedConfig ? simIdentity.resolvedConfig : null;
+  out.identityMatch =
+    simIdentity && typeof simIdentity.identityMatch === 'boolean' ? simIdentity.identityMatch : null;
+  out.identityMismatchReason =
+    simIdentity && Object.prototype.hasOwnProperty.call(simIdentity, 'identityMismatchReason')
+      ? simIdentity.identityMismatchReason
+      : null;
+  out.sanityFingerprint =
+    simIdentity && simIdentity.sanityFingerprint ? simIdentity.sanityFingerprint : null;
+  out.debugAudit = simIdentity && simIdentity.debugAudit ? simIdentity.debugAudit : null;
   out.identity = buildIdentitySection(row, simIdentity);
   return out;
 }
@@ -447,12 +1561,30 @@ function normalizeSimRow(stdoutRow, exportRow) {
       exportRow && exportRow.avgTurns,
       stdoutRow && stdoutRow.avgTurns,
     ),
-    A_hit: pickFinite(exportRow && exportRow.A_hit),
-    A_dmg1: pickFinite(exportRow && exportRow.A_dmg1),
-    A_dmg2: pickFinite(exportRow && exportRow.A_dmg2),
-    D_hit: pickFinite(exportRow && exportRow.D_hit),
-    D_dmg1: pickFinite(exportRow && exportRow.D_dmg1),
-    D_dmg2: pickFinite(exportRow && exportRow.D_dmg2),
+    A_hit: pickFinite(
+      exportRow && exportRow.A_hit,
+      aNode && Array.isArray(aNode.hit) ? aNode.hit[0] : null,
+    ),
+    A_dmg1: pickFinite(
+      exportRow && exportRow.A_dmg1,
+      aNode && Array.isArray(aNode.skillGivenHit) ? aNode.skillGivenHit[0] : null,
+    ),
+    A_dmg2: pickFinite(
+      exportRow && exportRow.A_dmg2,
+      aNode && Array.isArray(aNode.skillGivenHit) ? aNode.skillGivenHit[1] : null,
+    ),
+    D_hit: pickFinite(
+      exportRow && exportRow.D_hit,
+      dNode && Array.isArray(dNode.hit) ? dNode.hit[0] : null,
+    ),
+    D_dmg1: pickFinite(
+      exportRow && exportRow.D_dmg1,
+      dNode && Array.isArray(dNode.skillGivenHit) ? dNode.skillGivenHit[0] : null,
+    ),
+    D_dmg2: pickFinite(
+      exportRow && exportRow.D_dmg2,
+      dNode && Array.isArray(dNode.skillGivenHit) ? dNode.skillGivenHit[1] : null,
+    ),
     A_rng:
       pairOrNull(exportRow && exportRow.A_rng) ||
       pairOrNull(aNode && aNode.range) ||
@@ -675,12 +1807,12 @@ function buildMatchupResult(row, sim, simIdentity) {
   return out;
 }
 
-function buildReplayErrorResult(row, error) {
+function buildReplayErrorResult(row, error, sim = null, simIdentity = null) {
   return attachIdentityFields({
     attacker: row.attacker,
     defender: row.defender,
     truth: row.truth,
-    sim: null,
+    sim,
     delta: {},
     absDelta: {},
     dWinPct: null,
@@ -690,7 +1822,7 @@ function buildReplayErrorResult(row, error) {
     error,
     replaySource: row.replaySource || 'pageBuilds-exact',
     matchupKey: row.matchupKey,
-  }, row, null);
+  }, row, simIdentity);
 }
 
 function sortRows(rows) {
@@ -1299,6 +2431,9 @@ function createJobRunner({
     if (!customBuild || !isUsablePageBuild(defenderPageBuild)) {
       return buildReplayErrorResult(row, buildExactReplayError('missing exact attacker/defender page builds at replay time'));
     }
+    const defenderPayload = pageBuildToLegacyDefenderPayload(defenderPageBuild);
+    const replayIdentity = buildReplayIdentityInfo(row, customBuild, defenderPayload);
+    const debugMatchup = wantsReplayDebugMatchup(row);
 
     const defenderKey = `__REPLAY_DEFENDER__${sanitizeFilePart(row.attacker)}__${sanitizeFilePart(row.defender)}`.slice(0, 120);
     const exportPath = path.join(
@@ -1322,7 +2457,7 @@ function createJobRunner({
       customScriptCache.set(key, scriptToRun);
       generatedScripts.add(scriptToRun);
     }
-    writeExactDefenderPayloadFile(defenderFilePath, defenderKey, defenderPageBuild);
+    writeExactDefenderPayloadFile(defenderFilePath, defenderKey, defenderPayload);
 
     const env = {
       ...process.env,
@@ -1340,6 +2475,16 @@ function createJobRunner({
       LEGACY_VERIFY_DEFENDERS: defenderKey,
       LEGACY_ATTACKER_ATTACK_TYPE: attackerAttackType,
       LEGACY_DEFENDER_ATTACK_TYPE: defenderAttackType,
+      ...(debugMatchup
+        ? {
+            LEGACY_DIAG: '1',
+            LEGACY_TRACE_FIGHTS: String(replayDebugTraceFights),
+            LEGACY_ROLL_DUMP: replayDebugRollDumpFights > 0 ? '1' : '0',
+            LEGACY_ROLL_DUMP_FIGHTS: String(replayDebugRollDumpFights),
+            LEGACY_ROLL_DUMP_MAX_TURNS: String(replayDebugRollDumpMaxTurns),
+            LEGACY_ROLL_DUMP_MAX_LINES: String(replayDebugRollDumpMaxLines),
+          }
+        : {}),
       ...(variant.env || {}),
     };
 
@@ -1376,11 +2521,40 @@ function createJobRunner({
 
       const compactRows = parseCompactOutput(proc.stdout);
       const exportResult = parseExportRows(exportPath);
-      return buildMatchupResult(
-        row,
-        normalizeSimRow(compactRows[defenderKey], exportResult.rows[defenderKey]),
-        exportResult,
-      );
+      const collapsedIdentity = collapseResolvedIdentity(exportResult.payload, defenderKey);
+      const simRow = normalizeSimRow(compactRows[defenderKey], exportResult.rows[defenderKey]);
+      const simIdentity = {
+        resolvedBuilds: collapsedIdentity.resolvedBuilds,
+        resolvedHashes: collapsedIdentity.resolvedHashes,
+        exportResolvedHashes: collapsedIdentity.exportResolvedHashes,
+        resolvedConfig: exportResult.resolvedConfig,
+        sanityFingerprint: buildSanityFingerprint(exportResult.payload, collapsedIdentity),
+        ...evaluateExactReplayIdentity(row, collapsedIdentity, replayIdentity),
+      };
+      if (debugMatchup) {
+        simIdentity.debugAudit = buildReplayDebugAudit({
+          row,
+          defenderKey,
+          replayIdentity,
+          simIdentity,
+          exportPayload: exportResult.payload,
+          exportRow: exportResult.rows[defenderKey],
+          simRow,
+          stdout: proc.stdout,
+        });
+        console.log('[LEGACY_REPLAY_DEBUG_MATCHUP]', JSON.stringify(simIdentity.debugAudit, null, 2));
+      }
+      maybePrintIdentityDebug(row, replayIdentity, simIdentity);
+      if (row.replaySource === 'pageBuilds-exact' && simIdentity.identityMatch === false) {
+        return buildReplayErrorResult(
+          row,
+          `exact replay identity mismatch: ${simIdentity.identityMismatchReason}`,
+          simRow,
+          simIdentity,
+        );
+      }
+
+      return buildMatchupResult(row, simRow, simIdentity);
     } finally {
       tracker.jobFinished(row.label);
       try {

@@ -51,6 +51,8 @@
  *
  * Optional debugging:
  *   LEGACY_WATCH_BUILD=1                 # log one watched build when encountered
+ *   LEGACY_FORCE_WEAPON_PAIR="Crystal Maul,Reaper Axe"  # temporary exact weapon item-pair lock
+ *   LEGACY_FORCE_MISC_INCLUDE="Orphic Amulet"  # require at least one listed misc item in the final build; crystal variants still flow through
  *
  * Output/UI knobs:
  *   LEGACY_REPORT=quiet|compact|verbose  # default: compact
@@ -151,7 +153,7 @@ const POOLS = {
     'Core Staff',
     'Void Axe',
     'Scythe T2',
-    'Void Sword',
+    // 'Void Sword',
     // "Ritual Dagger IV",
     // "Warlords Katana",
     'Fortified Void Bow',
@@ -1302,7 +1304,13 @@ function attemptWeaponFast(att, def, w, pre, out) {
 
   // ARMOR application
   const val =
-    ARMOR_APPLY === 'per_weapon' ? applyArmorAndRound(raw, def.armorFactor, ARMOR_ROUND) : raw;
+    ARMOR_APPLY === 'per_weapon'
+      ? applyArmorAndRound(
+          raw,
+          armorFactorForArmorValue(BASE.level, def.armor, ARMOR_K),
+          ARMOR_ROUND,
+        )
+      : raw;
 
   out[0] = val > 0 ? val : 0;
   out[1] = 1; // raw>0 (hit+skill succeeded)
@@ -1648,6 +1656,46 @@ function parseLockOnlyAmuletFromEnv() {
   return new Set(parseCsvList(raw));
 }
 const LOCK_ONLY_AMULET = parseLockOnlyAmuletFromEnv();
+
+function parseForcedWeaponPairFromEnv() {
+  const raw = String(process.env.LEGACY_FORCE_WEAPON_PAIR || '').trim();
+  if (!raw) return null;
+  const names = parseCsvList(raw);
+  if (names.length !== 2) {
+    throw new Error(
+      `LEGACY_FORCE_WEAPON_PAIR must be a CSV list of exactly 2 weapon item names; got ${names.length}`,
+    );
+  }
+  return names;
+}
+const FORCED_WEAPON_PAIR = parseForcedWeaponPairFromEnv();
+
+function parseForcedMiscIncludeFromEnv() {
+  const raw = String(process.env.LEGACY_FORCE_MISC_INCLUDE || '').trim();
+  if (!raw) return null;
+
+  const names = String(process.env.LEGACY_FORCE_MISC_INCLUDE || '')
+    .split(',')
+    .map((x) => x.trim());
+  if (!names.length || names.some((name) => !name)) {
+    throw new Error(
+      'LEGACY_FORCE_MISC_INCLUDE must be a CSV list of misc item names with no empty entries',
+    );
+  }
+
+  for (const name of names) {
+    const idef = ItemDefs[name];
+    if (!idef) {
+      throw new Error(`LEGACY_FORCE_MISC_INCLUDE contains unknown item "${name}"`);
+    }
+    if (idef.type !== 'Misc') {
+      throw new Error(`LEGACY_FORCE_MISC_INCLUDE item "${name}" is not a Misc item`);
+    }
+  }
+
+  return new Set(names);
+}
+const FORCED_MISC_INCLUDE = parseForcedMiscIncludeFromEnv();
 
 // =====================
 // CRYSTAL CONSTRAINTS
@@ -2651,16 +2699,38 @@ function buildVariantsForMiscsSuperset(names) {
 
 function buildWeaponPairs(weaponVariants) {
   const pairsA = [];
+  const forcedPair = FORCED_WEAPON_PAIR;
+  // Temporary env-controlled exact weapon item-pair lock; crystal/upgrade variants still flow through.
+  const forcedA = forcedPair ? forcedPair[0] : null;
+  const forcedB = forcedPair ? forcedPair[1] : null;
   for (let i = 0; i < weaponVariants.length; i++) {
-    for (let j = i; j < weaponVariants.length; j++) pairsA.push(i, j);
+    for (let j = i; j < weaponVariants.length; j++) {
+      if (forcedPair) {
+        const left = weaponVariants[i].itemName;
+        const right = weaponVariants[j].itemName;
+        if (left === right) continue;
+        const matchesForcedPair =
+          (left === forcedA && right === forcedB) || (left === forcedB && right === forcedA);
+        if (!matchesForcedPair) continue;
+      }
+      pairsA.push(i, j);
+    }
   }
   return new Uint16Array(pairsA);
 }
 
 function buildMiscPairsOrderlessAllDup(miscVariants) {
   const pairsA = [];
+  const forcedInclude = FORCED_MISC_INCLUDE;
   for (let i = 0; i < miscVariants.length; i++) {
-    for (let j = i; j < miscVariants.length; j++) pairsA.push(i, j);
+    for (let j = i; j < miscVariants.length; j++) {
+      if (forcedInclude) {
+        const left = miscVariants[i].itemName;
+        const right = miscVariants[j].itemName;
+        if (!forcedInclude.has(left) && !forcedInclude.has(right)) continue;
+      }
+      pairsA.push(i, j);
+    }
   }
   return new Uint16Array(pairsA);
 }
@@ -3106,23 +3176,27 @@ function partWeaponUpgrades(part) {
   return [u1, u2];
 }
 
+function defenderVariantKeyFromCrystalSpec(itemName, crystalSpec, upgrade1, upgrade2, slotTag = 0) {
+  return `${variantKeyFromCrystalSpec(itemName, crystalSpec, upgrade1, upgrade2)}|${slotTag || 0}`;
+}
+
 function prefillVariantsFromDefenders(defenders, getV) {
   for (const def of defenders) {
     const p = def.payload;
 
-    getV(partName(p.armor), partCrystal(p.armor));
+    getV(partName(p.armor), partCrystalSpec(p.armor));
 
     {
       const [u1, u2] = partWeaponUpgrades(p.weapon1);
-      getV(partName(p.weapon1), partCrystal(p.weapon1), u1, u2);
+      getV(partName(p.weapon1), partCrystalSpec(p.weapon1), u1, u2);
     }
     {
       const [u1, u2] = partWeaponUpgrades(p.weapon2);
-      getV(partName(p.weapon2), partCrystal(p.weapon2), u1, u2);
+      getV(partName(p.weapon2), partCrystalSpec(p.weapon2), u1, u2);
     }
 
-    getV(partName(p.misc1), partCrystal(p.misc1));
-    getV(partName(p.misc2), partCrystal(p.misc2));
+    getV(partName(p.misc1), partCrystalSpec(p.misc1), '', '', 1);
+    getV(partName(p.misc2), partCrystalSpec(p.misc2), '', '', 2);
   }
 }
 
@@ -3136,24 +3210,24 @@ function compileDefender(def, variantCacheLocal) {
   const w1Name = partName(p.weapon1);
   const w2Name = partName(p.weapon2);
 
-  const armorCr = partCrystal(p.armor);
-  const m1Cr = partCrystal(p.misc1);
-  const m2Cr = partCrystal(p.misc2);
+  const armorCr = partCrystalSpec(p.armor);
+  const m1Cr = partCrystalSpec(p.misc1);
+  const m2Cr = partCrystalSpec(p.misc2);
 
-  const w1Cr = partCrystal(p.weapon1);
-  const w2Cr = partCrystal(p.weapon2);
+  const w1Cr = partCrystalSpec(p.weapon1);
+  const w2Cr = partCrystalSpec(p.weapon2);
   const [w1u1, w1u2] = partWeaponUpgrades(p.weapon1);
   const [w2u1, w2u2] = partWeaponUpgrades(p.weapon2);
 
-  const armorV = variantCacheLocal.get(variantKey(armorName, armorCr, '', ''));
-  const w1V = variantCacheLocal.get(variantKey(w1Name, w1Cr, w1u1, w1u2));
-  const w2V = variantCacheLocal.get(variantKey(w2Name, w2Cr, w2u1, w2u2));
-  const m1V = variantCacheLocal.get(variantKey(m1Name, m1Cr, '', ''));
-  const m2V = variantCacheLocal.get(variantKey(m2Name, m2Cr, '', ''));
+  const armorV = variantCacheLocal.get(defenderVariantKeyFromCrystalSpec(armorName, armorCr, '', ''));
+  const w1V = variantCacheLocal.get(defenderVariantKeyFromCrystalSpec(w1Name, w1Cr, w1u1, w1u2));
+  const w2V = variantCacheLocal.get(defenderVariantKeyFromCrystalSpec(w2Name, w2Cr, w2u1, w2u2));
+  const m1V = variantCacheLocal.get(defenderVariantKeyFromCrystalSpec(m1Name, m1Cr, '', '', 1));
+  const m2V = variantCacheLocal.get(defenderVariantKeyFromCrystalSpec(m2Name, m2Cr, '', '', 2));
   if (!armorV || !w1V || !w2V || !m1V || !m2V)
     throw new Error(`Missing variant cache entries for defender ${def.name}`);
   const m1Eff = m1V;
-  const m2Eff = rebuildMiscVariantForSlot(m2V, 2);
+  const m2Eff = m2V;
 
   const baseSpeed = Math.floor(Number(st.speed));
   const baseAcc = Math.floor(Number(st.accuracy));
@@ -3874,6 +3948,16 @@ function workerMain() {
     return v;
   }
 
+  function getDefenderV(itemName, crystalSpec, upgrade1 = '', upgrade2 = '', slotTag = 0) {
+    const key = defenderVariantKeyFromCrystalSpec(itemName, crystalSpec, upgrade1, upgrade2, slotTag);
+    let v = localCache.get(key);
+    if (!v) {
+      v = computeVariantFromCrystalSpec(itemName, crystalSpec, upgrade1, upgrade2, slotTag);
+      localCache.set(key, v);
+    }
+    return v;
+  }
+
   // Build variants
   const armorVariants = [];
   for (const nm of armorChoices)
@@ -3912,7 +3996,7 @@ function workerMain() {
   const attackerStyleSweepCount = attackerAttackTypes.length;
 
   // Ensure defender variants exist in cache
-  prefillVariantsFromDefenders(defenderBuilds, getV);
+  prefillVariantsFromDefenders(defenderBuilds, getDefenderV);
   const defenders = defenderBuilds.map((d) => compileDefender(d, localCache));
 
   const WP = weaponPairs.length / 2;
@@ -4312,7 +4396,17 @@ function runWarmStartAndGetWorstPct({
     return v;
   }
 
-  prefillVariantsFromDefenders(defenderBuilds, getV);
+  function getDefenderV(itemName, crystalSpec, upgrade1 = '', upgrade2 = '', slotTag = 0) {
+    const key = defenderVariantKeyFromCrystalSpec(itemName, crystalSpec, upgrade1, upgrade2, slotTag);
+    let v = localCache.get(key);
+    if (!v) {
+      v = computeVariantFromCrystalSpec(itemName, crystalSpec, upgrade1, upgrade2, slotTag);
+      localCache.set(key, v);
+    }
+    return v;
+  }
+
+  prefillVariantsFromDefenders(defenderBuilds, getDefenderV);
   const compiledDefenders = defenders || defenderBuilds.map((d) => compileDefender(d, localCache));
 
   const av = getV(WARM_START_BUILD.armor.item, WARM_START_BUILD.armor.crystal);
@@ -5337,7 +5431,17 @@ function printResults({
       return v;
     }
 
-    prefillVariantsFromDefenders(defenderBuilds, getV);
+    function getDefenderV(itemName, crystalSpec, u1 = '', u2 = '', slotTag = 0) {
+      const key = defenderVariantKeyFromCrystalSpec(itemName, crystalSpec, u1, u2, slotTag);
+      let v = localCache.get(key);
+      if (!v) {
+        v = computeVariantFromCrystalSpec(itemName, crystalSpec, u1, u2, slotTag);
+        localCache.set(key, v);
+      }
+      return v;
+    }
+
+    prefillVariantsFromDefenders(defenderBuilds, getDefenderV);
     return defenderBuilds.map((d) => compileDefender(d, localCache));
   })();
   advanceFinalization('compile defenders', null, `defs=${compiledDefendersOnce.length}`, true);

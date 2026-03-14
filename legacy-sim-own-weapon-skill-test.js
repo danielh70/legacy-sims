@@ -2479,9 +2479,30 @@ function compileCombatantFromParts({
   const w1Prj = w1V.addPrj * (w1SkillIdx === 2 ? w1Mult : 1);
   const w2Prj = w2V.addPrj * (w2SkillIdx === 2 ? w2Mult : 1);
 
+  const commonGun = BASE.gunSkill + armorV.addGun + m1V.addGun + m2V.addGun;
+  const commonMel = BASE.meleeSkill + armorV.addMel + m1V.addMel + m2V.addMel;
+  const commonPrj = BASE.projSkill + armorV.addPrj + m1V.addPrj + m2V.addPrj;
+
   const gun = BASE.gunSkill + armorV.addGun + w1Gun + w2Gun + m1V.addGun + m2V.addGun;
   const mel = BASE.meleeSkill + armorV.addMel + w1Mel + w2Mel + m1V.addMel + m2V.addMel;
   const prj = BASE.projSkill + armorV.addPrj + w1Prj + w2Prj + m1V.addPrj + m2V.addPrj;
+
+  const w1AtkSkillValue =
+    w1SkillIdx === 0
+      ? commonGun + w1Gun
+      : w1SkillIdx === 1
+        ? commonMel + w1Mel
+        : w1SkillIdx === 2
+          ? commonPrj + w1Prj
+          : null;
+  const w2AtkSkillValue =
+    w2SkillIdx === 0
+      ? commonGun + w2Gun
+      : w2SkillIdx === 1
+        ? commonMel + w2Mel
+        : w2SkillIdx === 2
+          ? commonPrj + w2Prj
+          : null;
 
   const defSk = BASE.defSkill + armorV.addDef + w1V.addDef + w2V.addDef + m1V.addDef + m2V.addDef;
 
@@ -2517,6 +2538,9 @@ function compileCombatantFromParts({
     weapon1: applyMinMax(w1V.weapon),
     weapon2: applyMinMax(w2V.weapon),
   };
+
+  if (c.w1 && Number.isFinite(w1AtkSkillValue)) c.w1.atkSkillValue = Math.floor(w1AtkSkillValue);
+  if (c.w2 && Number.isFinite(w2AtkSkillValue)) c.w2.atkSkillValue = Math.floor(w2AtkSkillValue);
 
   c.weapon1 = c.w1;
   c.weapon2 = c.w2;
@@ -3848,7 +3872,10 @@ function attemptWeapon(
         })
       : rollVs(att.acc, def.dodge, cfg.hitRollMode, cfg.hitGe, cfg.hitQround);
 
-  const atkSkill = skillValue(att, weapon.skill);
+  const atkSkill =
+    weapon && Number.isFinite(weapon.atkSkillValue)
+      ? weapon.atkSkillValue
+      : skillValue(att, weapon.skill);
   const skillLabel = weapon.skill === 0 ? 'Gun' : weapon.skill === 1 ? 'Mel' : 'Prj';
   const isProj = weapon.skill === 2;
   const defSkillBase = def.defSk;
@@ -3966,14 +3993,7 @@ function attemptWeapon(
     }
   }
 
-  const postArmorPerWeapon =
-    cfg.armorApply === 'per_weapon'
-      ? applyArmorAndRound(
-          raw,
-          armorFactorForArmorValue(BASE.level, def.armor, cfg.armorK),
-          cfg.armorRound,
-        )
-      : applyArmorAndRound(raw, def.armorFactor, cfg.armorRound);
+  const postArmorPerWeapon = applyArmorAndRound(raw, def.armorFactor, cfg.armorRound);
   if (raw > 0) {
     counters.rawDamageTotal += raw;
     if (raw < counters.rawDamageMin) counters.rawDamageMin = raw;

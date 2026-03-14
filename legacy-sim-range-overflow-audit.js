@@ -24,38 +24,40 @@ const path = require('path');
 // You can also override the file at runtime with LEGACY_DEFENDER_FILE.
 const USER_CONFIG = {
   attacker: {
-    label: 'CUSTOM',
+    label: 'CUSTOM_MAUL_A4',
     attackType: 'normal',
     stats: { level: 80, hp: 650, speed: 60, dodge: 57, accuracy: 14 },
     armor: {
       name: 'Dark Legion Armor',
-      crystal: 'Abyss Crystal',
-      upgrades: [],
+      upgrades: ['Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal', 'Abyss Crystal'],
     },
 
     weapon1: {
       name: 'Reaper Axe',
-      crystal: 'Amulet Crystal',
-      upgrades: [],
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
     },
     weapon2: {
       name: 'Crystal Maul',
-      crystalCounts: {
-        'Amulet Crystal': 3,
-        'Perfect Fire Crystal': 1,
-      },
-      upgrades: [],
+      upgrades: ['Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal', 'Amulet Crystal'],
     },
 
     misc1: {
       name: 'Bio Spinal Enhancer',
-      crystal: 'Perfect Pink Crystal',
-      upgrades: [],
+      upgrades: [
+        'Perfect Pink Crystal',
+        'Perfect Pink Crystal',
+        'Perfect Pink Crystal',
+        'Perfect Pink Crystal',
+      ],
     },
     misc2: {
       name: 'Bio Spinal Enhancer',
-      crystal: 'Perfect Orange Crystal',
-      upgrades: [],
+      upgrades: [
+        'Perfect Orange Crystal',
+        'Perfect Orange Crystal',
+        'Perfect Orange Crystal',
+        'Perfect Orange Crystal',
+      ],
     },
   },
 
@@ -697,6 +699,14 @@ const MISC_NO_CRYSTAL_SKILL_TWEAK_TAG = (() => {
 const PRINT_WEAPON_RNG = yn(String(pickEnv('LEGACY_PRINT_WEAPON_RNG', '0')));
 const SWAP_ATTACKER_WEPS = yn(String(pickEnv('LEGACY_SWAP_ATTACKER_WEPS', '0')));
 const SWAP_DEFENDER_WEPS = yn(String(pickEnv('LEGACY_SWAP_DEFENDER_WEPS', '0')));
+const RANGE_OVERFLOW_AUDIT_ENABLED = yn(String(pickEnv('LEGACY_RANGE_OVERFLOW_AUDIT', '0')));
+const RANGE_OVERFLOW_EXAMPLES = [];
+
+function pushRangeOverflowExample(example) {
+  if (!RANGE_OVERFLOW_AUDIT_ENABLED) return;
+  if (RANGE_OVERFLOW_EXAMPLES.length >= 20) return;
+  RANGE_OVERFLOW_EXAMPLES.push(example);
+}
 
 const MISC_NO_CRYSTAL_SKILL_ZERO_DEF = yn(
   String(pickEnv('LEGACY_MISC_NO_CRYSTAL_SKILL_ZERO_DEF', '0')),
@@ -3966,14 +3976,7 @@ function attemptWeapon(
     }
   }
 
-  const postArmorPerWeapon =
-    cfg.armorApply === 'per_weapon'
-      ? applyArmorAndRound(
-          raw,
-          armorFactorForArmorValue(BASE.level, def.armor, cfg.armorK),
-          cfg.armorRound,
-        )
-      : applyArmorAndRound(raw, def.armorFactor, cfg.armorRound);
+  const postArmorPerWeapon = applyArmorAndRound(raw, def.armorFactor, cfg.armorRound);
   if (raw > 0) {
     counters.rawDamageTotal += raw;
     if (raw < counters.rawDamageMin) counters.rawDamageMin = raw;
@@ -4132,6 +4135,70 @@ function doAction(
   }
 
   const actionRaw = actionDmg;
+
+  if (
+    RANGE_OVERFLOW_AUDIT_ENABLED &&
+    cfg.armorApply === 'per_weapon' &&
+    cfg.tacticsMode === 'none' &&
+    baseVal === 0 &&
+    att.w1 &&
+    att.w2
+  ) {
+    if (!sideStats.rangeOverflowAudit) {
+      sideStats.rangeOverflowAudit = {
+        overflowCount: 0,
+        actionOverflowCount: 0,
+        w1OverflowCount: 0,
+        w2OverflowCount: 0,
+      };
+    }
+
+    const predActionCap = predictMaxActionFromWeaponMax(
+      att.w1.max,
+      att.w2.max,
+      att.level,
+      def.armor,
+      cfg.armorK,
+      cfg.armorApply,
+      cfg.armorRound,
+    );
+    const predW1Cap = applyArmorAndRound(att.w1.max, def.armorFactor, cfg.armorRound);
+    const predW2Cap = applyArmorAndRound(att.w2.max, def.armorFactor, cfg.armorRound);
+
+    const actionOverflow = actionRaw > predActionCap;
+    const w1Overflow = (r1.dmg || 0) > predW1Cap;
+    const w2Overflow = (r2.dmg || 0) > predW2Cap;
+
+    if (actionOverflow || w1Overflow || w2Overflow) {
+      sideStats.rangeOverflowAudit.overflowCount++;
+      if (actionOverflow) sideStats.rangeOverflowAudit.actionOverflowCount++;
+      if (w1Overflow) sideStats.rangeOverflowAudit.w1OverflowCount++;
+      if (w2Overflow) sideStats.rangeOverflowAudit.w2OverflowCount++;
+
+      pushRangeOverflowExample({
+        matchup: rollCtx && rollCtx.matchName ? rollCtx.matchName : '',
+        fight: rollCtx && Number.isFinite(rollCtx.fight) ? rollCtx.fight : null,
+        turn: rollCtx && Number.isFinite(rollCtx.turn) ? rollCtx.turn : null,
+        actorSide: rollCtx && rollCtx.actorSide ? rollCtx.actorSide : '',
+        actionRaw,
+        predActionCap,
+        r1Raw: r1.raw || 0,
+        r1Dmg: r1.dmg || 0,
+        predW1Cap,
+        w1Min: att.w1.min,
+        w1Max: att.w1.max,
+        r2Raw: r2.raw || 0,
+        r2Dmg: r2.dmg || 0,
+        predW2Cap,
+        w2Min: att.w2.min,
+        w2Max: att.w2.max,
+        attackerArmor: att.armor,
+        defenderArmor: def.armor,
+        defenderArmorFactor: def.armorFactor,
+        targetHp0,
+      });
+    }
+  }
 
   let actionApplied = 0;
   let w1Applied = 0;
@@ -5645,6 +5712,27 @@ function main() {
             );
           }
 
+          if (RANGE_OVERFLOW_AUDIT_ENABLED) {
+            const aOv = stats.A.rangeOverflowAudit || {
+              overflowCount: 0,
+              actionOverflowCount: 0,
+              w1OverflowCount: 0,
+              w2OverflowCount: 0,
+            };
+            const dOv = stats.D.rangeOverflowAudit || {
+              overflowCount: 0,
+              actionOverflowCount: 0,
+              w1OverflowCount: 0,
+              w2OverflowCount: 0,
+            };
+            console.log(
+              `  OVERFLOW: total=${aOv.overflowCount + dOv.overflowCount} ` +
+                `action=${aOv.actionOverflowCount + dOv.actionOverflowCount} ` +
+                `w1=${aOv.w1OverflowCount + dOv.w1OverflowCount} ` +
+                `w2=${aOv.w2OverflowCount + dOv.w2OverflowCount}`,
+            );
+          }
+
           if (gb) {
             const A_overall_game_1 = (gb.A_hit * gb.A_dmg1) / 100;
             const A_overall_game_2 = (gb.A_hit * gb.A_dmg2) / 100;
@@ -6278,6 +6366,10 @@ function main() {
   }
 
   console.log('=== END OUTPUT ===');
+  if (RANGE_OVERFLOW_AUDIT_ENABLED) {
+    console.log('=== OVERFLOW EXAMPLES JSON ===');
+    console.log(JSON.stringify(RANGE_OVERFLOW_EXAMPLES));
+  }
 }
 
 module.exports = {

@@ -125,6 +125,34 @@
     return 'normal';
   }
 
+  function normalizeAttackTypeStrict(v, label) {
+    const raw = String(v == null ? '' : v).trim();
+    if (!raw) {
+      throw new Error(`Missing ${label}.attackType`);
+    }
+    const normalizedRaw = raw.toLowerCase().replace(/\s+/g, ' ');
+    const supported = new Set([
+      'normal',
+      'normal atk',
+      'normal attack',
+      'quick',
+      'quick atk',
+      'quick attack',
+      'aimed',
+      'aim',
+      'aimed atk',
+      'aimed attack',
+      'cover',
+      'covered',
+      'take cover',
+      'cover attack',
+    ]);
+    if (!supported.has(normalizedRaw)) {
+      throw new Error(`Unsupported ${label}.attackType: ${raw}`);
+    }
+    return normalizeAttackType(raw);
+  }
+
   function findSelectOption(selectEl, valueNeedle) {
     if (!selectEl) return null;
     const rawNeedle = String(valueNeedle || '').trim();
@@ -181,13 +209,28 @@
   function buildToPageImport(build) {
     function slotToImport(slot) {
       if (!slot || !slot.name) return null;
-      const crystal = slot.crystal || null;
       const upgrades = [];
-      if (crystal) {
-        for (let i = 0; i < 4; i++) upgrades.push(crystal);
-      }
-      if (Array.isArray(slot.upgrades) && slot.upgrades.length) {
-        for (const up of slot.upgrades) upgrades.push(up);
+      const crystals = normalizeUpgradeArray(slot.crystals);
+      const crystal = String(
+        (slot.crystal != null ? slot.crystal : slot.crystalName != null ? slot.crystalName : '') || '',
+      ).trim();
+      const crystalEntries = crystals.length
+        ? crystals
+        : crystal
+          ? [crystal, crystal, crystal, crystal]
+          : [];
+      const inlineUpgrades = normalizeUpgradeArray(slot.upgrades);
+
+      for (const entry of crystalEntries) upgrades.push(entry);
+      if (inlineUpgrades.length) {
+        if (
+          crystalEntries.length
+          && stableStringify(inlineUpgrades.slice(0, crystalEntries.length)) === stableStringify(crystalEntries)
+        ) {
+          for (const up of inlineUpgrades.slice(crystalEntries.length)) upgrades.push(up);
+        } else {
+          for (const up of inlineUpgrades) upgrades.push(up);
+        }
       }
       return { name: slot.name, upgrades };
     }
@@ -928,6 +971,193 @@
     }),
   ];
 
+  function isPlainObject(value) {
+    return !!value && typeof value === 'object' && !Array.isArray(value);
+  }
+
+  function requirePlainObject(value, label) {
+    if (!isPlainObject(value)) {
+      throw new Error(`Invalid ${label}: expected object`);
+    }
+    return value;
+  }
+
+  function requireFiniteStat(stats, key, label) {
+    const value = Number(stats && stats[key]);
+    if (!Number.isFinite(value)) {
+      throw new Error(`Invalid ${label}.stats.${key}: expected finite number`);
+    }
+    return value;
+  }
+
+  function normalizeLegacyExportSlot(slot, label) {
+    requirePlainObject(slot, label);
+
+    const name = String(slot.name || '').trim();
+    if (!name) {
+      throw new Error(`Invalid ${label}.name: expected non-empty string`);
+    }
+
+    if (!Array.isArray(slot.upgrades)) {
+      throw new Error(`Invalid ${label}.upgrades: expected array`);
+    }
+    const upgrades = normalizeUpgradeArray(slot.upgrades);
+    if (upgrades.length !== slot.upgrades.length) {
+      throw new Error(`Invalid ${label}.upgrades: entries must be non-empty strings`);
+    }
+
+    if (slot.crystal == null || String(slot.crystal).trim() === '') {
+      throw new Error(`Invalid ${label}.crystal: expected non-empty string`);
+    }
+    const crystal = String(slot.crystal).trim();
+
+    let crystals = null;
+    if (slot.crystals != null) {
+      if (!Array.isArray(slot.crystals)) {
+        throw new Error(`Invalid ${label}.crystals: expected array when present`);
+      }
+      crystals = normalizeUpgradeArray(slot.crystals);
+      if (crystals.length !== slot.crystals.length) {
+        throw new Error(`Invalid ${label}.crystals: entries must be non-empty strings`);
+      }
+      if (crystals.length !== 4) {
+        throw new Error(`Invalid ${label}.crystals: expected exactly 4 crystal entries`);
+      }
+    }
+
+    return crystals
+      ? { name, crystal, crystals, upgrades }
+      : { name, crystal, upgrades };
+  }
+
+  function normalizeLegacyExportBuild(build, label) {
+    requirePlainObject(build, label);
+    const stats = requirePlainObject(build.stats, `${label}.stats`);
+    const out = {
+      stats: {
+        level: requireFiniteStat(stats, 'level', label),
+        hp: requireFiniteStat(stats, 'hp', label),
+        speed: requireFiniteStat(stats, 'speed', label),
+        dodge: requireFiniteStat(stats, 'dodge', label),
+        accuracy: requireFiniteStat(stats, 'accuracy', label),
+      },
+      armor: normalizeLegacyExportSlot(build.armor, `${label}.armor`),
+      weapon1: normalizeLegacyExportSlot(build.weapon1, `${label}.weapon1`),
+      weapon2: normalizeLegacyExportSlot(build.weapon2, `${label}.weapon2`),
+      misc1: normalizeLegacyExportSlot(build.misc1, `${label}.misc1`),
+      misc2: normalizeLegacyExportSlot(build.misc2, `${label}.misc2`),
+      attackType: normalizeAttackTypeStrict(build.attackType, label),
+    };
+
+    const buildLabel = String(build.label || '').trim();
+    if (buildLabel) out.label = buildLabel;
+    return out;
+  }
+
+  function normalizeLegacyExportEntries(entries, label) {
+    if (!Array.isArray(entries) || !entries.length) {
+      throw new Error(`Invalid ${label}: expected non-empty array`);
+    }
+
+    const out = [];
+    const seen = new Set();
+    entries.forEach((entry, index) => {
+      requirePlainObject(entry, `${label}[${index}]`);
+      const name = String(entry.name || '').trim();
+      if (!name) {
+        throw new Error(`Invalid ${label}[${index}].name: expected non-empty string`);
+      }
+      const key = normalizeNameKey(name);
+      if (seen.has(key)) {
+        throw new Error(`Duplicate ${label} name: ${name}`);
+      }
+      seen.add(key);
+
+      const normalized = {
+        name,
+        build: normalizeLegacyExportBuild(entry.build, `${label}[${index}].build`),
+      };
+      if (entry.hash != null) {
+        const hash = String(entry.hash || '').trim();
+        if (!hash) {
+          throw new Error(`Invalid ${label}[${index}].hash: expected non-empty string when present`);
+        }
+        normalized.hash = hash;
+      }
+      out.push(normalized);
+    });
+
+    return out;
+  }
+
+  // Legacy export bridge usage:
+  // Terminal:
+  //   mkdir -p ./tmp && \
+  //   LEGACY_DEFENDER_FILE=./data/legacy-defenders-meta-v2-curated.js \
+  //   LEGACY_VERIFY_DEFENDERS=all \
+  //   node ./tools/export-legacy-truth-config.js > ./tmp/legacy-truth-config.json
+  //
+  // Browser console:
+  //   await LegacyTruthCollector.runLegacyExport(PASTE_JSON_HERE, {
+  //     repeats: 3,
+  //     trialsText: '10,000 times',
+  //     outputFile: 'legacy-truth-current-attacker-vs-meta.json',
+  //   });
+  function loadLegacyExport(rawOrObject) {
+    let parsed = rawOrObject;
+    if (typeof rawOrObject === 'string') {
+      const raw = rawOrObject.trim();
+      if (!raw) {
+        throw new Error('Legacy export JSON is empty.');
+      }
+      try {
+        parsed = JSON.parse(raw);
+      } catch (err) {
+        throw new Error(
+          `Legacy export JSON parse failed: ${err && err.message ? err.message : String(err)}`,
+        );
+      }
+    }
+
+    requirePlainObject(parsed, 'legacy export root');
+    const meta = requirePlainObject(parsed.meta, 'legacy export meta');
+    const attackers = normalizeLegacyExportEntries(parsed.attackers, 'attackers');
+    const defenders = normalizeLegacyExportEntries(parsed.defenders, 'defenders');
+
+    if (meta.crystalSlots != null && Number(meta.crystalSlots) !== 4) {
+      throw new Error(
+        `Unsupported legacy export meta.crystalSlots=${meta.crystalSlots}; browser import expects 4.`,
+      );
+    }
+
+    return {
+      meta: deepClone(meta),
+      attackers,
+      defenders,
+    };
+  }
+
+  async function runLegacyExport(rawOrObject, overrides = {}) {
+    if (overrides != null && !isPlainObject(overrides)) {
+      throw new Error('runLegacyExport() overrides must be an object when provided.');
+    }
+    const blocked = ['attackers', 'defenders', 'attackerFilters', 'defenderFilters'];
+    const blockedKeys = blocked.filter((key) => overrides && overrides[key] != null);
+    if (blockedKeys.length) {
+      throw new Error(
+        `runLegacyExport() does not accept ${blockedKeys.join(', ')} overrides; the export defines those lists.`,
+      );
+    }
+
+    const loaded = loadLegacyExport(rawOrObject);
+    return runMatrix({
+      ...deepClone(overrides || {}),
+      attackers: loaded.attackers,
+      defenders: loaded.defenders,
+      legacyExportMeta: loaded.meta,
+    });
+  }
+
   function installNetworkHooks() {
     if (window.__legacyTruthNetHooks) return window.__legacyTruthNetHooks;
 
@@ -1520,6 +1750,9 @@
       rawRuns: [],
       errors: [],
     };
+    if (config.legacyExportMeta && typeof config.legacyExportMeta === 'object') {
+      run.legacyExportMeta = deepClone(config.legacyExportMeta);
+    }
 
     console.log(
       `[LegacyTruthCollector] Starting ${run.counts.matchups} matchups x ${repeats} repeats = ${run.counts.runsPlanned} runs (${attackers.length} attackers x ${defenders.length} defenders).`,
@@ -1690,6 +1923,8 @@
     STRATIFIED_HP_BUCKETS: STRATIFIED_HP_BUCKETS.slice(),
     STRATIFIED_STYLES: STRATIFIED_STYLES.slice(),
     buildToPageImport,
+    loadLegacyExport,
+    runLegacyExport,
     normalizeAttackType,
     normalizePageBuild,
     setAttackType,
@@ -1742,5 +1977,5 @@
     },
   };
 
-  console.log('[LegacyTruthCollector] Ready. Run LegacyTruthCollector.quick() or LegacyTruthCollector.runMatrix({...}).');
+  console.log('[LegacyTruthCollector] Ready. Run LegacyTruthCollector.quick(), LegacyTruthCollector.runMatrix({...}), or LegacyTruthCollector.runLegacyExport(json, {...}).');
 })();
