@@ -1531,19 +1531,6 @@ let DEFENDER_PAYLOADS;
   );
 })();
 
-const DEFENDER_PRIORITY = [
-  // Priority order for gatekeepers (Stage 0).
-  // NOTE: aliases are accepted; we'll canonicalize and de-dupe at runtime.
-  'DL Gun Build 3',
-  'SG1 Split Bombs T2',
-  'DL Gun Build 4',
-  'DL Gun Build 2',
-  'DL Gun Build 7',
-  'Core/Void Build 1',
-  'T2 Scythe Build',
-  'HF Core/Void',
-];
-
 // Defender-name aliases (backwards compat).
 // We canonicalize names for selection so aliases don't inflate defender count
 // (e.g. "SG1 Split bombs" vs "SG1 Split Bombs T2").
@@ -1576,36 +1563,28 @@ function resolveDefenderKey(raw) {
 
 function isAliasKey(k) {
   const canon = DEFENDER_ALIAS_TO_CANON.get(k);
-  return !!(canon && DEFENDER_PAYLOADS && DEFENDER_PAYLOADS[canon]);
+  return !!(canon && canon !== k && DEFENDER_PAYLOADS && DEFENDER_PAYLOADS[canon]);
 }
 
-function priorityFirstAll(mode) {
-  // "all" keys, but drop alias keys *when* the canonical exists (prevents duplicates)
-  const all = Object.keys(DEFENDER_PAYLOADS)
-    .filter((k) => !isAliasKey(k))
-    .slice()
-    .sort();
-
+function getOrderedDefenderKeys() {
   const seen = new Set();
   const out = [];
 
-  const push = (raw) => {
-    const key = resolveDefenderKey(raw);
-    if (!key) {
-      console.warn(`WARN: defender "${raw}" not found; skipping`);
-      return;
-    }
-    if (!seen.has(key)) {
-      seen.add(key);
-      out.push(key);
-    }
-  };
+  for (const raw of Object.keys(DEFENDER_PAYLOADS)) {
+    if (isAliasKey(raw)) continue;
+    const key = resolveDefenderKey(raw) || raw;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(key);
+  }
 
-  for (const name of DEFENDER_PRIORITY) push(name);
-  if (mode === 'priority') return out;
-
-  for (const name of all) push(name);
   return out;
+}
+
+function priorityFirstAll(mode) {
+  const ordered = getOrderedDefenderKeys();
+  if (mode === 'priority') return ordered.slice();
+  return ordered.slice();
 }
 
 function DEFENDER_NAMES() {

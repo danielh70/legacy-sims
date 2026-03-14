@@ -194,3 +194,41 @@ The user prefers:
 - no hidden behavior changes
 
 Optimize for correctness, reproducibility, and clarity over cleverness.
+
+---
+
+## Repo cleanup rules
+
+When the task is repo cleanup / deleting debug artifacts:
+- Never delete on the first pass. First classify files into:
+  - KEEP
+  - SAFE TO DELETE
+  - REVIEW BEFORE DELETE
+- Be conservative with JSON, results, and data files.
+- Do not blindly delete all files under `results/` or all `*.json`.
+- Preserve these unless explicitly told otherwise:
+  - `legacy-sim-v1.0.4-clean.js`
+  - `brute-sim-v1.4.6.js`
+  - `tools/legacy-truth-replay-compare.js`
+  - `tools/legacy-truth-collector-v0.1.1.user.js`
+  - `data/legacy-defenders.js`
+  - `data/legacy-defenders-meta-v2-curated.js`
+  - `data/legacy-defs.js`
+  - `legacy-truth-targeted-3x2-maul-crystal-check.json`
+  - `legacy-truth-current-attacker-vs-meta.json`
+  - `legacy-truth-meta16-two-attackers.json`
+  - `legacy-truth-original15-two-attackers.json`
+- Prefer deleting only clearly temporary debug artifacts:
+  - summary markdowns
+  - temp sim / exact copies
+  - compile/diag/replay temp text files
+  - ad hoc debug result folders such as `results/debug-maul-path/`
+  - replay outputs not in the preserved regression set
+- Before deleting, check whether each file is tracked:
+  - use `git rm` for tracked files
+  - use `rm -rf` for untracked or ignored files
+- After cleanup, always show:
+  - exact commands run
+  - final `git status --short`
+  - short summary of what was removed
+- Do not commit unless explicitly asked.
