@@ -1,5 +1,8 @@
 # codex-apply-rollback-winner-c-report
 
+Cleanup note:
+- temporary probe configs, logs, and replay outputs referenced below were historical investigation artifacts and may have been removed during final repo cleanup
+
 ## Files touched
 
 | file | touch type | notes |

@@ -2,17 +2,19 @@
 
 Use this file as the source of truth in the next chat.
 
+Cleanup note:
+- most intermediate Codex investigation reports referenced in the original working arc were removed during final repo cleanup
+- retained final-state reports are `codex-full-rollback-vs-k-report.md` and `codex-apply-rollback-winner-c-report.md`
+- retained truth-pack paths below were normalized away from `tmp/` where applicable
+
 ## What the next chat should do first
 
 1. Read this handoff.
 2. Read the original baseline handoff: `legacy-bio-debug-handoff-2026-03-15.md`.
-3. Read the newest Codex report that comes back from the prompt I already pasted before opening the new chat.
+3. Read the retained final-state reports:
+   - `codex-full-rollback-vs-k-report.md`
+   - `codex-apply-rollback-winner-c-report.md`
 4. Continue from there without re-running old theory branches.
-
-The report that is currently **pending** from Codex should be named:
-- `codex-tracked-bio-lane-patch-report.md`
-
-That pending report is expected to answer whether the narrowly scoped tracked Bio-lane mitigation patch is now in place and whether `SG1 Double Maul Droid` is the only clearly separate remaining blocker.
 
 ---
 
@@ -141,8 +143,8 @@ Use:
 4. `CUSTOM_MAUL_A4_SG1_PINK`
 
 ### Exact fresh truth files that were explicitly collected and used
-- `./tmp/legacy-truth-current-attacker-vs-meta.json` — `CUSTOM`
-- `./tmp/legacy-truth-v4-custom-cstaff-full15-merged.json` — merged full-15 for `CUSTOM_CSTAFF_A4`
+- `./legacy-truth-current-attacker-vs-meta.json` — `CUSTOM`
+- `./legacy-truth-v4-custom-cstaff-full15-merged.json` — merged full-15 for `CUSTOM_CSTAFF_A4`
 - `./legacy-truth-v4-custom-maul-a4-dl-abyss-full15.json`
 - `./legacy-truth-v4-custom-maul-a4-sg1-pink-full15.json`
 
@@ -259,28 +261,11 @@ This is why the latest conclusion is:
 
 ## Current highest-priority question
 
-The last prompt already pasted to Codex is meant to answer exactly this:
+This handoff is now historical context only.
 
-> Make the tracked narrow Bio-lane patch in `legacy-sim-v1.0.4-clean.js`, rerun compact verification on the covered attackers, and determine whether `SG1 Double Maul Droid` is now the only clearly separate remaining blocker.
-
-The expected report from that prompt is:
-- `codex-tracked-bio-lane-patch-report.md`
-
-### What that pending patch prompt is supposed to do
-1. Implement the tracked always-on defender signature in `compileCombatantFromParts(...)`
-2. Implement the narrow structural Bio predicate in `attemptWeapon(...)`
-3. Use `def.armorFactor` instead of `armorFactorForArmorValue(...)` only when:
-   - `cfg.armorApply === 'per_weapon'`
-   - attacker-side action only
-   - defender matches the structural Bio predicate
-4. Leave all other paths untouched
-5. Do **not** bundle `SG1 Double Maul Droid` handling into that patch
-6. Rerun compact targeted row checks and compact full-v4 summaries
-
-### The decision expected after that report
-The next chat should determine whether the verdict is one of these:
-- **“tracked Bio-lane patch in place; only Double Maul Droid remains”**
-- or **“tracked Bio-lane patch in place; additional blocker remains”**
+The retained final-state decision documents are:
+- `codex-full-rollback-vs-k-report.md`
+- `codex-apply-rollback-winner-c-report.md`
 
 ---
 
@@ -290,29 +275,19 @@ The next chat should determine whether the verdict is one of these:
 - `legacy-bio-debug-handoff-2026-03-15.md`
 - this file: `legacy-chat-handoff-2026-03-15-continuation.md`
 
-### Key verification / diagnosis reports already produced
-- `codex-represented-build-patch-verify-report.md`
-- `codex-final-v4-signoff-check-report.md`
-- `codex-final-v4-maul-signoff-report.md`
-- `codex-ordinary-full4-mismatch-diagnosis-report.md`
-- `codex-applied-damage-trace-proof-report.md`
-- `codex-per-weapon-armorfactor-toggle-proof-report.md`
-- `codex-bio-lane-armorfactor-gate-proof-report.md`
-- `codex-replay-runtime-structural-gate-report.md`
-- `codex-structural-bio-gate-temp-proof-report.md`
-
-### Pending next report
-- `codex-tracked-bio-lane-patch-report.md`
+### Key retained reports
+- `codex-full-rollback-vs-k-report.md`
+- `codex-apply-rollback-winner-c-report.md`
 
 ### Key code files
 - `legacy-sim-v1.0.4-clean.js`
-- `legacy-truth-replay-compare.js`
-- `legacy-truth-collector-v0.1.1.user.js`
+- `tools/legacy-truth-replay-compare.js`
+- `tools/legacy-truth-collector-v0.1.1.user.js`
 - `brute-sim-v1.4.6.js` (untouched in this branch; do not patch yet)
 
 ### Key truth files
-- `./tmp/legacy-truth-current-attacker-vs-meta.json`
-- `./tmp/legacy-truth-v4-custom-cstaff-full15-merged.json`
+- `./legacy-truth-current-attacker-vs-meta.json`
+- `./legacy-truth-v4-custom-cstaff-full15-merged.json`
 - `./legacy-truth-v4-custom-maul-a4-dl-abyss-full15.json`
 - `./legacy-truth-v4-custom-maul-a4-sg1-pink-full15.json`
 
@@ -354,7 +329,9 @@ Then the next chat should:
 
 Upload:
 1. this file
-2. the newest Codex report (`codex-tracked-bio-lane-patch-report.md`)
+2. the retained final-state reports:
+   - `codex-full-rollback-vs-k-report.md`
+   - `codex-apply-rollback-winner-c-report.md`
 
 Then use this leading message:
 
@@ -373,4 +350,3 @@ If you only upload the two markdown files and no message, that is probably still
 - temp structural proof for that lane is strong enough that a tracked narrow patch is justified to test
 - `SG1 Double Maul Droid` should remain split off as a likely separate second issue
 - cleanup should wait until after the tracked Bio-lane patch report is reviewed
-
