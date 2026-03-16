@@ -143,10 +143,10 @@ Use:
 4. `CUSTOM_MAUL_A4_SG1_PINK`
 
 ### Exact fresh truth files that were explicitly collected and used
-- `./legacy-truth-current-attacker-vs-meta.json` — `CUSTOM`
-- `./legacy-truth-v4-custom-cstaff-full15-merged.json` — merged full-15 for `CUSTOM_CSTAFF_A4`
-- `./legacy-truth-v4-custom-maul-a4-dl-abyss-full15.json`
-- `./legacy-truth-v4-custom-maul-a4-sg1-pink-full15.json`
+- `./data/truth/legacy-truth-current-attacker-vs-meta.json` — `CUSTOM`
+- `./data/truth/legacy-truth-v4-custom-cstaff-full15-merged.json` — merged full-15 for `CUSTOM_CSTAFF_A4`
+- `./data/truth/legacy-truth-v4-custom-maul-a4-dl-abyss-full15.json`
+- `./data/truth/legacy-truth-v4-custom-maul-a4-sg1-pink-full15.json`
 
 ### What those signoff passes showed
 - `CUSTOM` stayed the healthiest attacker family
@@ -286,10 +286,10 @@ The retained final-state decision documents are:
 - `brute-sim-v1.4.6.js` (untouched in this branch; do not patch yet)
 
 ### Key truth files
-- `./legacy-truth-current-attacker-vs-meta.json`
-- `./legacy-truth-v4-custom-cstaff-full15-merged.json`
-- `./legacy-truth-v4-custom-maul-a4-dl-abyss-full15.json`
-- `./legacy-truth-v4-custom-maul-a4-sg1-pink-full15.json`
+- `./data/truth/legacy-truth-current-attacker-vs-meta.json`
+- `./data/truth/legacy-truth-v4-custom-cstaff-full15-merged.json`
+- `./data/truth/legacy-truth-v4-custom-maul-a4-dl-abyss-full15.json`
+- `./data/truth/legacy-truth-v4-custom-maul-a4-sg1-pink-full15.json`
 
 ---
 

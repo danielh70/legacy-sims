@@ -15032,7 +15032,7 @@
   "completed": 6,
   "completedRuns": 18,
   "failed": 0,
-  "outputFile": "tmp/legacy-truth-v4-custom-cstaff-full15-merged.json",
+  "outputFile": "data/truth/legacy-truth-v4-custom-cstaff-full15-merged.json",
   "attackers": [
     {
       "name": "CUSTOM_CSTAFF_A4",

@@ -40,7 +40,7 @@ Tracked deletion snapshot after cleanup:
 
 ## Files moved / renamed
 
-- `tmp/legacy-truth-v4-custom-cstaff-full15-merged.json` -> `legacy-truth-v4-custom-cstaff-full15-merged.json`
+- `data/truth/legacy-truth-v4-custom-cstaff-full15-merged.json` was retained as the normalized location for the merged cstaff full-15 truth pack
 
 ## Files edited only to update references / paths
 
@@ -57,7 +57,7 @@ find . -maxdepth 2 \( -name '.DS_Store' -o -name 'codex-*.md' -o -path './tmp/*'
 git ls-files
 
 rg -n "codex-[^ ]+\.md|tmp/|legacy-truth-[^ )\\]]+\.json" ./AGENTS.md ./README.md ./legacy-chat-handoff-2026-03-15-continuation.md ./codex-full-rollback-vs-k-report.md ./codex-apply-rollback-winner-c-report.md
-rg -n "legacy-truth-v4-custom-cstaff-full15-merged.json|tmp/legacy-truth-current-attacker-vs-meta.json|legacy-truth-current-attacker-vs-meta.json" ./README.md ./tools ./sim_ui ./simulator ./legacy-sim-v1.0.4-clean.js ./brute-sim-v1.4.6.js ./data ./package.json
+rg -n "legacy-truth-v4-custom-cstaff-full15-merged.json|legacy-truth-current-attacker-vs-meta.json" ./README.md ./tools ./sim_ui ./simulator ./legacy-sim-v1.0.4-clean.js ./brute-sim-v1.4.6.js ./data ./package.json
 find ./results -maxdepth 2 -type f | sort | sed 's#^./##'
 
 rg -n "legacy-defs\.js|legacy-defenders\.js|results/|results\.txt|codex-port-rollback-winner-c-to-brute-report\.md|legacy-truth-v4-custom-cstaff-full15-merged\.json" .
@@ -66,11 +66,11 @@ sed -n '130,180p' ./legacy-chat-handoff-2026-03-15-continuation.md
 sed -n '260,325p' ./legacy-chat-handoff-2026-03-15-continuation.md
 rg -n "codex-[^ ]+\.md" ./legacy-chat-handoff-2026-03-15-continuation.md
 
-git mv ./tmp/legacy-truth-v4-custom-cstaff-full15-merged.json ./legacy-truth-v4-custom-cstaff-full15-merged.json
+git mv ./data/truth/legacy-truth-v4-custom-cstaff-full15-merged.json ./data/truth/legacy-truth-v4-custom-cstaff-full15-merged.json
 git rm -f ./.DS_Store ...
 git rm -r -f ./results ./tmp
 
-mv ./tmp/legacy-truth-v4-custom-cstaff-full15-merged.json ./legacy-truth-v4-custom-cstaff-full15-merged.json
+mv ./data/truth/legacy-truth-v4-custom-cstaff-full15-merged.json ./data/truth/legacy-truth-v4-custom-cstaff-full15-merged.json
 find . -maxdepth 1 \( -name '.DS_Store' -o -name 'results.txt' -o -name 'codex-dl-riftcore-bio-diagnosis-report.md' -o -name 'codex-dl-riftcore-bio-harness-report.md' -o -name 'codex-droid-applied-damage-proof-report.md' -o -name 'codex-droid-lane-diagnosis-report.md' -o -name 'codex-droid-shared-hit-family-proof-report.md' -o -name 'codex-droid-split-decomposition-report.md' -o -name 'codex-droid-truth-pack-reconciliation-report.md' -o -name 'codex-droid-vs-hf-shell-diff-report.md' -o -name 'codex-final-post-parking-go-no-go-report.md' -o -name 'codex-global-armor-k-sanity-report.md' -o -name 'codex-hf-truth-pack-stop-go-report.md' -o -name 'codex-lane-probe-harness-reaper-report.md' -o -name 'codex-port-rollback-winner-c-to-brute-report.md' -o -name 'codex-post-bio-restore-residual-ranking-report.md' -o -name 'codex-post-droid-residual-ranking-report.md' -o -name 'codex-reaper-first-attacker-sensitivity-report.md' -o -name 'codex-reaper-first-mixed-melee-diagnosis-report.md' -o -name 'codex-sg1-bombs-cluster-harness-report.md' -o -name 'codex-sg1-bombs-downstream-refinement-report.md' -o -name 'codex-sg1-bombs-landing-sanity-report.md' -o -name 'codex-sg1-bombs-remaining-regression-report.md' \) -delete
 find ./results -depth -mindepth 1 -delete
 find ./tmp -depth -mindepth 1 -delete
@@ -95,8 +95,8 @@ Updated where needed:
 
 - the kept handoff no longer points at deleted intermediate reports
 - the kept handoff now references:
-  - `legacy-truth-current-attacker-vs-meta.json`
-  - `legacy-truth-v4-custom-cstaff-full15-merged.json`
+  - `data/truth/legacy-truth-current-attacker-vs-meta.json`
+  - `data/truth/legacy-truth-v4-custom-cstaff-full15-merged.json`
 - the two retained final reports now explicitly mark their `tmp` probe paths as historical cleanup-removed artifacts
 
 Dead-reference check:

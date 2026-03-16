@@ -214,10 +214,10 @@ When the task is repo cleanup / deleting debug artifacts:
   - `data/legacy-defenders.js`
   - `data/legacy-defenders-meta-v2-curated.js`
   - `data/legacy-defs.js`
-  - `legacy-truth-targeted-3x2-maul-crystal-check.json`
-  - `legacy-truth-current-attacker-vs-meta.json`
-  - `legacy-truth-meta16-two-attackers.json`
-  - `legacy-truth-original15-two-attackers.json`
+  - `data/truth/legacy-truth-targeted-3x2-maul-crystal-check.json`
+  - `data/truth/legacy-truth-current-attacker-vs-meta.json`
+  - `data/truth/legacy-truth-meta16-two-attackers.json`
+  - `data/truth/legacy-truth-original15-two-attackers.json`
 - Prefer deleting only clearly temporary debug artifacts:
   - summary markdowns
   - temp sim / exact copies

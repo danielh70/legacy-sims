@@ -1101,7 +1101,7 @@
   //   await LegacyTruthCollector.runLegacyExport(PASTE_JSON_HERE, {
   //     repeats: 3,
   //     trialsText: '10,000 times',
-  //     outputFile: 'legacy-truth-current-attacker-vs-meta.json',
+  //     outputFile: 'data/truth/legacy-truth-current-attacker-vs-meta.json',
   //   });
   function loadLegacyExport(rawOrObject) {
     let parsed = rawOrObject;
