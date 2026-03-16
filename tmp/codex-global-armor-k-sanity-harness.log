@@ -1,0 +1,9 @@
+RUN_ROOT	/Users/danielhook/Desktop/code_projects/legacy_sims/tmp/lane-probe-harness/global-armor-k-sanity-1773638323601
+SUMMARY_JSON	/Users/danielhook/Desktop/code_projects/legacy_sims/tmp/lane-probe-harness/global-armor-k-sanity-1773638323601/summary.json
+RANK	ID	TARGET_GAIN	CONTROL_MOVE	CONTRAST_MOVE	DEFAULT_REACH	SCORE	BOUND
+1	baseline_live	0.00	0.00	0.00	0	0.00	no
+2	sg1_bombs_parent	0.04	0.00	0.00	1	-0.06	no
+3	global_armor_k_7_5	0.09	0.00	0.00	15	-1.41	no
+4	sg1_bombs_parent_plus_global_armor_k_7	-0.24	0.00	0.00	15	-1.74	no
+5	global_armor_k_7	-0.26	0.00	0.00	15	-1.76	no
+6	global_armor_k_9	-1.05	0.00	0.00	15	-2.55	no

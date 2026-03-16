@@ -261,6 +261,7 @@ function normalizeLaneProbeW2Predicate(v) {
     s === 'defender_dual_melee' ||
     s === 'defender_melee_melee_per_weapon' ||
     s === 'defender_reaper_first_dual_melee' ||
+    s === 'defender_dark_legion_riftcore_double_bio' ||
     s === 'defender_dark_legion_reaper_first_dual_melee' ||
     s === 'defender_exact_signature'
     ? s
@@ -1456,6 +1457,16 @@ function laneProbeW2PredicateMatch(mode, att, cfg) {
   if (mode === 'defender_reaper_first_dual_melee') {
     return dualMelee && !!sig && sig.w1Item === 'Reaper Axe';
   }
+  if (mode === 'defender_dark_legion_riftcore_double_bio') {
+    return (
+      !!sig &&
+      sig.armorItem === 'Dark Legion Armor' &&
+      sig.m1Item === 'Bio Spinal Enhancer' &&
+      sig.m2Item === 'Bio Spinal Enhancer' &&
+      (sig.w1Item === 'Rift Gun' || sig.w1Item === 'Core Staff') &&
+      (sig.w2Item === 'Rift Gun' || sig.w2Item === 'Core Staff')
+    );
+  }
   if (mode === 'defender_dark_legion_reaper_first_dual_melee') {
     return dualMelee && !!sig && sig.armorItem === 'Dark Legion Armor' && sig.w1Item === 'Reaper Axe';
   }
@@ -1874,16 +1885,20 @@ function loadSharedDefs() {
 }
 loadSharedDefs();
 
+const ROLLBACK_DISABLE_HF_OVERRIDE = yn(pickEnv('LEGACY_ROLLBACK_DISABLE_HF_OVERRIDE', '0'));
 const HF_ARMOR_BASE_OVERRIDE = Number(pickEnv('LEGACY_HF_ARMOR_BASE_OVERRIDE', ''));
-if (Number.isFinite(HF_ARMOR_BASE_OVERRIDE) && HF_ARMOR_BASE_OVERRIDE > 0) {
+if (!ROLLBACK_DISABLE_HF_OVERRIDE && Number.isFinite(HF_ARMOR_BASE_OVERRIDE) && HF_ARMOR_BASE_OVERRIDE > 0) {
   if (ItemDefs['Hellforged Armor'] && ItemDefs['Hellforged Armor'].flatStats) {
     ItemDefs['Hellforged Armor'].flatStats.armor = Math.floor(HF_ARMOR_BASE_OVERRIDE);
   }
 }
 
+const ROLLBACK_DISABLE_VOID_SWORD_OVERRIDE = yn(
+  pickEnv('LEGACY_ROLLBACK_DISABLE_VOID_SWORD_OVERRIDE', '0'),
+);
 const VOID_SWORD_BASE_MIN_OVERRIDE = Number(pickEnv('LEGACY_VOID_SWORD_BASE_MIN_OVERRIDE', ''));
 const VOID_SWORD_BASE_MAX_OVERRIDE = Number(pickEnv('LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE', ''));
-if (ItemDefs['Void Sword'] && ItemDefs['Void Sword'].baseWeaponDamage) {
+if (!ROLLBACK_DISABLE_VOID_SWORD_OVERRIDE && ItemDefs['Void Sword'] && ItemDefs['Void Sword'].baseWeaponDamage) {
   if (Number.isFinite(VOID_SWORD_BASE_MIN_OVERRIDE) && VOID_SWORD_BASE_MIN_OVERRIDE > 0) {
     ItemDefs['Void Sword'].baseWeaponDamage.min = Math.floor(VOID_SWORD_BASE_MIN_OVERRIDE);
   }
@@ -1937,6 +1952,7 @@ const LANE_PROBE_W2_TARGET_PREDICATE = normalizeLaneProbeW2TargetPredicate(
 const LANE_PROBE_W2_TARGET_EXACT_SIG = parseExactSigSpec(
   pickEnv('LEGACY_LANE_PROBE_W2_TARGET_EXACT_SIG', ''),
 );
+const ROLLBACK_DISABLE_BIO_GATE = yn(pickEnv('LEGACY_ROLLBACK_DISABLE_BIO_GATE', '0'));
 const SHARED_SKILL_ATTACKER_OVERRIDE = normalizeSharedSkillOverride(
   pickEnv('LEGACY_SHARED_SKILL_ATTACKER_OVERRIDE', 'auto'),
 );
@@ -4396,6 +4412,7 @@ function attemptWeapon(
 
   const sig = def && def.__runtimeSig ? def.__runtimeSig : null;
   const defenderIsBioLane =
+    !ROLLBACK_DISABLE_BIO_GATE &&
     !!sig &&
     sig.armorItem === 'Dark Legion Armor' &&
     sig.m1Item === 'Bio Spinal Enhancer' &&

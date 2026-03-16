@@ -1,0 +1,55 @@
+JSON_SAVE: ON
+FILTERS attackers=CUSTOM_CSTAFF_A4 defenders=SG1 Split Bombs T2, SG1 Rift/Bombs Bio, DL Rift/Bombs Scout, DL Dual Rift Bio, Ashley Build, HF Scythe Pair
+PROGRESS variant=- jobs=0/6 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/6 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/6 0.0% elapsed=00:00:02 eta=00:00:00 current=CUSTOM_CSTAFF_A4 | Ashley Build
+PROGRESS variant=baseline jobs=1/6 16.7% elapsed=00:00:03 eta=00:00:15 current=CUSTOM_CSTAFF_A4 | Ashley Build
+PROGRESS variant=baseline jobs=1/6 16.7% elapsed=00:00:04 eta=00:00:20 current=CUSTOM_CSTAFF_A4 | DL Dual Rift Bio
+PROGRESS variant=baseline jobs=1/6 16.7% elapsed=00:00:06 eta=00:00:30 current=CUSTOM_CSTAFF_A4 | DL Dual Rift Bio
+PROGRESS variant=baseline jobs=2/6 33.3% elapsed=00:00:07 eta=00:00:13 current=CUSTOM_CSTAFF_A4 | DL Dual Rift Bio
+PROGRESS variant=baseline jobs=2/6 33.3% elapsed=00:00:08 eta=00:00:16 current=CUSTOM_CSTAFF_A4 | DL Rift/Bombs Scout
+PROGRESS variant=baseline jobs=2/6 33.3% elapsed=00:00:10 eta=00:00:20 current=CUSTOM_CSTAFF_A4 | DL Rift/Bombs Scout
+PROGRESS variant=baseline jobs=3/6 50.0% elapsed=00:00:10 eta=00:00:10 current=CUSTOM_CSTAFF_A4 | DL Rift/Bombs Scout
+PROGRESS variant=baseline jobs=3/6 50.0% elapsed=00:00:12 eta=00:00:12 current=CUSTOM_CSTAFF_A4 | HF Scythe Pair
+PROGRESS variant=baseline jobs=3/6 50.0% elapsed=00:00:14 eta=00:00:14 current=CUSTOM_CSTAFF_A4 | HF Scythe Pair
+PROGRESS variant=baseline jobs=4/6 66.7% elapsed=00:00:15 eta=00:00:08 current=CUSTOM_CSTAFF_A4 | HF Scythe Pair
+PROGRESS variant=baseline jobs=4/6 66.7% elapsed=00:00:16 eta=00:00:08 current=CUSTOM_CSTAFF_A4 | SG1 Rift/Bombs Bio
+PROGRESS variant=baseline jobs=4/6 66.7% elapsed=00:00:18 eta=00:00:09 current=CUSTOM_CSTAFF_A4 | SG1 Rift/Bombs Bio
+PROGRESS variant=baseline jobs=5/6 83.3% elapsed=00:00:19 eta=00:00:04 current=CUSTOM_CSTAFF_A4 | SG1 Rift/Bombs Bio
+PROGRESS variant=baseline jobs=5/6 83.3% elapsed=00:00:20 eta=00:00:04 current=CUSTOM_CSTAFF_A4 | SG1 Split Bombs T2
+PROGRESS variant=baseline jobs=5/6 83.3% elapsed=00:00:22 eta=00:00:04 current=CUSTOM_CSTAFF_A4 | SG1 Split Bombs T2
+PROGRESS variant=baseline jobs=6/6 100.0% elapsed=00:00:23 eta=00:00:00 current=CUSTOM_CSTAFF_A4 | SG1 Split Bombs T2
+MATCHUPS=6 COMPARED=6 TRIALS=100000 WORKERS=1 VARIANT=baseline ENV=(default env)
+SUMMARY meanAbsΔwin=2.60 meanAbsΔavgT=0.0921 worstAbsΔwin=4.53 (CUSTOM_CSTAFF_A4 vs Ashley Build)
+Worst mismatches (top 15):
+01 CUSTOM_CSTAFF_A4 | Ashley Build | win 19.58->24.11 s/a +4.53 / 4.53 | avgT 11.6587->11.6537 s/a -0.0050 / 0.0050
+   A hit 36->36 s/a +0 / 0 | dmg1 70->70 s/a +0 / 0 | dmg2 70->70 s/a +0 / 0 | dmg/f 404.0->393.7 s/a -10.3 / 10.3 | rng 50-167->50-167 s/a +0/+0 / 0/0
+   D hit 69->70 s/a +1 / 1 | dmg1 48->47 s/a -1 / 1 | dmg2 48->48 s/a +0 / 0 | dmg/f 670.4->605.3 s/a -65.1 / 65.1 | rng 50-193->50-188 s/a +0/-5 / 0/5
+02 CUSTOM_CSTAFF_A4 | HF Scythe Pair | win 82.07->78.40 s/a -3.67 / 3.67 | avgT 11.8079->11.7239 s/a -0.0840 / 0.0840
+   A hit 78->79 s/a +1 / 1 | dmg1 74->73 s/a -1 / 1 | dmg2 74->73 s/a -1 / 1 | dmg/f 876.3->821.2 s/a -55.1 / 55.1 | rng 43-142->42-142 s/a -1/+0 / 1/0
+   D hit 44->44 s/a +0 / 0 | dmg1 51->52 s/a +1 / 1 | dmg2 51->52 s/a +1 / 1 | dmg/f 457.1->439.3 s/a -17.8 / 17.8 | rng 79-204->80-205 s/a +1/+1 / 1/1
+03 CUSTOM_CSTAFF_A4 | DL Dual Rift Bio | win 53.27->50.12 s/a -3.15 / 3.15 | avgT 13.3560->13.3637 s/a +0.0077 / 0.0077
+   A hit 65->66 s/a +1 / 1 | dmg1 61->57 s/a -4 / 4 | dmg2 61->57 s/a -4 / 4 | dmg/f 796.4->746.5 s/a -49.9 / 49.9 | rng 50-167->51-172 s/a +1/+5 / 1/5
+   D hit 72->72 s/a +0 / 0 | dmg1 50->51 s/a +1 / 1 | dmg2 50->50 s/a +0 / 0 | dmg/f 593.6->564.8 s/a -28.8 / 28.8 | rng 60-132->60-132 s/a +0/+0 / 0/0
+04 CUSTOM_CSTAFF_A4 | SG1 Rift/Bombs Bio | win 66.06->63.73 s/a -2.33 / 2.33 | avgT 12.3275->12.3097 s/a -0.0178 / 0.0178
+   A hit 79->80 s/a +1 / 1 | dmg1 55->55 s/a +0 / 0 | dmg2 55->55 s/a +0 / 0 | dmg/f 839.2->793.6 s/a -45.6 / 45.6 | rng 52-172->51-170 s/a -1/-2 / 1/2
+   D hit 63->64 s/a +1 / 1 | dmg1 50->50 s/a +0 / 0 | dmg2 59->59 s/a +0 / 0 | dmg/f 536.5->525.1 s/a -11.4 / 11.4 | rng 55-151->55-151 s/a +0/+0 / 0/0
+05 CUSTOM_CSTAFF_A4 | SG1 Split Bombs T2 | win 62.42->60.55 s/a -1.87 / 1.87 | avgT 15.0642->14.7653 s/a -0.2988 / 0.2988
+   A hit 69->70 s/a +1 / 1 | dmg1 54->54 s/a +0 / 0 | dmg2 54->54 s/a +0 / 0 | dmg/f 815.6->769.9 s/a -45.7 / 45.7 | rng 49-164->49-164 s/a +0/+0 / 0/0
+   D hit 49->48 s/a -1 / 1 | dmg1 53->53 s/a +0 / 0 | dmg2 53->53 s/a +0 / 0 | dmg/f 545.7->519.9 s/a -25.8 / 25.8 | rng 55-172->55-172 s/a +0/+0 / 0/0
+06 CUSTOM_CSTAFF_A4 | DL Rift/Bombs Scout | win 43.45->43.49 s/a +0.04 / 0.04 | avgT 12.3732->12.2340 s/a -0.1393 / 0.1393
+   A hit 60->61 s/a +1 / 1 | dmg1 67->67 s/a +0 / 0 | dmg2 67->67 s/a +0 / 0 | dmg/f 760.3->722.7 s/a -37.6 / 37.6 | rng 50-167->50-167 s/a +0/+0 / 0/0
+   D hit 75->75 s/a +0 / 0 | dmg1 48->48 s/a +0 / 0 | dmg2 53->53 s/a +0 / 0 | dmg/f 604.8->573.1 s/a -31.7 / 31.7 | rng 55-151->55-151 s/a +0/+0 / 0/0
+
+By attacker:
+CUSTOM_CSTAFF_A4 | avgAbsΔwin=2.60 | worst=4.53 (+4.53) | vs=Ashley Build
+
+By defender:
+Ashley Build | avgAbsΔwin=4.53 | worst=4.53 (+4.53) | vs=CUSTOM_CSTAFF_A4
+HF Scythe Pair | avgAbsΔwin=3.67 | worst=3.67 (-3.67) | vs=CUSTOM_CSTAFF_A4
+DL Dual Rift Bio | avgAbsΔwin=3.15 | worst=3.15 (-3.15) | vs=CUSTOM_CSTAFF_A4
+SG1 Rift/Bombs Bio | avgAbsΔwin=2.33 | worst=2.33 (-2.33) | vs=CUSTOM_CSTAFF_A4
+SG1 Split Bombs T2 | avgAbsΔwin=1.87 | worst=1.87 (-1.87) | vs=CUSTOM_CSTAFF_A4
+DL Rift/Bombs Scout | avgAbsΔwin=0.04 | worst=0.04 (+0.04) | vs=CUSTOM_CSTAFF_A4
+
+Saved /Users/danielhook/Desktop/code_projects/legacy_sims/tmp/lane-probe-harness/sg1-bombs-remaining-regression-1773635709854/refresh-hit-rift-bombs-bio/legacy-replay--legacy-truth-v4-custom-cstaff-full15-merged--legacy-sim-v1.0.4-clean.lane-probe--none--sg1-bombs-remaining-regression-refresh-hit-rift-bombs-bio-cstaff--2026-03-16T04-41-21-724Z.json

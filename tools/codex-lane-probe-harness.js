@@ -133,6 +133,18 @@ function defaultPotentialReachCount(toggle, defsByName) {
     else if (predicate === 'defender_melee_melee_per_weapon') match = dualMelee;
     else if (predicate === 'defender_reaper_first_dual_melee') {
       match = dualMelee && d.weapon1 && d.weapon1.name === 'Reaper Axe';
+    } else if (predicate === 'defender_dark_legion_riftcore_double_bio') {
+      match =
+        d.armor &&
+        d.armor.name === 'Dark Legion Armor' &&
+        d.weapon1 &&
+        d.weapon2 &&
+        ['Rift Gun', 'Core Staff'].includes(d.weapon1.name) &&
+        ['Rift Gun', 'Core Staff'].includes(d.weapon2.name) &&
+        d.misc1 &&
+        d.misc2 &&
+        d.misc1.name === 'Bio Spinal Enhancer' &&
+        d.misc2.name === 'Bio Spinal Enhancer';
     } else if (predicate === 'defender_dark_legion_reaper_first_dual_melee') {
       match =
         dualMelee &&

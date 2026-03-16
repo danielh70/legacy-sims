@@ -1,0 +1,93 @@
+JSON_SAVE: ON
+FILTERS attackers=CUSTOM_CSTAFF_A4 defenders=(all)
+PROGRESS variant=- jobs=0/15 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/15 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=1/15 6.7% elapsed=00:00:01 eta=00:00:09 current=CUSTOM_CSTAFF_A4 | Ashley Build
+PROGRESS variant=baseline jobs=2/15 13.3% elapsed=00:00:01 eta=00:00:09 current=CUSTOM_CSTAFF_A4 | DL Core/Rift Bio
+PROGRESS variant=baseline jobs=2/15 13.3% elapsed=00:00:02 eta=00:00:13 current=CUSTOM_CSTAFF_A4 | DL Core/Rift Dodge
+PROGRESS variant=baseline jobs=3/15 20.0% elapsed=00:00:02 eta=00:00:08 current=CUSTOM_CSTAFF_A4 | DL Core/Rift Dodge
+PROGRESS variant=baseline jobs=4/15 26.7% elapsed=00:00:03 eta=00:00:08 current=CUSTOM_CSTAFF_A4 | DL Dual Rift Bio
+PROGRESS variant=baseline jobs=5/15 33.3% elapsed=00:00:03 eta=00:00:07 current=CUSTOM_CSTAFF_A4 | DL Gun Blade Bio
+PROGRESS variant=baseline jobs=5/15 33.3% elapsed=00:00:04 eta=00:00:08 current=CUSTOM_CSTAFF_A4 | DL Gun Blade Recon
+PROGRESS variant=baseline jobs=6/15 40.0% elapsed=00:00:04 eta=00:00:06 current=CUSTOM_CSTAFF_A4 | DL Gun Blade Recon
+PROGRESS variant=baseline jobs=7/15 46.7% elapsed=00:00:05 eta=00:00:05 current=CUSTOM_CSTAFF_A4 | DL Gun Sniper Mix
+PROGRESS variant=baseline jobs=8/15 53.3% elapsed=00:00:05 eta=00:00:04 current=CUSTOM_CSTAFF_A4 | DL Maul/Core Orphic
+PROGRESS variant=baseline jobs=9/15 60.0% elapsed=00:00:06 eta=00:00:04 current=CUSTOM_CSTAFF_A4 | DL Reaper/Maul Orphic Bio
+PROGRESS variant=baseline jobs=9/15 60.0% elapsed=00:00:06 eta=00:00:04 current=CUSTOM_CSTAFF_A4 | DL Rift/Bombs Scout
+PROGRESS variant=baseline jobs=10/15 66.7% elapsed=00:00:06 eta=00:00:03 current=CUSTOM_CSTAFF_A4 | DL Rift/Bombs Scout
+PROGRESS variant=baseline jobs=11/15 73.3% elapsed=00:00:07 eta=00:00:02 current=CUSTOM_CSTAFF_A4 | HF Scythe Pair
+PROGRESS variant=baseline jobs=12/15 80.0% elapsed=00:00:07 eta=00:00:02 current=CUSTOM_CSTAFF_A4 | SG1 Double Maul Droid
+PROGRESS variant=baseline jobs=13/15 86.7% elapsed=00:00:08 eta=00:00:01 current=CUSTOM_CSTAFF_A4 | SG1 Rift/Bombs Bio
+PROGRESS variant=baseline jobs=13/15 86.7% elapsed=00:00:08 eta=00:00:01 current=CUSTOM_CSTAFF_A4 | SG1 Split Bombs T2
+PROGRESS variant=baseline jobs=14/15 93.3% elapsed=00:00:08 eta=00:00:01 current=CUSTOM_CSTAFF_A4 | SG1 Split Bombs T2
+PROGRESS variant=baseline jobs=15/15 100.0% elapsed=00:00:09 eta=00:00:00 current=CUSTOM_CSTAFF_A4 | SG1 Void/Reaper
+MATCHUPS=15 COMPARED=15 TRIALS=20000 WORKERS=1 VARIANT=baseline ENV=(default env)
+SUMMARY meanAbsΔwin=2.76 meanAbsΔavgT=0.1179 worstAbsΔwin=6.53 (CUSTOM_CSTAFF_A4 vs SG1 Double Maul Droid)
+Worst mismatches (top 15):
+01 CUSTOM_CSTAFF_A4 | SG1 Double Maul Droid | win 63.59->57.06 s/a -6.53 / 6.53 | avgT 10.9552->10.7536 s/a -0.2016 / 0.2016
+   A hit 50->50 s/a +0 / 0 | dmg1 72->72 s/a +0 / 0 | dmg2 72->72 s/a +0 / 0 | dmg/f 619.3->561.4 s/a -57.9 / 57.9 | rng 52-172->51-170 s/a -1/-2 / 1/2
+   D hit 86->87 s/a +1 / 1 | dmg1 30->31 s/a +1 / 1 | dmg2 30->31 s/a +1 / 1 | dmg/f 521.8->513.8 s/a -8.0 / 8.0 | rng 94-208->94-210 s/a +0/+2 / 0/2
+02 CUSTOM_CSTAFF_A4 | Ashley Build | win 19.58->24.52 s/a +4.95 / 4.95 | avgT 11.6587->11.6534 s/a -0.0053 / 0.0053
+   A hit 36->36 s/a +0 / 0 | dmg1 70->70 s/a +0 / 0 | dmg2 70->70 s/a +0 / 0 | dmg/f 404.0->393.4 s/a -10.6 / 10.6 | rng 50-167->50-167 s/a +0/+0 / 0/0
+   D hit 69->70 s/a +1 / 1 | dmg1 48->48 s/a +0 / 0 | dmg2 48->48 s/a +0 / 0 | dmg/f 670.4->604.7 s/a -65.7 / 65.7 | rng 50-193->50-188 s/a +0/-5 / 0/5
+03 CUSTOM_CSTAFF_A4 | DL Dual Rift Bio | win 53.27->49.66 s/a -3.61 / 3.61 | avgT 13.3560->13.3334 s/a -0.0226 / 0.0226
+   A hit 65->66 s/a +1 / 1 | dmg1 61->57 s/a -4 / 4 | dmg2 61->57 s/a -4 / 4 | dmg/f 796.4->745.1 s/a -51.3 / 51.3 | rng 50-167->51-172 s/a +1/+5 / 1/5
+   D hit 72->72 s/a +0 / 0 | dmg1 50->51 s/a +1 / 1 | dmg2 50->51 s/a +1 / 1 | dmg/f 593.6->566.0 s/a -27.6 / 27.6 | rng 60-132->60-132 s/a +0/+0 / 0/0
+04 CUSTOM_CSTAFF_A4 | HF Scythe Pair | win 82.07->78.82 s/a -3.25 / 3.25 | avgT 11.8079->11.7217 s/a -0.0862 / 0.0862
+   A hit 78->79 s/a +1 / 1 | dmg1 74->73 s/a -1 / 1 | dmg2 74->73 s/a -1 / 1 | dmg/f 876.3->822.1 s/a -54.2 / 54.2 | rng 43-142->42-142 s/a -1/+0 / 1/0
+   D hit 44->44 s/a +0 / 0 | dmg1 51->52 s/a +1 / 1 | dmg2 51->51 s/a +0 / 0 | dmg/f 457.1->438.8 s/a -18.3 / 18.3 | rng 79-204->80-205 s/a +1/+1 / 1/1
+05 CUSTOM_CSTAFF_A4 | DL Reaper/Maul Orphic Bio | win 35.23->38.43 s/a +3.20 / 3.20 | avgT 11.0541->11.0299 s/a -0.0242 / 0.0242
+   A hit 44->44 s/a +0 / 0 | dmg1 73->72 s/a -1 / 1 | dmg2 73->72 s/a -1 / 1 | dmg/f 520.2->497.3 s/a -22.9 / 22.9 | rng 50-167->50-167 s/a +0/+0 / 0/0
+   D hit 61->61 s/a +0 / 0 | dmg1 46->46 s/a +0 / 0 | dmg2 46->46 s/a +0 / 0 | dmg/f 635.1->570.8 s/a -64.3 / 64.3 | rng 84-227->84-224 s/a +0/-3 / 0/3
+06 CUSTOM_CSTAFF_A4 | DL Core/Rift Bio | win 52.83->49.83 s/a -3.00 / 3.00 | avgT 14.8481->14.8079 s/a -0.0402 / 0.0402
+   A hit 65->66 s/a +1 / 1 | dmg1 54->52 s/a -2 / 2 | dmg2 54->52 s/a -2 / 2 | dmg/f 795.3->742.9 s/a -52.4 / 52.4 | rng 50-167->51-172 s/a +1/+5 / 1/5
+   D hit 63->64 s/a +1 / 1 | dmg1 58->58 s/a +0 / 0 | dmg2 51->52 s/a +1 / 1 | dmg/f 581.4->560.0 s/a -21.4 / 21.4 | rng 50-125->50-125 s/a +0/+0 / 0/0
+07 CUSTOM_CSTAFF_A4 | SG1 Rift/Bombs Bio | win 66.06->63.17 s/a -2.89 / 2.89 | avgT 12.3275->12.2278 s/a -0.0998 / 0.0998
+   A hit 79->80 s/a +1 / 1 | dmg1 55->55 s/a +0 / 0 | dmg2 55->55 s/a +0 / 0 | dmg/f 839.2->787.9 s/a -51.3 / 51.3 | rng 52-172->51-170 s/a -1/-2 / 1/2
+   D hit 63->64 s/a +1 / 1 | dmg1 50->50 s/a +0 / 0 | dmg2 59->59 s/a +0 / 0 | dmg/f 536.5->519.5 s/a -17.0 / 17.0 | rng 55-151->55-151 s/a +0/+0 / 0/0
+08 CUSTOM_CSTAFF_A4 | DL Gun Blade Recon | win 20.51->23.39 s/a +2.88 / 2.88 | avgT 10.6698->10.6205 s/a -0.0493 / 0.0493
+   A hit 36->36 s/a +0 / 0 | dmg1 79->79 s/a +0 / 0 | dmg2 79->78 s/a -1 / 1 | dmg/f 458.2->435.1 s/a -23.1 / 23.1 | rng 50-167->50-167 s/a +0/+0 / 0/0
+   D hit 76->76 s/a +0 / 0 | dmg1 50->50 s/a +0 / 0 | dmg2 50->49 s/a -1 / 1 | dmg/f 662.5->607.0 s/a -55.5 / 55.5 | rng 60-180->60-177 s/a +0/-3 / 0/3
+09 CUSTOM_CSTAFF_A4 | DL Gun Blade Bio | win 27.71->30.36 s/a +2.65 / 2.65 | avgT 10.7064->10.5878 s/a -0.1186 / 0.1186
+   A hit 41->41 s/a +0 / 0 | dmg1 75->74 s/a -1 / 1 | dmg2 75->74 s/a -1 / 1 | dmg/f 495.6->468.3 s/a -27.3 / 27.3 | rng 50-167->50-167 s/a +0/+0 / 0/0
+   D hit 70->71 s/a +1 / 1 | dmg1 52->52 s/a +0 / 0 | dmg2 52->52 s/a +0 / 0 | dmg/f 645.6->590.8 s/a -54.8 / 54.8 | rng 60-180->60-177 s/a +0/-3 / 0/3
+10 CUSTOM_CSTAFF_A4 | SG1 Void/Reaper | win 51.82->49.59 s/a -2.23 / 2.23 | avgT 10.7545->10.5998 s/a -0.1547 / 0.1547
+   A hit 54->55 s/a +1 / 1 | dmg1 64->64 s/a +0 / 0 | dmg2 64->63 s/a -1 / 1 | dmg/f 586.7->540.6 s/a -46.1 / 46.1 | rng 52-172->51-170 s/a -1/-2 / 1/2
+   D hit 71->72 s/a +1 / 1 | dmg1 48->48 s/a +0 / 0 | dmg2 46->46 s/a +0 / 0 | dmg/f 573.6->542.3 s/a -31.3 / 31.3 | rng 12-242->12-243 s/a +0/+1 / 0/1
+11 CUSTOM_CSTAFF_A4 | DL Maul/Core Orphic | win 32.51->34.56 s/a +2.05 / 2.05 | avgT 11.1702->10.9003 s/a -0.2698 / 0.2698
+   A hit 44->44 s/a +0 / 0 | dmg1 71->71 s/a +0 / 0 | dmg2 71->71 s/a +0 / 0 | dmg/f 514.2->487.3 s/a -26.9 / 26.9 | rng 50-167->50-167 s/a +0/+0 / 0/0
+   D hit 64->65 s/a +1 / 1 | dmg1 53->54 s/a +1 / 1 | dmg2 53->54 s/a +1 / 1 | dmg/f 633.7->578.2 s/a -55.5 / 55.5 | rng 50-180->50-177 s/a +0/-3 / 0/3
+12 CUSTOM_CSTAFF_A4 | SG1 Split Bombs T2 | win 62.42->60.80 s/a -1.62 / 1.62 | avgT 15.0642->14.7656 s/a -0.2986 / 0.2986
+   A hit 69->70 s/a +1 / 1 | dmg1 54->54 s/a +0 / 0 | dmg2 54->54 s/a +0 / 0 | dmg/f 815.6->770.7 s/a -44.9 / 44.9 | rng 49-164->49-164 s/a +0/+0 / 0/0
+   D hit 49->48 s/a -1 / 1 | dmg1 53->53 s/a +0 / 0 | dmg2 53->53 s/a +0 / 0 | dmg/f 545.7->518.7 s/a -27.0 / 27.0 | rng 55-172->55-172 s/a +0/+0 / 0/0
+13 CUSTOM_CSTAFF_A4 | DL Gun Sniper Mix | win 42.07->43.44 s/a +1.37 / 1.37 | avgT 10.3887->10.4035 s/a +0.0148 / 0.0148
+   A hit 62->63 s/a +1 / 1 | dmg1 76->75 s/a -1 / 1 | dmg2 76->75 s/a -1 / 1 | dmg/f 748.5->717.3 s/a -31.2 / 31.2 | rng 50-167->50-167 s/a +0/+0 / 0/0
+   D hit 79->80 s/a +1 / 1 | dmg1 44->44 s/a +0 / 0 | dmg2 44->44 s/a +0 / 0 | dmg/f 611.4->570.6 s/a -40.8 / 40.8 | rng 60-185->60-182 s/a +0/-3 / 0/3
+14 CUSTOM_CSTAFF_A4 | DL Core/Rift Dodge | win 36.88->37.87 s/a +0.99 / 0.99 | avgT 12.9573->12.7284 s/a -0.2289 / 0.2289
+   A hit 40->39 s/a -1 / 1 | dmg1 71->70 s/a -1 / 1 | dmg2 71->70 s/a -1 / 1 | dmg/f 542.0->506.8 s/a -35.2 / 35.2 | rng 50-167->50-167 s/a +0/+0 / 0/0
+   D hit 82->83 s/a +1 / 1 | dmg1 48->48 s/a +0 / 0 | dmg2 55->55 s/a +0 / 0 | dmg/f 621.2->582.7 s/a -38.5 / 38.5 | rng 50-125->50-125 s/a +0/+0 / 0/0
+15 CUSTOM_CSTAFF_A4 | DL Rift/Bombs Scout | win 43.45->43.32 s/a -0.13 / 0.13 | avgT 12.3732->12.2191 s/a -0.1541 / 0.1541
+   A hit 60->61 s/a +1 / 1 | dmg1 67->67 s/a +0 / 0 | dmg2 67->67 s/a +0 / 0 | dmg/f 760.3->722.2 s/a -38.1 / 38.1 | rng 50-167->50-167 s/a +0/+0 / 0/0
+   D hit 75->75 s/a +0 / 0 | dmg1 48->48 s/a +0 / 0 | dmg2 53->54 s/a +1 / 1 | dmg/f 604.8->573.5 s/a -31.3 / 31.3 | rng 55-151->55-151 s/a +0/+0 / 0/0
+
+By attacker:
+CUSTOM_CSTAFF_A4 | avgAbsΔwin=2.76 | worst=6.53 (-6.53) | vs=SG1 Double Maul Droid
+
+By defender:
+SG1 Double Maul Droid | avgAbsΔwin=6.53 | worst=6.53 (-6.53) | vs=CUSTOM_CSTAFF_A4
+Ashley Build | avgAbsΔwin=4.95 | worst=4.95 (+4.95) | vs=CUSTOM_CSTAFF_A4
+DL Dual Rift Bio | avgAbsΔwin=3.61 | worst=3.61 (-3.61) | vs=CUSTOM_CSTAFF_A4
+HF Scythe Pair | avgAbsΔwin=3.25 | worst=3.25 (-3.25) | vs=CUSTOM_CSTAFF_A4
+DL Reaper/Maul Orphic Bio | avgAbsΔwin=3.20 | worst=3.20 (+3.20) | vs=CUSTOM_CSTAFF_A4
+DL Core/Rift Bio | avgAbsΔwin=3.00 | worst=3.00 (-3.00) | vs=CUSTOM_CSTAFF_A4
+SG1 Rift/Bombs Bio | avgAbsΔwin=2.89 | worst=2.89 (-2.89) | vs=CUSTOM_CSTAFF_A4
+DL Gun Blade Recon | avgAbsΔwin=2.88 | worst=2.88 (+2.88) | vs=CUSTOM_CSTAFF_A4
+DL Gun Blade Bio | avgAbsΔwin=2.65 | worst=2.65 (+2.65) | vs=CUSTOM_CSTAFF_A4
+SG1 Void/Reaper | avgAbsΔwin=2.23 | worst=2.23 (-2.23) | vs=CUSTOM_CSTAFF_A4
+DL Maul/Core Orphic | avgAbsΔwin=2.05 | worst=2.05 (+2.05) | vs=CUSTOM_CSTAFF_A4
+SG1 Split Bombs T2 | avgAbsΔwin=1.62 | worst=1.62 (-1.62) | vs=CUSTOM_CSTAFF_A4
+DL Gun Sniper Mix | avgAbsΔwin=1.37 | worst=1.37 (+1.37) | vs=CUSTOM_CSTAFF_A4
+DL Core/Rift Dodge | avgAbsΔwin=0.99 | worst=0.99 (+0.99) | vs=CUSTOM_CSTAFF_A4
+DL Rift/Bombs Scout | avgAbsΔwin=0.13 | worst=0.13 (-0.13) | vs=CUSTOM_CSTAFF_A4
+
+Saved /Users/danielhook/Desktop/code_projects/legacy_sims/tmp/replay-final-post-parking/legacy-replay--legacy-truth-v4-custom-cstaff-full15-merged--legacy-sim-v1.0.4-clean--none--final-post-parking-cstaff--2026-03-16T21-45-13-754Z.json

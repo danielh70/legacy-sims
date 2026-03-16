@@ -149,8 +149,6 @@ const __DEFAULT_ENV__ = {
 
   LEGACY_MISC_NO_CRYSTAL_SKILL_SLOT2_TYPES: '',
 
-  LEGACY_HF_ARMOR_BASE_OVERRIDE: '125',
-
   LEGACY_VOID_SWORD_BASE_MIN_OVERRIDE: '',
   LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE: '120',
 
@@ -1747,13 +1745,6 @@ function loadSharedDefs() {
   LOADED_DEFS_PATH = `(embedded; failed external: ${errors.join(' | ')})`;
 }
 loadSharedDefs();
-
-const HF_ARMOR_BASE_OVERRIDE = Number(pickEnv('LEGACY_HF_ARMOR_BASE_OVERRIDE', ''));
-if (Number.isFinite(HF_ARMOR_BASE_OVERRIDE) && HF_ARMOR_BASE_OVERRIDE > 0) {
-  if (ItemDefs['Hellforged Armor'] && ItemDefs['Hellforged Armor'].flatStats) {
-    ItemDefs['Hellforged Armor'].flatStats.armor = Math.floor(HF_ARMOR_BASE_OVERRIDE);
-  }
-}
 
 const VOID_SWORD_BASE_MIN_OVERRIDE = Number(pickEnv('LEGACY_VOID_SWORD_BASE_MIN_OVERRIDE', ''));
 const VOID_SWORD_BASE_MAX_OVERRIDE = Number(pickEnv('LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE', ''));
@@ -5604,7 +5595,6 @@ function main() {
       rngMode,
 
       miscSkillTag: MISC_NO_CRYSTAL_SKILL_TWEAK_TAG,
-      hfArmorBaseOverride: HF_ARMOR_BASE_OVERRIDE,
       voidSwordBaseMaxOverride: VOID_SWORD_BASE_MAX_OVERRIDE,
       armorStatStack: cfg.armorStatStack,
       armorStatRound: cfg.armorStatRound,

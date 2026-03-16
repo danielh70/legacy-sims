@@ -2015,7 +2015,7 @@ function isWatchBuildCandidate(av, w1v, w2v, m1v, m2v) {
 // This section is intentionally kept in lock-step with legacy-sim-latest.js for:
 //   - crystal stacking modes (sum4 vs iter4)
 //   - rounding behavior (ceil/floor/round)
-//   - default calibration overrides (HF armor base, Void Sword max)
+//   - default calibration overrides (Void Sword max)
 
 function _envStr(name, dflt) {
   const v = process.env[name];
@@ -2026,21 +2026,8 @@ function _envInt(name, dflt) {
   return Number.isFinite(v) ? v : dflt;
 }
 
-// ---- default calibration overrides (match legacy-sim-latest defaults) ----
+// ---- default calibration overrides (match current legacy-sim live defaults) ----
 (function applyCalibOverrides() {
-  const hfRaw = _envStr('LEGACY_HF_ARMOR_BASE_OVERRIDE', '125');
-  if (hfRaw.toLowerCase() !== 'off') {
-    const hf = parseInt(hfRaw, 10);
-    if (
-      Number.isFinite(hf) &&
-      hf > 0 &&
-      ItemDefs['Hellforged Armor'] &&
-      ItemDefs['Hellforged Armor'].flatStats
-    ) {
-      ItemDefs['Hellforged Armor'].flatStats.armor = hf;
-    }
-  }
-
   const vsMinRaw = _envStr('LEGACY_VOID_SWORD_BASE_MIN_OVERRIDE', '');
   const vsMaxRaw = _envStr('LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE', '120');
   if (ItemDefs['Void Sword'] && ItemDefs['Void Sword'].baseWeaponDamage) {
