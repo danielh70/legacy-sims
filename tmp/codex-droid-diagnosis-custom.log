@@ -1,0 +1,59 @@
+JSON_SAVE: ON
+FILTERS attackers=CUSTOM defenders=SG1 Double Maul Droid, Ashley Build, HF Scythe Pair, SG1 Split Bombs T2, DL Reaper/Maul Orphic Bio, DL Rift/Bombs Scout
+PROGRESS variant=- jobs=0/6 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/6 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/6 0.0% elapsed=00:00:02 eta=00:00:00 current=CUSTOM | DL Rift/Bombs Scout
+PROGRESS variant=baseline jobs=0/6 0.0% elapsed=00:00:04 eta=00:00:00 current=CUSTOM | DL Rift/Bombs Scout
+PROGRESS variant=baseline jobs=1/6 16.7% elapsed=00:00:06 eta=00:00:29 current=CUSTOM | DL Rift/Bombs Scout
+PROGRESS variant=baseline jobs=1/6 16.7% elapsed=00:00:06 eta=00:00:30 current=CUSTOM | DL Reaper/Maul Orphic Bio
+PROGRESS variant=baseline jobs=1/6 16.7% elapsed=00:00:08 eta=00:00:40 current=CUSTOM | DL Reaper/Maul Orphic Bio
+PROGRESS variant=baseline jobs=2/6 33.3% elapsed=00:00:09 eta=00:00:19 current=CUSTOM | DL Reaper/Maul Orphic Bio
+PROGRESS variant=baseline jobs=2/6 33.3% elapsed=00:00:10 eta=00:00:20 current=CUSTOM | Ashley Build
+PROGRESS variant=baseline jobs=2/6 33.3% elapsed=00:00:12 eta=00:00:24 current=CUSTOM | Ashley Build
+PROGRESS variant=baseline jobs=3/6 50.0% elapsed=00:00:14 eta=00:00:14 current=CUSTOM | Ashley Build
+PROGRESS variant=baseline jobs=3/6 50.0% elapsed=00:00:14 eta=00:00:14 current=CUSTOM | HF Scythe Pair
+PROGRESS variant=baseline jobs=3/6 50.0% elapsed=00:00:16 eta=00:00:16 current=CUSTOM | HF Scythe Pair
+PROGRESS variant=baseline jobs=3/6 50.0% elapsed=00:00:18 eta=00:00:18 current=CUSTOM | HF Scythe Pair
+PROGRESS variant=baseline jobs=3/6 50.0% elapsed=00:00:20 eta=00:00:20 current=CUSTOM | HF Scythe Pair
+PROGRESS variant=baseline jobs=4/6 66.7% elapsed=00:00:20 eta=00:00:10 current=CUSTOM | HF Scythe Pair
+PROGRESS variant=baseline jobs=4/6 66.7% elapsed=00:00:22 eta=00:00:11 current=CUSTOM | SG1 Split Bombs T2
+PROGRESS variant=baseline jobs=4/6 66.7% elapsed=00:00:24 eta=00:00:12 current=CUSTOM | SG1 Split Bombs T2
+PROGRESS variant=baseline jobs=4/6 66.7% elapsed=00:00:26 eta=00:00:13 current=CUSTOM | SG1 Split Bombs T2
+PROGRESS variant=baseline jobs=5/6 83.3% elapsed=00:00:27 eta=00:00:05 current=CUSTOM | SG1 Split Bombs T2
+PROGRESS variant=baseline jobs=5/6 83.3% elapsed=00:00:28 eta=00:00:06 current=CUSTOM | SG1 Double Maul Droid
+PROGRESS variant=baseline jobs=5/6 83.3% elapsed=00:00:30 eta=00:00:06 current=CUSTOM | SG1 Double Maul Droid
+PROGRESS variant=baseline jobs=6/6 100.0% elapsed=00:00:31 eta=00:00:00 current=CUSTOM | SG1 Double Maul Droid
+MATCHUPS=6 COMPARED=6 TRIALS=200000 WORKERS=1 VARIANT=baseline ENV=(default env)
+SUMMARY meanAbsΔwin=2.24 meanAbsΔavgT=0.0706 worstAbsΔwin=3.23 (CUSTOM vs SG1 Double Maul Droid)
+Worst mismatches (top 15):
+01 CUSTOM | SG1 Double Maul Droid | win 88.05->84.82 s/a -3.23 / 3.23 | avgT 8.5253->8.5383 s/a +0.0130 / 0.0130
+   A hit 67->68 s/a +1 / 1 | dmg1 59->59 s/a +0 / 0 | dmg2 59->59 s/a +0 / 0 | dmg/f 709.6->625.4 s/a -84.2 / 84.2 | rng 87-222->86-219 s/a -1/-3 / 1/3
+   D hit 92->92 s/a +0 / 0 | dmg1 27->28 s/a +1 / 1 | dmg2 27->28 s/a +1 / 1 | dmg/f 396.9->401.1 s/a +4.2 / 4.2 | rng 97-224->96-220 s/a -1/-4 / 1/4
+02 CUSTOM | DL Reaper/Maul Orphic Bio | win 52.49->55.64 s/a +3.15 / 3.15 | avgT 8.2921->8.3362 s/a +0.0441 / 0.0441
+   A hit 62->63 s/a +1 / 1 | dmg1 60->60 s/a +0 / 0 | dmg2 60->60 s/a +0 / 0 | dmg/f 581.6->547.9 s/a -33.7 / 33.7 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 74->75 s/a +1 / 1 | dmg1 43->43 s/a +0 / 0 | dmg2 43->43 s/a +0 / 0 | dmg/f 567.7->525.2 s/a -42.5 / 42.5 | rng 87-234->86-229 s/a -1/-5 / 1/5
+03 CUSTOM | SG1 Split Bombs T2 | win 47.31->50.21 s/a +2.90 / 2.90 | avgT 12.6991->12.4799 s/a -0.2192 / 0.2192
+   A hit 82->83 s/a +1 / 1 | dmg1 39->39 s/a +0 / 0 | dmg2 39->39 s/a +0 / 0 | dmg/f 748.4->729.2 s/a -19.2 / 19.2 | rng 83-211->83-211 s/a +0/+0 / 0/0
+   D hit 64->65 s/a +1 / 1 | dmg1 50->50 s/a +0 / 0 | dmg2 50->50 s/a +0 / 0 | dmg/f 588.7->552.1 s/a -36.6 / 36.6 | rng 57-178->56-176 s/a -1/-2 / 1/2
+04 CUSTOM | Ashley Build | win 48.80->51.51 s/a +2.71 / 2.71 | avgT 9.1666->9.2354 s/a +0.0688 / 0.0688
+   A hit 54->55 s/a +1 / 1 | dmg1 57->57 s/a +0 / 0 | dmg2 57->57 s/a +0 / 0 | dmg/f 530.0->498.1 s/a -31.9 / 31.9 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 81->81 s/a +0 / 0 | dmg1 44->44 s/a +0 / 0 | dmg2 44->44 s/a +0 / 0 | dmg/f 579.3->535.3 s/a -44.0 / 44.0 | rng 52-199->51-191 s/a -1/-8 / 1/8
+05 CUSTOM | HF Scythe Pair | win 66.42->65.46 s/a -0.96 / 0.96 | avgT 9.5285->9.5395 s/a +0.0110 / 0.0110
+   A hit 88->89 s/a +1 / 1 | dmg1 61->61 s/a +0 / 0 | dmg2 61->61 s/a +0 / 0 | dmg/f 849.2->787.5 s/a -61.7 / 61.7 | rng 72-183->71-182 s/a -1/-1 / 1/1
+   D hit 60->60 s/a +0 / 0 | dmg1 48->48 s/a +0 / 0 | dmg2 48->48 s/a +0 / 0 | dmg/f 518.0->497.9 s/a -20.1 / 20.1 | rng 82-212->82-209 s/a +0/-3 / 0/3
+06 CUSTOM | DL Rift/Bombs Scout | win 56.69->57.20 s/a +0.51 / 0.51 | avgT 10.4073->10.3395 s/a -0.0678 / 0.0678
+   A hit 76->76 s/a +0 / 0 | dmg1 52->53 s/a +1 / 1 | dmg2 52->53 s/a +1 / 1 | dmg/f 794.3->758.9 s/a -35.4 / 35.4 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 84->85 s/a +1 / 1 | dmg1 44->44 s/a +0 / 0 | dmg2 50->50 s/a +0 / 0 | dmg/f 570.5->541.7 s/a -28.8 / 28.8 | rng 57-156->56-154 s/a -1/-2 / 1/2
+
+By attacker:
+CUSTOM | avgAbsΔwin=2.24 | worst=3.23 (-3.23) | vs=SG1 Double Maul Droid
+
+By defender:
+SG1 Double Maul Droid | avgAbsΔwin=3.23 | worst=3.23 (-3.23) | vs=CUSTOM
+DL Reaper/Maul Orphic Bio | avgAbsΔwin=3.15 | worst=3.15 (+3.15) | vs=CUSTOM
+SG1 Split Bombs T2 | avgAbsΔwin=2.90 | worst=2.90 (+2.90) | vs=CUSTOM
+Ashley Build | avgAbsΔwin=2.71 | worst=2.71 (+2.71) | vs=CUSTOM
+HF Scythe Pair | avgAbsΔwin=0.96 | worst=0.96 (-0.96) | vs=CUSTOM
+DL Rift/Bombs Scout | avgAbsΔwin=0.51 | worst=0.51 (+0.51) | vs=CUSTOM
+
+Saved /Users/danielhook/Desktop/code_projects/legacy_sims/tmp/replay-droid-lane-diagnosis/legacy-replay--legacy-truth-current-attacker-vs-meta--legacy-sim-v1.0.4-clean--none--codex-droid-diagnosis-custom--2026-03-15T23-44-21-193Z.json

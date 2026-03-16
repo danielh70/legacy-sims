@@ -1,0 +1,168 @@
+{
+  "debug_dual_rift": {
+    "A_auto": {
+      "attacker": {
+        "avgAppliedPerTurn": 69.6462,
+        "killsByW1": 128,
+        "killsByW2": 163,
+        "totalKills": 291,
+        "turnsTaken": 5436,
+        "w2AfterAppliedW1GateCount": 0,
+        "w2OnDeadCount": 57,
+        "w2StopOnKillCount": 0,
+        "weapon1Attempts": 5436,
+        "weapon2Attempts": 5436
+      },
+      "defender": {
+        "avgAppliedPerTurn": 48.5102,
+        "killsByW1": 103,
+        "killsByW2": 106,
+        "totalKills": 209,
+        "turnsTaken": 5645,
+        "w2AfterAppliedW1GateCount": 0,
+        "w2OnDeadCount": 51,
+        "w2StopOnKillCount": 0,
+        "weapon1Attempts": 5645,
+        "weapon2Attempts": 5645
+      },
+      "identityMatch": true
+    },
+    "B_attacker": {
+      "attacker": {
+        "avgAppliedPerTurn": 69.2694,
+        "killsByW1": 122,
+        "killsByW2": 158,
+        "totalKills": 280,
+        "turnsTaken": 5482,
+        "w2AfterAppliedW1GateCount": 122,
+        "w2OnDeadCount": 0,
+        "w2StopOnKillCount": 0,
+        "weapon1Attempts": 5482,
+        "weapon2Attempts": 5360
+      },
+      "defender": {
+        "avgAppliedPerTurn": 47.7988,
+        "killsByW1": 118,
+        "killsByW2": 102,
+        "totalKills": 220,
+        "turnsTaken": 5702,
+        "w2AfterAppliedW1GateCount": 0,
+        "w2OnDeadCount": 61,
+        "w2StopOnKillCount": 0,
+        "weapon1Attempts": 5702,
+        "weapon2Attempts": 5702
+      },
+      "identityMatch": true
+    },
+    "E_attacker_stop1": {
+      "attacker": {
+        "avgAppliedPerTurn": 67.7065,
+        "killsByW1": 151,
+        "killsByW2": 126,
+        "totalKills": 277,
+        "turnsTaken": 5575,
+        "w2AfterAppliedW1GateCount": 0,
+        "w2OnDeadCount": 0,
+        "w2StopOnKillCount": 151,
+        "weapon1Attempts": 5575,
+        "weapon2Attempts": 5424
+      },
+      "defender": {
+        "avgAppliedPerTurn": 47.6599,
+        "killsByW1": 108,
+        "killsByW2": 115,
+        "totalKills": 223,
+        "turnsTaken": 5798,
+        "w2AfterAppliedW1GateCount": 0,
+        "w2OnDeadCount": 0,
+        "w2StopOnKillCount": 108,
+        "weapon1Attempts": 5798,
+        "weapon2Attempts": 5690
+      },
+      "identityMatch": true
+    }
+  },
+  "summary": {
+    "DL Dual Rift Bio": {
+      "A_auto": {
+        "dAvgTurns": 0.0551,
+        "dWin": 6.39,
+        "truthWin": 49.6
+      },
+      "B_attacker": {
+        "dAvgTurns": 0.0549,
+        "dWin": 6.34,
+        "truthWin": 49.6
+      },
+      "C_defender": {
+        "dAvgTurns": 0.0614,
+        "dWin": 6.31,
+        "truthWin": 49.6
+      },
+      "D_both": {
+        "dAvgTurns": 0.0489,
+        "dWin": 6.26,
+        "truthWin": 49.6
+      },
+      "E_attacker_stop1": {
+        "dAvgTurns": 0.0614,
+        "dWin": 6.25,
+        "truthWin": 49.6
+      }
+    },
+    "DL Gun Sniper Mix": {
+      "A_auto": {
+        "dAvgTurns": 0.0605,
+        "dWin": 0.11,
+        "truthWin": 65.85
+      },
+      "B_attacker": {
+        "dAvgTurns": 0.0681,
+        "dWin": 0.09,
+        "truthWin": 65.85
+      },
+      "C_defender": {
+        "dAvgTurns": 0.0629,
+        "dWin": 0,
+        "truthWin": 65.85
+      },
+      "D_both": {
+        "dAvgTurns": 0.0658,
+        "dWin": 0.01,
+        "truthWin": 65.85
+      },
+      "E_attacker_stop1": {
+        "dAvgTurns": 0.0711,
+        "dWin": -0.13,
+        "truthWin": 65.85
+      }
+    },
+    "HF Scythe Pair": {
+      "A_auto": {
+        "dAvgTurns": 0.0041,
+        "dWin": -0.92,
+        "truthWin": 66.42
+      },
+      "B_attacker": {
+        "dAvgTurns": 0.0123,
+        "dWin": -1.03,
+        "truthWin": 66.42
+      },
+      "C_defender": {
+        "dAvgTurns": 0.0147,
+        "dWin": -1.14,
+        "truthWin": 66.42
+      },
+      "D_both": {
+        "dAvgTurns": 0.0142,
+        "dWin": -0.88,
+        "truthWin": 66.42
+      },
+      "E_attacker_stop1": {
+        "dAvgTurns": 0.0116,
+        "dWin": -1.04,
+        "truthWin": 66.42
+      }
+    }
+  }
+}

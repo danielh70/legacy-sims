@@ -1,0 +1,44 @@
+JSON_SAVE: ON
+FILTERS attackers=CUSTOM defenders=Ashley Build, DL Reaper/Maul Orphic Bio, DL Rift/Bombs Scout, DL Dual Rift Bio, SG1 Split Bombs T2
+PROGRESS variant=- jobs=0/5 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/5 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=1/5 20.0% elapsed=00:00:02 eta=00:00:07 current=CUSTOM | DL Rift/Bombs Scout
+PROGRESS variant=baseline jobs=1/5 20.0% elapsed=00:00:02 eta=00:00:08 current=CUSTOM | DL Reaper/Maul Orphic Bio
+PROGRESS variant=baseline jobs=2/5 40.0% elapsed=00:00:03 eta=00:00:05 current=CUSTOM | DL Reaper/Maul Orphic Bio
+PROGRESS variant=baseline jobs=2/5 40.0% elapsed=00:00:04 eta=00:00:06 current=CUSTOM | Ashley Build
+PROGRESS variant=baseline jobs=3/5 60.0% elapsed=00:00:05 eta=00:00:03 current=CUSTOM | Ashley Build
+PROGRESS variant=baseline jobs=3/5 60.0% elapsed=00:00:06 eta=00:00:04 current=CUSTOM | SG1 Split Bombs T2
+PROGRESS variant=baseline jobs=4/5 80.0% elapsed=00:00:08 eta=00:00:02 current=CUSTOM | SG1 Split Bombs T2
+PROGRESS variant=baseline jobs=4/5 80.0% elapsed=00:00:08 eta=00:00:02 current=CUSTOM | DL Dual Rift Bio
+PROGRESS variant=baseline jobs=4/5 80.0% elapsed=00:00:10 eta=00:00:03 current=CUSTOM | DL Dual Rift Bio
+PROGRESS variant=baseline jobs=5/5 100.0% elapsed=00:00:10 eta=00:00:00 current=CUSTOM | DL Dual Rift Bio
+MATCHUPS=5 COMPARED=5 TRIALS=50000 WORKERS=1 VARIANT=baseline ENV=(default env)
+SUMMARY meanAbsΔwin=1.93 meanAbsΔavgT=0.1800 worstAbsΔwin=3.39 (CUSTOM vs DL Reaper/Maul Orphic Bio)
+Worst mismatches (top 15):
+01 CUSTOM | DL Reaper/Maul Orphic Bio | win 52.49->55.88 s/a +3.39 / 3.39 | avgT 8.2921->8.3703 s/a +0.0782 / 0.0782
+   A hit 62->63 s/a +1 / 1 | dmg1 60->60 s/a +0 / 0 | dmg2 60->60 s/a +0 / 0 | dmg/f 581.6->551.1 s/a -30.5 / 30.5 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 74->75 s/a +1 / 1 | dmg1 43->42 s/a -1 / 1 | dmg2 43->43 s/a +0 / 0 | dmg/f 567.7->528.3 s/a -39.4 / 39.4 | rng 87-234->86-229 s/a -1/-5 / 1/5
+02 CUSTOM | SG1 Split Bombs T2 | win 47.31->50.07 s/a +2.76 / 2.76 | avgT 12.6991->12.4761 s/a -0.2230 / 0.2230
+   A hit 82->83 s/a +1 / 1 | dmg1 39->39 s/a +0 / 0 | dmg2 39->39 s/a +0 / 0 | dmg/f 748.4->729.1 s/a -19.3 / 19.3 | rng 83-211->83-211 s/a +0/+0 / 0/0
+   D hit 64->65 s/a +1 / 1 | dmg1 50->50 s/a +0 / 0 | dmg2 50->50 s/a +0 / 0 | dmg/f 588.7->552.9 s/a -35.8 / 35.8 | rng 57-178->56-176 s/a -1/-2 / 1/2
+03 CUSTOM | Ashley Build | win 48.80->51.44 s/a +2.64 / 2.64 | avgT 9.1666->9.2498 s/a +0.0832 / 0.0832
+   A hit 54->55 s/a +1 / 1 | dmg1 57->57 s/a +0 / 0 | dmg2 57->57 s/a +0 / 0 | dmg/f 530.0->499.5 s/a -30.5 / 30.5 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 81->81 s/a +0 / 0 | dmg1 44->44 s/a +0 / 0 | dmg2 44->44 s/a +0 / 0 | dmg/f 579.3->537.7 s/a -41.6 / 41.6 | rng 52-199->51-191 s/a -1/-8 / 1/8
+04 CUSTOM | DL Rift/Bombs Scout | win 56.69->57.29 s/a +0.60 / 0.60 | avgT 10.4073->10.3403 s/a -0.0670 / 0.0670
+   A hit 76->77 s/a +1 / 1 | dmg1 52->53 s/a +1 / 1 | dmg2 52->53 s/a +1 / 1 | dmg/f 794.3->759.4 s/a -34.9 / 34.9 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 84->85 s/a +1 / 1 | dmg1 44->44 s/a +0 / 0 | dmg2 50->50 s/a +0 / 0 | dmg/f 570.5->541.6 s/a -28.9 / 28.9 | rng 57-156->56-154 s/a -1/-2 / 1/2
+05 CUSTOM | DL Dual Rift Bio | win 49.60->49.36 s/a -0.24 / 0.24 | avgT 11.3621->11.8106 s/a +0.4485 / 0.4485
+   A hit 79->80 s/a +1 / 1 | dmg1 46->42 s/a -4 / 4 | dmg2 46->42 s/a -4 / 4 | dmg/f 764.6->737.3 s/a -27.3 / 27.3 | rng 84-215->86-220 s/a +2/+5 / 2/5
+   D hit 82->83 s/a +1 / 1 | dmg1 47->47 s/a +0 / 0 | dmg2 47->47 s/a +0 / 0 | dmg/f 572.8->566.4 s/a -6.4 / 6.4 | rng 62-136->61-135 s/a -1/-1 / 1/1
+
+By attacker:
+CUSTOM | avgAbsΔwin=1.93 | worst=3.39 (+3.39) | vs=DL Reaper/Maul Orphic Bio
+
+By defender:
+DL Reaper/Maul Orphic Bio | avgAbsΔwin=3.39 | worst=3.39 (+3.39) | vs=CUSTOM
+SG1 Split Bombs T2 | avgAbsΔwin=2.76 | worst=2.76 (+2.76) | vs=CUSTOM
+Ashley Build | avgAbsΔwin=2.64 | worst=2.64 (+2.64) | vs=CUSTOM
+DL Rift/Bombs Scout | avgAbsΔwin=0.60 | worst=0.60 (+0.60) | vs=CUSTOM
+DL Dual Rift Bio | avgAbsΔwin=0.24 | worst=0.24 (-0.24) | vs=CUSTOM
+
+Saved /Users/danielhook/Desktop/code_projects/legacy_sims/tmp/lane-probe-harness/reaper-first-attacker-sensitivity-1773632377409/refresh-hit-reaper-first-target-reaper-first-maul-second/legacy-replay--legacy-truth-current-attacker-vs-meta--legacy-sim-v1.0.4-clean.lane-probe--none--reaper-first-attacker-sensitivity-refresh-hit-reaper-first-target-reaper-first-m--2026-03-16T03-42-55-433Z.json

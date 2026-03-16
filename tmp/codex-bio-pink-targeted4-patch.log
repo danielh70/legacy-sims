@@ -1,0 +1,41 @@
+JSON_SAVE: ON
+FILTERS attackers=(all) defenders=(all)
+PROGRESS variant=- jobs=0/4 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/4 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/4 0.0% elapsed=00:00:02 eta=00:00:00 current=CUSTOM | DL Dual Rift Bio
+PROGRESS variant=baseline jobs=1/4 25.0% elapsed=00:00:04 eta=00:00:12 current=CUSTOM | DL Dual Rift Bio
+PROGRESS variant=baseline jobs=1/4 25.0% elapsed=00:00:04 eta=00:00:12 current=CUSTOM | DL Gun Sniper Mix
+PROGRESS variant=baseline jobs=1/4 25.0% elapsed=00:00:06 eta=00:00:18 current=CUSTOM | DL Gun Sniper Mix
+PROGRESS variant=baseline jobs=2/4 50.0% elapsed=00:00:07 eta=00:00:07 current=CUSTOM | DL Gun Sniper Mix
+PROGRESS variant=baseline jobs=2/4 50.0% elapsed=00:00:08 eta=00:00:08 current=CUSTOM | HF Scythe Pair
+PROGRESS variant=baseline jobs=3/4 75.0% elapsed=00:00:10 eta=00:00:03 current=CUSTOM | HF Scythe Pair
+PROGRESS variant=baseline jobs=3/4 75.0% elapsed=00:00:10 eta=00:00:03 current=CUSTOM | DL Core/Rift Bio
+PROGRESS variant=baseline jobs=3/4 75.0% elapsed=00:00:12 eta=00:00:04 current=CUSTOM | DL Core/Rift Bio
+PROGRESS variant=baseline jobs=3/4 75.0% elapsed=00:00:14 eta=00:00:05 current=CUSTOM | DL Core/Rift Bio
+PROGRESS variant=baseline jobs=4/4 100.0% elapsed=00:00:14 eta=00:00:00 current=CUSTOM | DL Core/Rift Bio
+MATCHUPS=4 COMPARED=4 TRIALS=200000 WORKERS=1 VARIANT=baseline ENV=(default env)
+SUMMARY meanAbsΔwin=2.46 meanAbsΔavgT=0.5590 worstAbsΔwin=4.19 (CUSTOM vs DL Gun Sniper Mix)
+Worst mismatches (top 15):
+01 CUSTOM | DL Gun Sniper Mix | win 65.24->69.43 s/a +4.19 / 4.19 | avgT 9.1763->9.4622 s/a +0.2859 / 0.2859
+   A hit 77->78 s/a +1 / 1 | dmg1 60->59 s/a -1 / 1 | dmg2 60->59 s/a -1 / 1 | dmg/f 818.7->790.7 s/a -28.0 / 28.0 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 87->88 s/a +1 / 1 | dmg1 36->34 s/a -2 / 2 | dmg2 36->34 s/a -2 / 2 | dmg/f 521.8->487.9 s/a -33.9 / 33.9 | rng 62-191->61-186 s/a -1/-5 / 1/5
+02 CUSTOM | HF Scythe Pair | win 65.97->69.66 s/a +3.69 / 3.69 | avgT 9.5155->9.6611 s/a +0.1456 / 0.1456
+   A hit 88->89 s/a +1 / 1 | dmg1 61->61 s/a +0 / 0 | dmg2 61->61 s/a +0 / 0 | dmg/f 847.1->798.8 s/a -48.3 / 48.3 | rng 72-183->71-182 s/a -1/-1 / 1/1
+   D hit 60->60 s/a +0 / 0 | dmg1 48->46 s/a -2 / 2 | dmg2 48->46 s/a -2 / 2 | dmg/f 518.9->481.0 s/a -37.9 / 37.9 | rng 82-212->82-209 s/a +0/-3 / 0/3
+03 CUSTOM | DL Core/Rift Bio | win 43.81->42.12 s/a -1.69 / 1.69 | avgT 12.6962->13.4691 s/a +0.7729 / 0.7729
+   A hit 79->80 s/a +1 / 1 | dmg1 39->36 s/a -3 / 3 | dmg2 39->36 s/a -3 / 3 | dmg/f 739.9->702.7 s/a -37.2 / 37.2 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 75->76 s/a +1 / 1 | dmg1 54->52 s/a -2 / 2 | dmg2 48->45 s/a -3 / 3 | dmg/f 595.7->577.0 s/a -18.7 / 18.7 | rng 52-129->51-127 s/a -1/-2 / 1/2
+04 CUSTOM | DL Dual Rift Bio | win 50.12->50.40 s/a +0.28 / 0.28 | avgT 11.3289->12.3606 s/a +1.0317 / 1.0317
+   A hit 79->79 s/a +0 / 0 | dmg1 46->41 s/a -5 / 5 | dmg2 46->41 s/a -5 / 5 | dmg/f 766.9->734.9 s/a -32.0 / 32.0 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 82->83 s/a +1 / 1 | dmg1 47->44 s/a -3 / 3 | dmg2 47->44 s/a -3 / 3 | dmg/f 571.6->562.4 s/a -9.2 / 9.2 | rng 62-136->61-135 s/a -1/-1 / 1/1
+
+By attacker:
+CUSTOM | avgAbsΔwin=2.46 | worst=4.19 (+4.19) | vs=DL Gun Sniper Mix
+
+By defender:
+DL Gun Sniper Mix | avgAbsΔwin=4.19 | worst=4.19 (+4.19) | vs=CUSTOM
+HF Scythe Pair | avgAbsΔwin=3.69 | worst=3.69 (+3.69) | vs=CUSTOM
+DL Core/Rift Bio | avgAbsΔwin=1.69 | worst=1.69 (-1.69) | vs=CUSTOM
+DL Dual Rift Bio | avgAbsΔwin=0.28 | worst=0.28 (+0.28) | vs=CUSTOM
+
+Saved /Users/danielhook/Desktop/code_projects/legacy_sims/results/replay/legacy-replay--legacy-truth-targeted-compile-suspects-truth--legacy-sim-v1.0.4-clean--none--codex-bio-pink-targeted4-patch--2026-03-15T02-31-37-204Z.json

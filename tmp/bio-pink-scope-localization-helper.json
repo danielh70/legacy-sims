@@ -1,0 +1,1832 @@
+{
+  "metaMostImproved": [
+    {
+      "defender": "DL Dual Rift Bio",
+      "absWinImprovement": 5.58,
+      "before": {
+        "defender": "DL Dual Rift Bio",
+        "truthWinPct": 49.6,
+        "dWinPct": 6.38,
+        "dAvgTurns": 0.0598,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Rift Gun",
+          "misc1": "Bio Spinal Enhancer[P4]",
+          "misc2": "Bio Spinal Enhancer[P4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Rift Gun",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 2,
+          "doubleBio": true,
+          "exactDoubleBioP4": true,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "P4",
+            "P4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "DL Dual Rift Bio",
+        "truthWinPct": 49.6,
+        "dWinPct": 0.8,
+        "dAvgTurns": 0.9985,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Rift Gun",
+          "misc1": "Bio Spinal Enhancer[P4]",
+          "misc2": "Bio Spinal Enhancer[P4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Rift Gun",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 2,
+          "doubleBio": true,
+          "exactDoubleBioP4": true,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "P4",
+            "P4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "SG1 Double Maul Droid",
+      "absWinImprovement": 2.59,
+      "before": {
+        "defender": "SG1 Double Maul Droid",
+        "truthWinPct": 88.05,
+        "dWinPct": -3.12,
+        "dAvgTurns": 0.0158,
+        "build": {
+          "armor": "SG1 Armor",
+          "weapon1": "Crystal Maul",
+          "weapon2": "Crystal Maul",
+          "misc1": "Scout Drones[A4]",
+          "misc2": "Droid Drone[O4]"
+        },
+        "predicates": {
+          "armor": "SG1 Armor",
+          "baseShell": {
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Crystal Maul",
+            "Crystal Maul"
+          ],
+          "hasRiftGun": false,
+          "exactRiftCoreFamily": false,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "A4",
+            "O4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "SG1 Double Maul Droid",
+        "truthWinPct": 88.05,
+        "dWinPct": -0.53,
+        "dAvgTurns": 0.1025,
+        "build": {
+          "armor": "SG1 Armor",
+          "weapon1": "Crystal Maul",
+          "weapon2": "Crystal Maul",
+          "misc1": "Scout Drones[A4]",
+          "misc2": "Droid Drone[O4]"
+        },
+        "predicates": {
+          "armor": "SG1 Armor",
+          "baseShell": {
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Crystal Maul",
+            "Crystal Maul"
+          ],
+          "hasRiftGun": false,
+          "exactRiftCoreFamily": false,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "A4",
+            "O4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "DL Core/Rift Bio",
+      "absWinImprovement": 2.18,
+      "before": {
+        "defender": "DL Core/Rift Bio",
+        "truthWinPct": 43.72,
+        "dWinPct": 3.78,
+        "dAvgTurns": -0.1457,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Core Staff",
+          "weapon2": "Rift Gun",
+          "misc1": "Bio Spinal Enhancer[P4]",
+          "misc2": "Bio Spinal Enhancer[P4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Core Staff",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 2,
+          "doubleBio": true,
+          "exactDoubleBioP4": true,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "P4",
+            "P4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "DL Core/Rift Bio",
+        "truthWinPct": 43.72,
+        "dWinPct": -1.6,
+        "dAvgTurns": 0.7956,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Core Staff",
+          "weapon2": "Rift Gun",
+          "misc1": "Bio Spinal Enhancer[P4]",
+          "misc2": "Bio Spinal Enhancer[P4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Core Staff",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 2,
+          "doubleBio": true,
+          "exactDoubleBioP4": true,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "P4",
+            "P4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "DL Reaper/Maul Orphic Bio",
+      "absWinImprovement": -1.01,
+      "before": {
+        "defender": "DL Reaper/Maul Orphic Bio",
+        "truthWinPct": 52.49,
+        "dWinPct": 3.01,
+        "dAvgTurns": 0.0646,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Reaper Axe",
+          "weapon2": "Crystal Maul",
+          "misc1": "Orphic Amulet[O4]",
+          "misc2": "Bio Spinal Enhancer[P4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Crystal Maul",
+            "Reaper Axe"
+          ],
+          "hasRiftGun": false,
+          "exactRiftCoreFamily": false,
+          "bioCount": 1,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "O4",
+            "P4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "DL Reaper/Maul Orphic Bio",
+        "truthWinPct": 52.49,
+        "dWinPct": 4.02,
+        "dAvgTurns": 0.4455,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Reaper Axe",
+          "weapon2": "Crystal Maul",
+          "misc1": "Orphic Amulet[O4]",
+          "misc2": "Bio Spinal Enhancer[P4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Crystal Maul",
+            "Reaper Axe"
+          ],
+          "hasRiftGun": false,
+          "exactRiftCoreFamily": false,
+          "bioCount": 1,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "O4",
+            "P4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "DL Core/Rift Dodge",
+      "absWinImprovement": -1.62,
+      "before": {
+        "defender": "DL Core/Rift Dodge",
+        "truthWinPct": 69.59,
+        "dWinPct": -1.19,
+        "dAvgTurns": -0.0178,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Core Staff",
+          "misc1": "Scout Drones[A4]",
+          "misc2": "Scout Drones[A4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Core Staff",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "A4",
+            "A4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "DL Core/Rift Dodge",
+        "truthWinPct": 69.59,
+        "dWinPct": 2.81,
+        "dAvgTurns": 0.1274,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Core Staff",
+          "misc1": "Scout Drones[A4]",
+          "misc2": "Scout Drones[A4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Core Staff",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "A4",
+            "A4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "HF Scythe Pair",
+      "absWinImprovement": -2.46,
+      "before": {
+        "defender": "HF Scythe Pair",
+        "truthWinPct": 66.42,
+        "dWinPct": -0.78,
+        "dAvgTurns": 0.0204,
+        "build": {
+          "armor": "Hellforged Armor",
+          "weapon1": "Scythe T2",
+          "weapon2": "Scythe T2",
+          "misc1": "Scout Drones[O4]",
+          "misc2": "Bio Spinal Enhancer[O4]"
+        },
+        "predicates": {
+          "armor": "Hellforged Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Scythe T2",
+            "Scythe T2"
+          ],
+          "hasRiftGun": false,
+          "exactRiftCoreFamily": false,
+          "bioCount": 1,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": false,
+          "bioSpecShorts": [
+            "O4",
+            "O4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "HF Scythe Pair",
+        "truthWinPct": 66.42,
+        "dWinPct": 3.24,
+        "dAvgTurns": 0.1326,
+        "build": {
+          "armor": "Hellforged Armor",
+          "weapon1": "Scythe T2",
+          "weapon2": "Scythe T2",
+          "misc1": "Scout Drones[O4]",
+          "misc2": "Bio Spinal Enhancer[O4]"
+        },
+        "predicates": {
+          "armor": "Hellforged Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Scythe T2",
+            "Scythe T2"
+          ],
+          "hasRiftGun": false,
+          "exactRiftCoreFamily": false,
+          "bioCount": 1,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": false,
+          "bioSpecShorts": [
+            "O4",
+            "O4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "DL Gun Blade Recon",
+      "absWinImprovement": -2.53,
+      "before": {
+        "defender": "DL Gun Blade Recon",
+        "truthWinPct": 54.8,
+        "dWinPct": -0.94,
+        "dAvgTurns": 0.0052,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Gun Blade Mk4",
+          "misc1": "Recon Drones[G4]",
+          "misc2": "Scout Drones[A4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Gun Blade Mk4",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": false,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "G4",
+            "A4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "DL Gun Blade Recon",
+        "truthWinPct": 54.8,
+        "dWinPct": 3.47,
+        "dAvgTurns": 0.1759,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Gun Blade Mk4",
+          "misc1": "Recon Drones[G4]",
+          "misc2": "Scout Drones[A4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Gun Blade Mk4",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": false,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "G4",
+            "A4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "SG1 Void/Reaper",
+      "absWinImprovement": -2.64,
+      "before": {
+        "defender": "SG1 Void/Reaper",
+        "truthWinPct": 57.75,
+        "dWinPct": -0.9,
+        "dAvgTurns": -0.1254,
+        "build": {
+          "armor": "SG1 Armor",
+          "weapon1": "Void Bow",
+          "weapon2": "Reaper Axe",
+          "misc1": "Scout Drones[A4]",
+          "misc2": "Scout Drones[A4]"
+        },
+        "predicates": {
+          "armor": "SG1 Armor",
+          "baseShell": {
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Reaper Axe",
+            "Void Bow"
+          ],
+          "hasRiftGun": false,
+          "exactRiftCoreFamily": false,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "A4",
+            "A4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "SG1 Void/Reaper",
+        "truthWinPct": 57.75,
+        "dWinPct": 3.54,
+        "dAvgTurns": 0.0557,
+        "build": {
+          "armor": "SG1 Armor",
+          "weapon1": "Void Bow",
+          "weapon2": "Reaper Axe",
+          "misc1": "Scout Drones[A4]",
+          "misc2": "Scout Drones[A4]"
+        },
+        "predicates": {
+          "armor": "SG1 Armor",
+          "baseShell": {
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Reaper Axe",
+            "Void Bow"
+          ],
+          "hasRiftGun": false,
+          "exactRiftCoreFamily": false,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "A4",
+            "A4"
+          ]
+        }
+      }
+    }
+  ],
+  "metaMostRegressed": [
+    {
+      "defender": "DL Rift/Bombs Scout",
+      "absWinImprovement": -5.07,
+      "before": {
+        "defender": "DL Rift/Bombs Scout",
+        "truthWinPct": 56.69,
+        "dWinPct": 0.46,
+        "dAvgTurns": -0.0699,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Split Crystal Bombs T2",
+          "misc1": "Scout Drones[A4]",
+          "misc2": "Scout Drones[A4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Rift Gun",
+            "Split Crystal Bombs T2"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": false,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "A4",
+            "A4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "DL Rift/Bombs Scout",
+        "truthWinPct": 56.69,
+        "dWinPct": 5.53,
+        "dAvgTurns": 0.1208,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Split Crystal Bombs T2",
+          "misc1": "Scout Drones[A4]",
+          "misc2": "Scout Drones[A4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Rift Gun",
+            "Split Crystal Bombs T2"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": false,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "A4",
+            "A4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "SG1 Rift/Bombs Bio",
+      "absWinImprovement": -4.82,
+      "before": {
+        "defender": "SG1 Rift/Bombs Bio",
+        "truthWinPct": 46.61,
+        "dWinPct": 2.54,
+        "dAvgTurns": -0.1071,
+        "build": {
+          "armor": "SG1 Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Split Crystal Bombs T2",
+          "misc1": "Bio Spinal Enhancer[Y4]",
+          "misc2": "Scout Drones[A4]"
+        },
+        "predicates": {
+          "armor": "SG1 Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Rift Gun",
+            "Split Crystal Bombs T2"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": false,
+          "bioCount": 1,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": false,
+          "bioSpecShorts": [
+            "Y4",
+            "A4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "SG1 Rift/Bombs Bio",
+        "truthWinPct": 46.61,
+        "dWinPct": 7.36,
+        "dAvgTurns": 0.1106,
+        "build": {
+          "armor": "SG1 Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Split Crystal Bombs T2",
+          "misc1": "Bio Spinal Enhancer[Y4]",
+          "misc2": "Scout Drones[A4]"
+        },
+        "predicates": {
+          "armor": "SG1 Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Rift Gun",
+            "Split Crystal Bombs T2"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": false,
+          "bioCount": 1,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": false,
+          "bioSpecShorts": [
+            "Y4",
+            "A4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "SG1 Split Bombs T2",
+      "absWinImprovement": -4.7,
+      "before": {
+        "defender": "SG1 Split Bombs T2",
+        "truthWinPct": 47.31,
+        "dWinPct": 2.95,
+        "dAvgTurns": -0.2327,
+        "build": {
+          "armor": "SG1 Armor",
+          "weapon1": "Split Crystal Bombs T2",
+          "weapon2": "Split Crystal Bombs T2",
+          "misc1": "Scout Drones[A4]",
+          "misc2": "Scout Drones[A4]"
+        },
+        "predicates": {
+          "armor": "SG1 Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Split Crystal Bombs T2",
+            "Split Crystal Bombs T2"
+          ],
+          "hasRiftGun": false,
+          "exactRiftCoreFamily": false,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "A4",
+            "A4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "SG1 Split Bombs T2",
+        "truthWinPct": 47.31,
+        "dWinPct": 7.65,
+        "dAvgTurns": 0.0419,
+        "build": {
+          "armor": "SG1 Armor",
+          "weapon1": "Split Crystal Bombs T2",
+          "weapon2": "Split Crystal Bombs T2",
+          "misc1": "Scout Drones[A4]",
+          "misc2": "Scout Drones[A4]"
+        },
+        "predicates": {
+          "armor": "SG1 Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Split Crystal Bombs T2",
+            "Split Crystal Bombs T2"
+          ],
+          "hasRiftGun": false,
+          "exactRiftCoreFamily": false,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "A4",
+            "A4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "DL Gun Blade Bio",
+      "absWinImprovement": -4.22,
+      "before": {
+        "defender": "DL Gun Blade Bio",
+        "truthWinPct": 54.73,
+        "dWinPct": 0.29,
+        "dAvgTurns": -0.015,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Gun Blade Mk4",
+          "misc1": "Bio Spinal Enhancer[G4]",
+          "misc2": "Scout Drones[A+G3]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Gun Blade Mk4",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": false,
+          "bioCount": 1,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": false,
+          "bioSpecShorts": [
+            "G4",
+            "A+G3"
+          ]
+        }
+      },
+      "after": {
+        "defender": "DL Gun Blade Bio",
+        "truthWinPct": 54.73,
+        "dWinPct": 4.51,
+        "dAvgTurns": 0.1561,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Gun Blade Mk4",
+          "misc1": "Bio Spinal Enhancer[G4]",
+          "misc2": "Scout Drones[A+G3]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Gun Blade Mk4",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": false,
+          "bioCount": 1,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": false,
+          "bioSpecShorts": [
+            "G4",
+            "A+G3"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "Ashley Build",
+      "absWinImprovement": -4.17,
+      "before": {
+        "defender": "Ashley Build",
+        "truthWinPct": 48.8,
+        "dWinPct": 2.89,
+        "dAvgTurns": 0.0631,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Reaper Axe",
+          "weapon2": "Core Staff",
+          "misc1": "Scout Drones[A4]",
+          "misc2": "Scout Drones[A4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 600,
+            "speed": 60,
+            "dodge": 67,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Core Staff",
+            "Reaper Axe"
+          ],
+          "hasRiftGun": false,
+          "exactRiftCoreFamily": false,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "A4",
+            "A4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "Ashley Build",
+        "truthWinPct": 48.8,
+        "dWinPct": 7.06,
+        "dAvgTurns": 0.273,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Reaper Axe",
+          "weapon2": "Core Staff",
+          "misc1": "Scout Drones[A4]",
+          "misc2": "Scout Drones[A4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 600,
+            "speed": 60,
+            "dodge": 67,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Core Staff",
+            "Reaper Axe"
+          ],
+          "hasRiftGun": false,
+          "exactRiftCoreFamily": false,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "A4",
+            "A4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "DL Gun Sniper Mix",
+      "absWinImprovement": -3.41,
+      "before": {
+        "defender": "DL Gun Sniper Mix",
+        "truthWinPct": 65.85,
+        "dWinPct": 0.17,
+        "dAvgTurns": 0.0639,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Double Barrel Sniper Rifle",
+          "misc1": "Scout Drones[A3+P]",
+          "misc2": "Bio Spinal Enhancer[P2+G2]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Double Barrel Sniper Rifle",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": false,
+          "bioCount": 1,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": false,
+          "bioSpecShorts": [
+            "A3+P",
+            "P2+G2"
+          ]
+        }
+      },
+      "after": {
+        "defender": "DL Gun Sniper Mix",
+        "truthWinPct": 65.85,
+        "dWinPct": 3.58,
+        "dAvgTurns": 0.2973,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Double Barrel Sniper Rifle",
+          "misc1": "Scout Drones[A3+P]",
+          "misc2": "Bio Spinal Enhancer[P2+G2]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Double Barrel Sniper Rifle",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": false,
+          "bioCount": 1,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": false,
+          "bioSpecShorts": [
+            "A3+P",
+            "P2+G2"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "DL Maul/Core Orphic",
+      "absWinImprovement": -2.69,
+      "before": {
+        "defender": "DL Maul/Core Orphic",
+        "truthWinPct": 53.5,
+        "dWinPct": 0.98,
+        "dAvgTurns": -0.0361,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Crystal Maul",
+          "weapon2": "Core Staff",
+          "misc1": "Bio Spinal Enhancer[P2+O2]",
+          "misc2": "Orphic Amulet[O4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Core Staff",
+            "Crystal Maul"
+          ],
+          "hasRiftGun": false,
+          "exactRiftCoreFamily": false,
+          "bioCount": 1,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": false,
+          "bioSpecShorts": [
+            "P2+O2",
+            "O4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "DL Maul/Core Orphic",
+        "truthWinPct": 53.5,
+        "dWinPct": 3.67,
+        "dAvgTurns": 0.221,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Crystal Maul",
+          "weapon2": "Core Staff",
+          "misc1": "Bio Spinal Enhancer[P2+O2]",
+          "misc2": "Orphic Amulet[O4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Core Staff",
+            "Crystal Maul"
+          ],
+          "hasRiftGun": false,
+          "exactRiftCoreFamily": false,
+          "bioCount": 1,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": false,
+          "bioSpecShorts": [
+            "P2+O2",
+            "O4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "SG1 Void/Reaper",
+      "absWinImprovement": -2.64,
+      "before": {
+        "defender": "SG1 Void/Reaper",
+        "truthWinPct": 57.75,
+        "dWinPct": -0.9,
+        "dAvgTurns": -0.1254,
+        "build": {
+          "armor": "SG1 Armor",
+          "weapon1": "Void Bow",
+          "weapon2": "Reaper Axe",
+          "misc1": "Scout Drones[A4]",
+          "misc2": "Scout Drones[A4]"
+        },
+        "predicates": {
+          "armor": "SG1 Armor",
+          "baseShell": {
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Reaper Axe",
+            "Void Bow"
+          ],
+          "hasRiftGun": false,
+          "exactRiftCoreFamily": false,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "A4",
+            "A4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "SG1 Void/Reaper",
+        "truthWinPct": 57.75,
+        "dWinPct": 3.54,
+        "dAvgTurns": 0.0557,
+        "build": {
+          "armor": "SG1 Armor",
+          "weapon1": "Void Bow",
+          "weapon2": "Reaper Axe",
+          "misc1": "Scout Drones[A4]",
+          "misc2": "Scout Drones[A4]"
+        },
+        "predicates": {
+          "armor": "SG1 Armor",
+          "baseShell": {
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Reaper Axe",
+            "Void Bow"
+          ],
+          "hasRiftGun": false,
+          "exactRiftCoreFamily": false,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "A4",
+            "A4"
+          ]
+        }
+      }
+    }
+  ],
+  "probeFocus": [
+    {
+      "defender": "DL Dual Rift No Bio",
+      "absWinImprovement": -3.32,
+      "before": {
+        "defender": "DL Dual Rift No Bio",
+        "truthWinPct": 82.42,
+        "dWinPct": 0.37,
+        "dAvgTurns": 0.0756,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Rift Gun",
+          "misc1": "Scout Drones[P4]",
+          "misc2": "Scout Drones[P4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Rift Gun",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "P4",
+            "P4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "DL Dual Rift No Bio",
+        "truthWinPct": 82.42,
+        "dWinPct": 3.69,
+        "dAvgTurns": 0.1518,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Rift Gun",
+          "misc1": "Scout Drones[P4]",
+          "misc2": "Scout Drones[P4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Rift Gun",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "P4",
+            "P4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "DL Dual Rift One Bio P4",
+      "absWinImprovement": -0.11,
+      "before": {
+        "defender": "DL Dual Rift One Bio P4",
+        "truthWinPct": 67.12,
+        "dWinPct": 3.38,
+        "dAvgTurns": 0.0742,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Rift Gun",
+          "misc1": "Bio Spinal Enhancer[P4]",
+          "misc2": "Scout Drones[P4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Rift Gun",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 1,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "P4",
+            "P4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "DL Dual Rift One Bio P4",
+        "truthWinPct": 67.12,
+        "dWinPct": 3.49,
+        "dAvgTurns": 0.6153,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Rift Gun",
+          "misc1": "Bio Spinal Enhancer[P4]",
+          "misc2": "Scout Drones[P4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Rift Gun",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 1,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "P4",
+            "P4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "DL Dual Rift Two Bio P4",
+      "absWinImprovement": 5.36,
+      "before": {
+        "defender": "DL Dual Rift Two Bio P4",
+        "truthWinPct": 49.49,
+        "dWinPct": 6.37,
+        "dAvgTurns": 0.0714,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Rift Gun",
+          "misc1": "Bio Spinal Enhancer[P4]",
+          "misc2": "Bio Spinal Enhancer[P4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Rift Gun",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 2,
+          "doubleBio": true,
+          "exactDoubleBioP4": true,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "P4",
+            "P4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "DL Dual Rift Two Bio P4",
+        "truthWinPct": 49.49,
+        "dWinPct": 1.01,
+        "dAvgTurns": 0.9953,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Rift Gun",
+          "misc1": "Bio Spinal Enhancer[P4]",
+          "misc2": "Bio Spinal Enhancer[P4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Rift Gun",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 2,
+          "doubleBio": true,
+          "exactDoubleBioP4": true,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "P4",
+            "P4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "DL Dual Rift Bio P4 + O4",
+      "absWinImprovement": 0.33,
+      "before": {
+        "defender": "DL Dual Rift Bio P4 + O4",
+        "truthWinPct": 66.21,
+        "dWinPct": 4.53,
+        "dAvgTurns": 0.0565,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Rift Gun",
+          "misc1": "Bio Spinal Enhancer[P4]",
+          "misc2": "Bio Spinal Enhancer[O4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Rift Gun",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 2,
+          "doubleBio": true,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": false,
+          "bioSpecShorts": [
+            "P4",
+            "O4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "DL Dual Rift Bio P4 + O4",
+        "truthWinPct": 66.21,
+        "dWinPct": 4.2,
+        "dAvgTurns": 0.5918,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Rift Gun",
+          "weapon2": "Rift Gun",
+          "misc1": "Bio Spinal Enhancer[P4]",
+          "misc2": "Bio Spinal Enhancer[O4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Rift Gun",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 2,
+          "doubleBio": true,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": false,
+          "bioSpecShorts": [
+            "P4",
+            "O4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "DL Core/Rift No Bio",
+      "absWinImprovement": -3.9,
+      "before": {
+        "defender": "DL Core/Rift No Bio",
+        "truthWinPct": 73.21,
+        "dWinPct": -0.32,
+        "dAvgTurns": -0.0363,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Core Staff",
+          "weapon2": "Rift Gun",
+          "misc1": "Scout Drones[P4]",
+          "misc2": "Scout Drones[P4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Core Staff",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "P4",
+            "P4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "DL Core/Rift No Bio",
+        "truthWinPct": 73.21,
+        "dWinPct": 4.22,
+        "dAvgTurns": 0.091,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Core Staff",
+          "weapon2": "Rift Gun",
+          "misc1": "Scout Drones[P4]",
+          "misc2": "Scout Drones[P4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Core Staff",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 0,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "P4",
+            "P4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "DL Core/Rift One Bio P4",
+      "absWinImprovement": 0.43,
+      "before": {
+        "defender": "DL Core/Rift One Bio P4",
+        "truthWinPct": 56.91,
+        "dWinPct": 2.07,
+        "dAvgTurns": -0.1008,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Core Staff",
+          "weapon2": "Rift Gun",
+          "misc1": "Bio Spinal Enhancer[P4]",
+          "misc2": "Scout Drones[P4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Core Staff",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 1,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "P4",
+            "P4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "DL Core/Rift One Bio P4",
+        "truthWinPct": 56.91,
+        "dWinPct": 1.64,
+        "dAvgTurns": 0.502,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Core Staff",
+          "weapon2": "Rift Gun",
+          "misc1": "Bio Spinal Enhancer[P4]",
+          "misc2": "Scout Drones[P4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Core Staff",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 1,
+          "doubleBio": false,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "P4",
+            "P4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "DL Core/Rift Two Bio P4",
+      "absWinImprovement": 1.62,
+      "before": {
+        "defender": "DL Core/Rift Two Bio P4",
+        "truthWinPct": 43.9,
+        "dWinPct": 3.53,
+        "dAvgTurns": -0.1416,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Core Staff",
+          "weapon2": "Rift Gun",
+          "misc1": "Bio Spinal Enhancer[P4]",
+          "misc2": "Bio Spinal Enhancer[P4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Core Staff",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 2,
+          "doubleBio": true,
+          "exactDoubleBioP4": true,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "P4",
+            "P4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "DL Core/Rift Two Bio P4",
+        "truthWinPct": 43.9,
+        "dWinPct": -1.91,
+        "dAvgTurns": 0.7927,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Core Staff",
+          "weapon2": "Rift Gun",
+          "misc1": "Bio Spinal Enhancer[P4]",
+          "misc2": "Bio Spinal Enhancer[P4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Core Staff",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 2,
+          "doubleBio": true,
+          "exactDoubleBioP4": true,
+          "allBioPinkOnly": true,
+          "bioSpecShorts": [
+            "P4",
+            "P4"
+          ]
+        }
+      }
+    },
+    {
+      "defender": "DL Core/Rift Bio P4 + O4",
+      "absWinImprovement": 0.75,
+      "before": {
+        "defender": "DL Core/Rift Bio P4 + O4",
+        "truthWinPct": 54.76,
+        "dWinPct": 2.36,
+        "dAvgTurns": -0.0754,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Core Staff",
+          "weapon2": "Rift Gun",
+          "misc1": "Bio Spinal Enhancer[P4]",
+          "misc2": "Bio Spinal Enhancer[O4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Core Staff",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 2,
+          "doubleBio": true,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": false,
+          "bioSpecShorts": [
+            "P4",
+            "O4"
+          ]
+        }
+      },
+      "after": {
+        "defender": "DL Core/Rift Bio P4 + O4",
+        "truthWinPct": 54.76,
+        "dWinPct": 1.61,
+        "dAvgTurns": 0.4802,
+        "build": {
+          "armor": "Dark Legion Armor",
+          "weapon1": "Core Staff",
+          "weapon2": "Rift Gun",
+          "misc1": "Bio Spinal Enhancer[P4]",
+          "misc2": "Bio Spinal Enhancer[O4]"
+        },
+        "predicates": {
+          "armor": "Dark Legion Armor",
+          "baseShell": {
+            "hp": 865,
+            "speed": 60,
+            "dodge": 14,
+            "accuracy": 14
+          },
+          "weaponSet": [
+            "Core Staff",
+            "Rift Gun"
+          ],
+          "hasRiftGun": true,
+          "exactRiftCoreFamily": true,
+          "bioCount": 2,
+          "doubleBio": true,
+          "exactDoubleBioP4": false,
+          "allBioPinkOnly": false,
+          "bioSpecShorts": [
+            "P4",
+            "O4"
+          ]
+        }
+      }
+    }
+  ]
+}

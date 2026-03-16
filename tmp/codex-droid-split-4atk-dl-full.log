@@ -1,0 +1,20 @@
+JSON_SAVE: ON
+FILTERS attackers=CUSTOM_MAUL_A4_DL_ABYSS defenders=SG1 Double Maul Droid
+PROGRESS variant=- jobs=0/1 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/1 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/1 0.0% elapsed=00:00:02 eta=00:00:00 current=CUSTOM_MAUL_A4_DL_ABYSS | SG1 Double Maul Droid
+PROGRESS variant=baseline jobs=1/1 100.0% elapsed=00:00:04 eta=00:00:00 current=CUSTOM_MAUL_A4_DL_ABYSS | SG1 Double Maul Droid
+MATCHUPS=1 COMPARED=1 TRIALS=200000 WORKERS=1 VARIANT=baseline ENV=(default env)
+SUMMARY meanAbsΔwin=4.21 meanAbsΔavgT=0.0277 worstAbsΔwin=4.21 (CUSTOM_MAUL_A4_DL_ABYSS vs SG1 Double Maul Droid)
+Worst mismatches (top 15):
+01 CUSTOM_MAUL_A4_DL_ABYSS | SG1 Double Maul Droid | win 79.54->75.33 s/a -4.21 / 4.21 | avgT 8.0297->8.0020 s/a -0.0277 / 0.0277
+   A hit 70->70 s/a +0 / 0 | dmg1 59->59 s/a +0 / 0 | dmg2 59->59 s/a +0 / 0 | dmg/f 676.3->605.8 s/a -70.5 / 70.5 | rng 87-218->86-216 s/a -1/-2 / 1/2
+   D hit 86->87 s/a +1 / 1 | dmg1 36->37 s/a +1 / 1 | dmg2 36->37 s/a +1 / 1 | dmg/f 444.1->445.3 s/a +1.2 / 1.2 | rng 94-208->94-210 s/a +0/+2 / 0/2
+
+By attacker:
+CUSTOM_MAUL_A4_DL_ABYSS | avgAbsΔwin=4.21 | worst=4.21 (-4.21) | vs=SG1 Double Maul Droid
+
+By defender:
+SG1 Double Maul Droid | avgAbsΔwin=4.21 | worst=4.21 (-4.21) | vs=CUSTOM_MAUL_A4_DL_ABYSS
+
+Saved /Users/danielhook/Desktop/code_projects/legacy_sims/tmp/replay-droid-split-decomp-4atk/legacy-replay--legacy-truth-v4-custom-maul-a4-dl-abyss-full15--legacy-sim-v1.0.4-clean.droid-split-decomp--none--codex-droid-split-4atk-dl-full--2026-03-16T00-15-39-853Z.json

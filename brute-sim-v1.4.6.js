@@ -1115,6 +1115,18 @@ const PROJ_DEF_MULT = _envNum('LEGACY_PROJ_DEF_MULT', 1);
 
 // main-calib compatibility: whether the 2nd weapon is skipped if the 1st weapon kills the target
 const ACTION_STOP_ON_KILL = _envBool('LEGACY_ACTION_STOP_ON_KILL', false);
+const DIAG_W2_AFTER_APPLIED_W1 = _envStr('LEGACY_DIAG_W2_AFTER_APPLIED_W1', 'auto')
+  .trim()
+  .toLowerCase();
+const DIAG_SPLIT_MULTIWEAPON_ACTION = _envStr('LEGACY_DIAG_SPLIT_MULTIWEAPON_ACTION', 'auto')
+  .trim()
+  .toLowerCase();
+const DIAG_QUEUED_SECOND_ACTION = _envStr('LEGACY_DIAG_QUEUED_SECOND_ACTION', 'auto')
+  .trim()
+  .toLowerCase();
+const DIAG_FIRST_ACTOR_OVERRIDE = _envStr('LEGACY_DIAG_FIRST_ACTOR_OVERRIDE', 'auto')
+  .trim()
+  .toLowerCase();
 
 // main-calib compatibility: shared hit roll once per action (forces both weapons to use same hit result)
 const SHARED_HIT = _envBool('LEGACY_SHARED_HIT', false);
@@ -1122,6 +1134,18 @@ const SHARED_HIT = _envBool('LEGACY_SHARED_HIT', false);
 // main-calib compatibility: shared skill roll caching
 //   none | same_type | gun_same_type
 const SHARED_SKILL_MODE = _envStr('LEGACY_SHARED_SKILL', 'none').trim().toLowerCase();
+const SHARED_SKILL_ATTACKER_OVERRIDE = _envStr(
+  'LEGACY_SHARED_SKILL_ATTACKER_OVERRIDE',
+  'auto',
+)
+  .trim()
+  .toLowerCase();
+const SHARED_SKILL_DEFENDER_OVERRIDE = _envStr(
+  'LEGACY_SHARED_SKILL_DEFENDER_OVERRIDE',
+  'auto',
+)
+  .trim()
+  .toLowerCase();
 
 // tactics/base damage bonus support (matches legacy_simulator.canonical semantics)
 //   LEGACY_TACTICS_MODE: none | base | both
@@ -1219,6 +1243,97 @@ function rollVs(off, def, rollMode, ge, qround) {
 // Weapon skill encoding: 0=gun, 1=melee, 2=proj
 function skillValue(att, skillCode) {
   return skillCode === 0 ? att.gun : skillCode === 1 ? att.mel : att.prj;
+}
+function normalizeSharedSkillOverride(v) {
+  return v === 'off' || v === 'broad' || v === 'exact' || v === 'auto' ? v : 'auto';
+}
+function normalizeDiagW2AfterAppliedW1(v) {
+  return v === 'off' || v === 'attacker' || v === 'defender' || v === 'both' || v === 'auto'
+    ? v
+    : 'auto';
+}
+function normalizeDiagSplitMultiweaponAction(v) {
+  return v === 'off' || v === 'attacker' || v === 'defender' || v === 'both' || v === 'auto'
+    ? v
+    : 'auto';
+}
+function normalizeDiagQueuedSecondAction(v) {
+  return v === 'off' || v === 'attacker' || v === 'defender' || v === 'both' || v === 'auto'
+    ? v
+    : 'auto';
+}
+function normalizeDiagFirstActorOverride(v) {
+  return v === 'off' ||
+    v === 'attacker' ||
+    v === 'defender' ||
+    v === 'alternate' ||
+    v === 'auto'
+    ? v
+    : 'auto';
+}
+function sharedSkillBroadAllowed(mode, skillCode) {
+  return mode === 'same_type' || (mode === 'gun_same_type' && skillCode === 0);
+}
+function sharedSkillOverrideForActor(att) {
+  return att && att.name === 'Attacker'
+    ? normalizeSharedSkillOverride(SHARED_SKILL_ATTACKER_OVERRIDE)
+    : normalizeSharedSkillOverride(SHARED_SKILL_DEFENDER_OVERRIDE);
+}
+function resolveSharedSkillEligibility(att) {
+  const override = sharedSkillOverrideForActor(att);
+  if (!att || !att.w1 || !att.w2 || att.w1.skill !== att.w2.skill) {
+    return { enabled: false, skillCode: null, override };
+  }
+
+  const skillCode = att.w1.skill;
+  const broadAllowed = sharedSkillBroadAllowed(SHARED_SKILL_MODE, skillCode);
+  if (!broadAllowed || override === 'off') {
+    return { enabled: false, skillCode: null, override };
+  }
+  if (override === 'exact') {
+    const w1Name = String((att.w1 && att.w1.name) || '');
+    const w2Name = String((att.w2 && att.w2.name) || '');
+    const exactAllowed = !!w1Name && w1Name === w2Name;
+    return { enabled: exactAllowed, skillCode: exactAllowed ? skillCode : null, override };
+  }
+
+  return { enabled: true, skillCode, override };
+}
+function diagW2AfterAppliedW1EnabledForActor(mode, att) {
+  const normalized = normalizeDiagW2AfterAppliedW1(mode);
+  if (normalized === 'auto' || normalized === 'off') return false;
+  const actorIsAttacker = !!(att && att.name === 'Attacker');
+  if (normalized === 'both') return true;
+  if (normalized === 'attacker') return actorIsAttacker;
+  if (normalized === 'defender') return !actorIsAttacker;
+  return false;
+}
+function diagSplitMultiweaponActionEnabledForActor(mode, att) {
+  const normalized = normalizeDiagSplitMultiweaponAction(mode);
+  if (normalized === 'auto' || normalized === 'off') return false;
+  const actorIsAttacker = !!(att && att.name === 'Attacker');
+  if (normalized === 'both') return true;
+  if (normalized === 'attacker') return actorIsAttacker;
+  if (normalized === 'defender') return !actorIsAttacker;
+  return false;
+}
+function diagQueuedSecondActionEnabledForActor(mode, actor) {
+  const normalized = normalizeDiagQueuedSecondAction(mode);
+  if (normalized === 'auto' || normalized === 'off') return false;
+  const actorIsAttacker = !!(actor && actor.name === 'Attacker');
+  if (normalized === 'both') return true;
+  if (normalized === 'attacker') return actorIsAttacker;
+  if (normalized === 'defender') return !actorIsAttacker;
+  return false;
+}
+function resolveFirstActor(attacker, defender, speedTieMode, diagFirstActorOverride, fightIndex) {
+  const override = normalizeDiagFirstActorOverride(diagFirstActorOverride);
+  if (override === 'attacker') return true;
+  if (override === 'defender') return false;
+  if (override === 'alternate') return fightIndex % 2 === 0;
+  if (attacker.speed > defender.speed) return true;
+  if (attacker.speed < defender.speed) return false;
+  return speedTieMode === 'random' ? RNG() < 0.5 : true;
 }
 
 function rollDamage(min, max, dmgRollMode) {
@@ -1319,42 +1434,68 @@ function attemptWeaponFast(att, def, w, pre, out) {
 function doActionFast(att, def, targetHp0) {
   if (targetHp0 <= 0) return 0;
 
-  // Shared hit (if enabled): one hit roll per action, applied to both weapons.
-  _PRE_ACTION.forceHit = SHARED_HIT
-    ? rollVs(att.acc, def.dodge, HIT_ROLL_MODE, HIT_GE, HIT_QROUND)
-    : null;
+  function preparePreAction() {
+    _PRE_ACTION.forceHit = SHARED_HIT
+      ? rollVs(att.acc, def.dodge, HIT_ROLL_MODE, HIT_GE, HIT_QROUND)
+      : null;
 
-  // Shared skill (if enabled + eligible): cache a single skill roll per action.
-  _PRE_ACTION.sharedSkillOn = false;
-  _PRE_ACTION.sharedSkillSkillCode = null;
-  _PRE_ACTION.sharedSkillCached = false;
-  _PRE_ACTION.sharedSkillCachedVal = false;
+    _PRE_ACTION.sharedSkillOn = false;
+    _PRE_ACTION.sharedSkillSkillCode = null;
+    _PRE_ACTION.sharedSkillCached = false;
+    _PRE_ACTION.sharedSkillCachedVal = false;
 
-  if (SHARED_SKILL_MODE !== 'none' && att.w1 && att.w2 && att.w1.skill === att.w2.skill) {
-    const sc = att.w1.skill;
-    const allow =
-      SHARED_SKILL_MODE === 'same_type' || (SHARED_SKILL_MODE === 'gun_same_type' && sc === 0);
-    if (allow) {
+    const sharedSkillDecision = resolveSharedSkillEligibility(att);
+    if (sharedSkillDecision.enabled) {
       _PRE_ACTION.sharedSkillOn = true;
-      _PRE_ACTION.sharedSkillSkillCode = sc;
+      _PRE_ACTION.sharedSkillSkillCode = sharedSkillDecision.skillCode;
     }
   }
+
+  const splitMultiweaponActionEnabled =
+    targetHp0 > 0 &&
+    ARMOR_APPLY === 'per_weapon' &&
+    TACTICS_BASE_VAL === 0 &&
+    !!att &&
+    !!att.w1 &&
+    !!att.w2 &&
+    diagSplitMultiweaponActionEnabledForActor(DIAG_SPLIT_MULTIWEAPON_ACTION, att);
+
+  preparePreAction();
 
   // weapon 1
   attemptWeaponFast(att, def, att.w1, _PRE_ACTION, _TW1);
 
-  // optional "stop on kill" optimization must match legacy_simulator.canonical:
-  // only valid for ARMOR_APPLY=per_weapon AND baseVal==0 (tactics disabled),
-  // otherwise rolling weapon2 changes RNG consumption and/or damage semantics.
   let skipW2 = false;
-  if (
-    ACTION_STOP_ON_KILL &&
-    targetHp0 > 0 &&
-    ARMOR_APPLY === 'per_weapon' &&
-    TACTICS_BASE_VAL === 0 &&
-    _TW1[0] >= targetHp0
-  ) {
-    skipW2 = true;
+  if (splitMultiweaponActionEnabled) {
+    const postW1Hp = Math.max(0, targetHp0 - Math.min(_TW1[0], targetHp0));
+    if (postW1Hp <= 0) {
+      skipW2 = true;
+    } else {
+      preparePreAction();
+    }
+  } else {
+    const diagW2AfterAppliedW1Enabled =
+      targetHp0 > 0 &&
+      ARMOR_APPLY === 'per_weapon' &&
+      TACTICS_BASE_VAL === 0 &&
+      diagW2AfterAppliedW1EnabledForActor(DIAG_W2_AFTER_APPLIED_W1, att);
+    const w1AppliedPreW2Gate =
+      diagW2AfterAppliedW1Enabled && _TW1[0] > 0 ? Math.min(_TW1[0], targetHp0) : 0;
+
+    // optional "stop on kill" optimization must match legacy_simulator.canonical:
+    // only valid for ARMOR_APPLY=per_weapon AND baseVal==0 (tactics disabled),
+    // otherwise rolling weapon2 changes RNG consumption and/or damage semantics.
+    if (
+      ACTION_STOP_ON_KILL &&
+      targetHp0 > 0 &&
+      ARMOR_APPLY === 'per_weapon' &&
+      TACTICS_BASE_VAL === 0 &&
+      _TW1[0] >= targetHp0
+    ) {
+      skipW2 = true;
+    } else if (diagW2AfterAppliedW1Enabled && w1AppliedPreW2Gate >= targetHp0) {
+      skipW2 = true;
+    }
   }
 
   if (!skipW2) attemptWeaponFast(att, def, att.w2, _PRE_ACTION, _TW2);
@@ -1394,14 +1535,17 @@ function doActionFast(att, def, targetHp0) {
   return actionDmg >= targetHp0 ? targetHp0 : actionDmg;
 }
 
-function fightOnceCalibFast(p1, p2, MAX_TURNS) {
+function fightOnceCalibFast(p1, p2, MAX_TURNS, fightIndex = 0) {
   let p1hp = p1.hp;
   let p2hp = p2.hp;
 
-  let p1First;
-  if (p1.speed > p2.speed) p1First = true;
-  else if (p1.speed < p2.speed) p1First = false;
-  else p1First = SPEED_TIE_MODE === 'random' ? RNG() < 0.5 : true;
+  const p1First = resolveFirstActor(
+    p1,
+    p2,
+    SPEED_TIE_MODE,
+    DIAG_FIRST_ACTOR_OVERRIDE,
+    fightIndex,
+  );
 
   const first = p1First ? p1 : p2;
   const second = p1First ? p2 : p1;
@@ -1410,16 +1554,26 @@ function fightOnceCalibFast(p1, p2, MAX_TURNS) {
 
   while (p1hp > 0 && p2hp > 0 && turns < MAX_TURNS) {
     turns++;
+    const p1hp0 = p1hp;
+    const p2hp0 = p2hp;
 
     // first acts
     if (second === p1) p1hp -= doActionFast(first, second, p1hp);
     else p2hp -= doActionFast(first, second, p2hp);
 
-    if (p1hp <= 0 || p2hp <= 0) break;
+    const secondKilled = second === p1 ? p1hp <= 0 : p2hp <= 0;
+    const firstAlive = first === p1 ? p1hp > 0 : p2hp > 0;
+    const queuedSecondActionEnabled =
+      secondKilled &&
+      firstAlive &&
+      diagQueuedSecondActionEnabledForActor(DIAG_QUEUED_SECOND_ACTION, second);
+
+    if (secondKilled && !queuedSecondActionEnabled) break;
 
     // second acts
-    if (first === p1) p1hp -= doActionFast(second, first, p1hp);
-    else p2hp -= doActionFast(second, first, p2hp);
+    if (first === p1)
+      p1hp -= doActionFast(second, first, queuedSecondActionEnabled ? p1hp0 : p1hp);
+    else p2hp -= doActionFast(second, first, queuedSecondActionEnabled ? p2hp0 : p2hp);
   }
 
   let winnerIsP1;
@@ -1439,7 +1593,7 @@ function runMatchPacked(p1, p2, trials, MAX_TURNS) {
   let wins = 0;
   let exSum = 0;
   for (let i = 0; i < trials; i++) {
-    const packed = fightOnceCalibFast(p1, p2, MAX_TURNS);
+    const packed = fightOnceCalibFast(p1, p2, MAX_TURNS, i);
     wins += (packed >>> 16) & 1;
     exSum += packed & 0xffff;
   }
@@ -2591,6 +2745,38 @@ function computeVariantFromCrystalSpec(itemName, crystalSpec, upgrade1, upgrade2
   };
 }
 
+function isValidatedDuplicateBioPinkVariant(v) {
+  if (!v || v.itemName !== 'Bio Spinal Enhancer') return false;
+  if (v.crystalName === 'Perfect Pink Crystal') return true;
+  const mix = v.crystalMix || null;
+  if (!mix || typeof mix !== 'object') return false;
+  const names = Object.keys(mix);
+  return names.length === 1 && names[0] === 'Perfect Pink Crystal' && Number(mix[names[0]]) === 4;
+}
+
+function scaleVariantCrystalDelta(v, scale) {
+  if (!v || !Number.isFinite(scale) || scale === 1) return v;
+  const flat = (ItemDefs[v.itemName] && ItemDefs[v.itemName].flatStats) || {};
+  return {
+    ...v,
+    addSpeed: (flat.speed || 0) + ((v.addSpeed || 0) - (flat.speed || 0)) * scale,
+    addAcc: (flat.accuracy || 0) + ((v.addAcc || 0) - (flat.accuracy || 0)) * scale,
+    addDod: (flat.dodge || 0) + ((v.addDod || 0) - (flat.dodge || 0)) * scale,
+    addGun: (flat.gunSkill || 0) + ((v.addGun || 0) - (flat.gunSkill || 0)) * scale,
+    addMel: (flat.meleeSkill || 0) + ((v.addMel || 0) - (flat.meleeSkill || 0)) * scale,
+    addPrj: (flat.projSkill || 0) + ((v.addPrj || 0) - (flat.projSkill || 0)) * scale,
+    addDef: (flat.defSkill || 0) + ((v.addDef || 0) - (flat.defSkill || 0)) * scale,
+    addArmStat: (flat.armor || 0) + ((v.addArmStat || 0) - (flat.armor || 0)) * scale,
+  };
+}
+
+function applyValidatedDuplicateBioPinkScaling(m1V, m2V) {
+  if (!isValidatedDuplicateBioPinkVariant(m1V) || !isValidatedDuplicateBioPinkVariant(m2V))
+    return [m1V, m2V];
+  // Validated duplicate-Bio patch: boost only the second exact Bio[P4] crystal delta.
+  return [m1V, scaleVariantCrystalDelta(m2V, 1.5)];
+}
+
 function buildVariantsForArmors(names) {
   const out = [];
   const cache = new Map();
@@ -3205,8 +3391,7 @@ function compileDefender(def, variantCacheLocal) {
   const m2V = variantCacheLocal.get(defenderVariantKeyFromCrystalSpec(m2Name, m2Cr, '', '', 2));
   if (!armorV || !w1V || !w2V || !m1V || !m2V)
     throw new Error(`Missing variant cache entries for defender ${def.name}`);
-  const m1Eff = m1V;
-  const m2Eff = m2V;
+  const [m1Eff, m2Eff] = applyValidatedDuplicateBioPinkScaling(m1V, m2V);
 
   const baseSpeed = Math.floor(Number(st.speed));
   const baseAcc = Math.floor(Number(st.accuracy));
@@ -3269,8 +3454,10 @@ function compileDefender(def, variantCacheLocal) {
 // =====================
 function compileAttacker(plan, av, w1v, w2v, m1v, m2v, attackTypeRaw = ATTACKER_ATTACK_TYPE) {
   const level = BASE.level;
-  const m1Eff = m1v;
-  const m2Eff = rebuildMiscVariantForSlot(m2v, 2);
+  const [m1Eff, m2Eff] = applyValidatedDuplicateBioPinkScaling(
+    m1v,
+    rebuildMiscVariantForSlot(m2v, 2),
+  );
 
   const speed =
     BASE.speed + av.addSpeed + w1v.addSpeed + w2v.addSpeed + m1Eff.addSpeed + m2Eff.addSpeed;

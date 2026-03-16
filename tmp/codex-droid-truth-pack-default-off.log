@@ -1,0 +1,33 @@
+=== LEGACY VERIFY ===
+ENV OVERRIDES: LEGACY_ASCII=1 LEGACY_COLOR=0 LEGACY_COMPARE=0 LEGACY_DEFENDER_FILE=./data/legacy-defenders.js LEGACY_DETERMINISTIC=1 LEGACY_DIAG_DROID_HF_SHELL_MODE=off LEGACY_EXPORT_JSON=1 LEGACY_EXPORT_JSON_FILE=./tmp/codex-droid-truth-pack-default-off.json LEGACY_HEADER=min LEGACY_OUTPUT=compact LEGACY_PRINT_GAME=0 LEGACY_SEED=1337 …(+3 more)
+NOTE: If this was unintentional, run with a clean env: env -i PATH="$PATH" HOME="$HOME" node legacy_simulator.best-defaults.js
+RUN: trials/def=50000 seed=1337 det=ON rng=fast maxT=200 defs=5 out=compact style=A:normal D:payload round=floor
+CONFIG: attacker=CUSTOM defs=5 selector=csv file=legacy-defenders.js compare=off exportJson=on style=A:normal D:payload round=floor
+CONFIG HASH: attacker=4d627351 defenders=5 defsHash=7316c4f5
+
+ATTACKER: CUSTOM
+  Armor: SG1 Armor [Perfect Pink Crystal]
+  Weps : Reaper Axe [Amulet Crystal] (105-134)  +  Crystal Maul [Amulet Crystal x3 + Perfect Fire Crystal] (122-135)
+  Miscs: Bio Spinal Enhancer [Perfect Pink Crystal]  +  Bio Spinal Enhancer [Perfect Orange Crystal]
+  Stats: HP=650 Spd=190 Acc=194 Dod=134 Style=normal Arm=75 (armF=0.810127)
+  Skill: Gun=580 Prj=580 Mel=769 Def=856
+
+=== VARIANT 1/1: HIT=int+GE/round SKILL=int+GE/round DMG=int CRYS=iter4/sum4 ARMSTAT=sum4/ceil/s4 ARMOR=K8 per_weapon/ceil SHIT=1 SSK=none TIE=random ROUND=baseline HIDDEN=none STYLE=A:normal D:payload@floor TACT=none MISC=none KEY=0a9aa608
+- 01 [ 48.27%] DL Gun Build 3     | AvgT   8.30 [4-20] | First D
+    | A disp  48/ 48 rng 84-215 dmg/f 722.0 hit  79/ 79 sk|hit  61/ 61 | D disp  40/ 40 rng 61-186 dmg/f 558.0 hit  81/ 81 sk|hit  49/ 49
+  --------------------------------------------------------------------------------------------
+- 02 [ 50.05%] SG1 Split bombs    | AvgT  12.46 [5-28] | First D
+    | A disp  32/ 32 rng 83-211 dmg/f 728.2 hit  82/ 82 sk|hit  38/ 39 | D disp  32/ 32 rng 56-176 dmg/f 552.6 hit  64/ 64 sk|hit  49/ 49
+  --------------------------------------------------------------------------------------------
+- 03 [ 62.26%] T2 Scythe Build    | AvgT   9.85 [4-26] | First D
+    | A disp  42/ 42 rng 84-215 dmg/f 766.3 hit  77/ 77 sk|hit  54/ 54 | D disp  29/ 29 rng 82-206 dmg/f 510.6 hit  68/ 68 sk|hit  43/ 43
+  --------------------------------------------------------------------------------------------
+- 04 [ 63.67%] HF Core/Void       | AvgT   9.84 [4-22] | First D
+    | A disp  53/ 53 rng 68-175 dmg/f 780.1 hit  91/ 91 sk|hit  57/ 57 | D disp  30/ 30 rng 51-198 dmg/f 512.3 hit  78/ 78 sk|hit  39/ 39
+  --------------------------------------------------------------------------------------------
+- 05 [ 64.93%] Core/Void Build 1  | AvgT   9.66 [4-22] | First D
+    | A disp  44/ 44 rng 84-215 dmg/f 774.6 hit  76/ 76 sk|hit  57/ 57 | D disp  30/ 30 rng 51-198 dmg/f 501.7 hit  78/ 78 sk|hit  39/ 39
+SUMMARY: meanWin=57.83% min=48.27% (DL Gun Build 3) max=64.93% (Core/Void Build 1)
+
+[SAVE] wrote JSON summary -> codex-droid-truth-pack-default-off.json
+=== END OUTPUT ===

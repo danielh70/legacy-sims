@@ -1,0 +1,95 @@
+JSON_SAVE: ON
+FILTERS attackers=(all) defenders=(all)
+PROGRESS variant=- jobs=0/12 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/12 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/12 0.0% elapsed=00:00:02 eta=00:00:00 current=CUSTOM | DL Dual Rift No Bio
+PROGRESS variant=baseline jobs=1/12 8.3% elapsed=00:00:03 eta=00:00:38 current=CUSTOM | DL Dual Rift No Bio
+PROGRESS variant=baseline jobs=1/12 8.3% elapsed=00:00:04 eta=00:00:44 current=CUSTOM | DL Dual Rift One Bio P4
+PROGRESS variant=baseline jobs=1/12 8.3% elapsed=00:00:06 eta=00:01:06 current=CUSTOM | DL Dual Rift One Bio P4
+PROGRESS variant=baseline jobs=2/12 16.7% elapsed=00:00:07 eta=00:00:35 current=CUSTOM | DL Dual Rift One Bio P4
+PROGRESS variant=baseline jobs=2/12 16.7% elapsed=00:00:08 eta=00:00:40 current=CUSTOM | DL Dual Rift One Bio O4
+PROGRESS variant=baseline jobs=2/12 16.7% elapsed=00:00:10 eta=00:00:50 current=CUSTOM | DL Dual Rift One Bio O4
+PROGRESS variant=baseline jobs=3/12 25.0% elapsed=00:00:10 eta=00:00:30 current=CUSTOM | DL Dual Rift One Bio O4
+PROGRESS variant=baseline jobs=3/12 25.0% elapsed=00:00:12 eta=00:00:36 current=CUSTOM | DL Dual Rift Two Bio P4
+PROGRESS variant=baseline jobs=4/12 33.3% elapsed=00:00:14 eta=00:00:28 current=CUSTOM | DL Dual Rift Two Bio P4
+PROGRESS variant=baseline jobs=4/12 33.3% elapsed=00:00:14 eta=00:00:28 current=CUSTOM | DL Dual Rift Bio P4 + O4
+PROGRESS variant=baseline jobs=4/12 33.3% elapsed=00:00:16 eta=00:00:32 current=CUSTOM | DL Dual Rift Bio P4 + O4
+PROGRESS variant=baseline jobs=5/12 41.7% elapsed=00:00:17 eta=00:00:24 current=CUSTOM | DL Dual Rift Bio P4 + O4
+PROGRESS variant=baseline jobs=5/12 41.7% elapsed=00:00:18 eta=00:00:25 current=CUSTOM | DL Dual Rift Two Bio O4
+PROGRESS variant=baseline jobs=5/12 41.7% elapsed=00:00:20 eta=00:00:28 current=CUSTOM | DL Dual Rift Two Bio O4
+PROGRESS variant=baseline jobs=6/12 50.0% elapsed=00:00:20 eta=00:00:20 current=CUSTOM | DL Dual Rift Two Bio O4
+PROGRESS variant=baseline jobs=6/12 50.0% elapsed=00:00:22 eta=00:00:22 current=CUSTOM | DL Core/Rift No Bio
+PROGRESS variant=baseline jobs=7/12 58.3% elapsed=00:00:24 eta=00:00:17 current=CUSTOM | DL Core/Rift No Bio
+PROGRESS variant=baseline jobs=7/12 58.3% elapsed=00:00:24 eta=00:00:17 current=CUSTOM | DL Core/Rift One Bio P4
+PROGRESS variant=baseline jobs=7/12 58.3% elapsed=00:00:26 eta=00:00:19 current=CUSTOM | DL Core/Rift One Bio P4
+PROGRESS variant=baseline jobs=8/12 66.7% elapsed=00:00:28 eta=00:00:14 current=CUSTOM | DL Core/Rift One Bio P4
+PROGRESS variant=baseline jobs=8/12 66.7% elapsed=00:00:28 eta=00:00:14 current=CUSTOM | DL Core/Rift One Bio O4
+PROGRESS variant=baseline jobs=8/12 66.7% elapsed=00:00:30 eta=00:00:15 current=CUSTOM | DL Core/Rift One Bio O4
+PROGRESS variant=baseline jobs=9/12 75.0% elapsed=00:00:31 eta=00:00:10 current=CUSTOM | DL Core/Rift One Bio O4
+PROGRESS variant=baseline jobs=9/12 75.0% elapsed=00:00:32 eta=00:00:11 current=CUSTOM | DL Core/Rift Two Bio P4
+PROGRESS variant=baseline jobs=9/12 75.0% elapsed=00:00:34 eta=00:00:11 current=CUSTOM | DL Core/Rift Two Bio P4
+PROGRESS variant=baseline jobs=10/12 83.3% elapsed=00:00:35 eta=00:00:07 current=CUSTOM | DL Core/Rift Two Bio P4
+PROGRESS variant=baseline jobs=10/12 83.3% elapsed=00:00:36 eta=00:00:07 current=CUSTOM | DL Core/Rift Bio P4 + O4
+PROGRESS variant=baseline jobs=10/12 83.3% elapsed=00:00:38 eta=00:00:08 current=CUSTOM | DL Core/Rift Bio P4 + O4
+PROGRESS variant=baseline jobs=11/12 91.7% elapsed=00:00:39 eta=00:00:04 current=CUSTOM | DL Core/Rift Bio P4 + O4
+PROGRESS variant=baseline jobs=11/12 91.7% elapsed=00:00:40 eta=00:00:04 current=CUSTOM | DL Core/Rift Two Bio O4
+PROGRESS variant=baseline jobs=11/12 91.7% elapsed=00:00:42 eta=00:00:04 current=CUSTOM | DL Core/Rift Two Bio O4
+PROGRESS variant=baseline jobs=12/12 100.0% elapsed=00:00:42 eta=00:00:00 current=CUSTOM | DL Core/Rift Two Bio O4
+MATCHUPS=12 COMPARED=12 TRIALS=200000 WORKERS=1 VARIANT=baseline ENV=(default env)
+SUMMARY meanAbsΔwin=1.78 meanAbsΔavgT=0.1178 worstAbsΔwin=3.75 (CUSTOM vs DL Dual Rift Bio P4 + O4)
+Worst mismatches (top 15):
+01 CUSTOM | DL Dual Rift Bio P4 + O4 | win 66.99->70.74 s/a +3.75 / 3.75 | avgT 10.3227->10.3823 s/a +0.0596 / 0.0596
+   A hit 79->80 s/a +1 / 1 | dmg1 53->53 s/a +0 / 0 | dmg2 53->53 s/a +0 / 0 | dmg/f 830.6->800.5 s/a -30.1 / 30.1 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 82->83 s/a +1 / 1 | dmg1 47->47 s/a +0 / 0 | dmg2 47->47 s/a +0 / 0 | dmg/f 520.5->505.4 s/a -15.1 / 15.1 | rng 62-136->61-135 s/a -1/-1 / 1/1
+02 CUSTOM | DL Dual Rift One Bio P4 | win 67.16->70.50 s/a +3.34 / 3.34 | avgT 10.4925->10.5798 s/a +0.0873 / 0.0873
+   A hit 77->78 s/a +1 / 1 | dmg1 53->53 s/a +0 / 0 | dmg2 53->53 s/a +0 / 0 | dmg/f 829.7->799.9 s/a -29.8 / 29.8 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 87->88 s/a +1 / 1 | dmg1 43->43 s/a +0 / 0 | dmg2 43->43 s/a +0 / 0 | dmg/f 519.6->506.6 s/a -13.0 / 13.0 | rng 62-136->61-135 s/a -1/-1 / 1/1
+03 CUSTOM | DL Core/Rift Two Bio P4 | win 43.74->40.44 s/a -3.30 / 3.30 | avgT 12.6811->12.9291 s/a +0.2480 / 0.2480
+   A hit 79->80 s/a +1 / 1 | dmg1 39->37 s/a -2 / 2 | dmg2 39->37 s/a -2 / 2 | dmg/f 740.2->696.0 s/a -44.2 / 44.2 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 75->76 s/a +1 / 1 | dmg1 54->55 s/a +1 / 1 | dmg2 48->48 s/a +0 / 0 | dmg/f 595.3->581.0 s/a -14.3 / 14.3 | rng 52-129->51-127 s/a -1/-2 / 1/2
+04 CUSTOM | DL Core/Rift Bio P4 + O4 | win 54.55->57.12 s/a +2.57 / 2.57 | avgT 11.4592->11.3848 s/a -0.0744 / 0.0744
+   A hit 79->80 s/a +1 / 1 | dmg1 46->46 s/a +0 / 0 | dmg2 46->46 s/a +0 / 0 | dmg/f 786.0->759.5 s/a -26.5 / 26.5 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 75->76 s/a +1 / 1 | dmg1 60->60 s/a +0 / 0 | dmg2 48->48 s/a +0 / 0 | dmg/f 569.0->541.8 s/a -27.2 / 27.2 | rng 52-129->51-127 s/a -1/-2 / 1/2
+05 CUSTOM | DL Core/Rift One Bio P4 | win 57.28->58.98 s/a +1.70 / 1.70 | avgT 11.7409->11.6388 s/a -0.1021 / 0.1021
+   A hit 77->78 s/a +1 / 1 | dmg1 46->46 s/a +0 / 0 | dmg2 46->46 s/a +0 / 0 | dmg/f 795.9->765.8 s/a -30.1 / 30.1 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 82->83 s/a +1 / 1 | dmg1 51->52 s/a +1 / 1 | dmg2 45->45 s/a +0 / 0 | dmg/f 559.8->536.6 s/a -23.2 / 23.2 | rng 52-129->51-127 s/a -1/-2 / 1/2
+06 CUSTOM | DL Dual Rift One Bio O4 | win 79.88->81.43 s/a +1.55 / 1.55 | avgT 9.4831->9.5764 s/a +0.0933 / 0.0933
+   A hit 77->78 s/a +1 / 1 | dmg1 61->61 s/a +0 / 0 | dmg2 61->61 s/a +0 / 0 | dmg/f 872.5->828.0 s/a -44.5 / 44.5 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 87->88 s/a +1 / 1 | dmg1 43->43 s/a +0 / 0 | dmg2 43->43 s/a +0 / 0 | dmg/f 468.6->463.0 s/a -5.6 / 5.6 | rng 62-136->61-135 s/a -1/-1 / 1/1
+07 CUSTOM | DL Dual Rift Two Bio O4 | win 79.90->81.42 s/a +1.52 / 1.52 | avgT 9.3206->9.4094 s/a +0.0888 / 0.0888
+   A hit 79->80 s/a +1 / 1 | dmg1 61->60 s/a -1 / 1 | dmg2 61->60 s/a -1 / 1 | dmg/f 872.7->827.8 s/a -44.9 / 44.9 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 82->83 s/a +1 / 1 | dmg1 47->47 s/a +0 / 0 | dmg2 47->47 s/a +0 / 0 | dmg/f 471.1->462.6 s/a -8.5 / 8.5 | rng 62-136->61-135 s/a -1/-1 / 1/1
+08 CUSTOM | DL Dual Rift Two Bio P4 | win 49.95->48.91 s/a -1.04 / 1.04 | avgT 11.3261->11.8532 s/a +0.5271 / 0.5271
+   A hit 79->80 s/a +1 / 1 | dmg1 46->42 s/a -4 / 4 | dmg2 46->42 s/a -4 / 4 | dmg/f 765.9->730.6 s/a -35.3 / 35.3 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 82->83 s/a +1 / 1 | dmg1 47->47 s/a +0 / 0 | dmg2 47->47 s/a +0 / 0 | dmg/f 571.8->567.2 s/a -4.6 / 4.6 | rng 62-136->61-135 s/a -1/-1 / 1/1
+09 CUSTOM | DL Core/Rift No Bio | win 73.59->72.89 s/a -0.70 / 0.70 | avgT 10.7660->10.7455 s/a -0.0205 / 0.0205
+   A hit 76->76 s/a +0 / 0 | dmg1 53->54 s/a +1 / 1 | dmg2 53->54 s/a +1 / 1 | dmg/f 850.5->806.9 s/a -43.6 / 43.6 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 87->88 s/a +1 / 1 | dmg1 48->48 s/a +0 / 0 | dmg2 41->41 s/a +0 / 0 | dmg/f 505.2->492.5 s/a -12.7 / 12.7 | rng 52-129->51-127 s/a -1/-2 / 1/2
+10 CUSTOM | DL Core/Rift Two Bio O4 | win 67.39->68.07 s/a +0.68 / 0.68 | avgT 10.2805->10.2410 s/a -0.0395 / 0.0395
+   A hit 79->80 s/a +1 / 1 | dmg1 53->53 s/a +0 / 0 | dmg2 53->53 s/a +0 / 0 | dmg/f 833.4->794.0 s/a -39.4 / 39.4 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 75->76 s/a +1 / 1 | dmg1 65->65 s/a +0 / 0 | dmg2 48->48 s/a +0 / 0 | dmg/f 531.3->510.9 s/a -20.4 / 20.4 | rng 52-129->51-127 s/a -1/-2 / 1/2
+11 CUSTOM | DL Core/Rift One Bio O4 | win 67.46->68.11 s/a +0.65 / 0.65 | avgT 10.4234->10.4268 s/a +0.0034 / 0.0034
+   A hit 77->78 s/a +1 / 1 | dmg1 53->53 s/a +0 / 0 | dmg2 53->53 s/a +0 / 0 | dmg/f 832.8->793.9 s/a -38.9 / 38.9 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 82->83 s/a +1 / 1 | dmg1 57->58 s/a +1 / 1 | dmg2 45->44 s/a -1 / 1 | dmg/f 529.7->511.5 s/a -18.2 / 18.2 | rng 52-129->51-127 s/a -1/-2 / 1/2
+12 CUSTOM | DL Dual Rift No Bio | win 82.23->82.79 s/a +0.56 / 0.56 | avgT 9.7066->9.7759 s/a +0.0693 / 0.0693
+   A hit 76->76 s/a +0 / 0 | dmg1 61->61 s/a +0 / 0 | dmg2 61->61 s/a +0 / 0 | dmg/f 878.1->830.9 s/a -47.2 / 47.2 | rng 84-215->84-215 s/a +0/+0 / 0/0
+   D hit 91->91 s/a +0 / 0 | dmg1 40->40 s/a +0 / 0 | dmg2 40->40 s/a +0 / 0 | dmg/f 456.3->455.3 s/a -1.0 / 1.0 | rng 62-136->61-135 s/a -1/-1 / 1/1
+
+By attacker:
+CUSTOM | avgAbsΔwin=1.78 | worst=3.75 (+3.75) | vs=DL Dual Rift Bio P4 + O4
+
+By defender:
+DL Dual Rift Bio P4 + O4 | avgAbsΔwin=3.75 | worst=3.75 (+3.75) | vs=CUSTOM
+DL Dual Rift One Bio P4 | avgAbsΔwin=3.34 | worst=3.34 (+3.34) | vs=CUSTOM
+DL Core/Rift Two Bio P4 | avgAbsΔwin=3.30 | worst=3.30 (-3.30) | vs=CUSTOM
+DL Core/Rift Bio P4 + O4 | avgAbsΔwin=2.57 | worst=2.57 (+2.57) | vs=CUSTOM
+DL Core/Rift One Bio P4 | avgAbsΔwin=1.70 | worst=1.70 (+1.70) | vs=CUSTOM
+DL Dual Rift One Bio O4 | avgAbsΔwin=1.55 | worst=1.55 (+1.55) | vs=CUSTOM
+DL Dual Rift Two Bio O4 | avgAbsΔwin=1.52 | worst=1.52 (+1.52) | vs=CUSTOM
+DL Dual Rift Two Bio P4 | avgAbsΔwin=1.04 | worst=1.04 (-1.04) | vs=CUSTOM
+DL Core/Rift No Bio | avgAbsΔwin=0.70 | worst=0.70 (-0.70) | vs=CUSTOM
+DL Core/Rift Two Bio O4 | avgAbsΔwin=0.68 | worst=0.68 (+0.68) | vs=CUSTOM
+DL Core/Rift One Bio O4 | avgAbsΔwin=0.65 | worst=0.65 (+0.65) | vs=CUSTOM
+DL Dual Rift No Bio | avgAbsΔwin=0.56 | worst=0.56 (+0.56) | vs=CUSTOM
+
+Saved /Users/danielhook/Desktop/code_projects/legacy_sims/results/replay/legacy-replay--legacy-truth-bio-orange-duplicate-probe--legacy-sim-v1.0.4-clean--none--codex-bio-rule-b-rebalance-orange-live--2026-03-15T06-56-19-412Z.json

@@ -1,0 +1,823 @@
+{
+  "createdUtc": "2026-03-16T01:48:11.896Z",
+  "script": "legacy-sim-v1.0.4-clean.droid-truth-pack-reconcile.js",
+  "cwd": "/Users/danielhook/Desktop/code_projects/legacy_sims",
+  "resolvedConfig": {
+    "attackerLabel": "CUSTOM",
+    "defenderSourceFile": "/Users/danielhook/Desktop/code_projects/legacy_sims/data/legacy-defenders.js",
+    "sharedDefsFile": "../data/legacy-defs.js"
+  },
+  "resolvedBuilds": {
+    "attacker": {
+      "stats": {
+        "level": 80,
+        "hp": 650,
+        "speed": 60,
+        "dodge": 57,
+        "accuracy": 14
+      },
+      "armor": {
+        "name": "SG1 Armor",
+        "crystal": "Perfect Pink Crystal",
+        "crystalSpec": {
+          "Perfect Pink Crystal": 4
+        },
+        "upgrades": [],
+        "crystalSpecShort": "P4"
+      },
+      "weapon1": {
+        "name": "Reaper Axe",
+        "crystal": "Amulet Crystal",
+        "crystalSpec": {
+          "Amulet Crystal": 4
+        },
+        "upgrades": [],
+        "crystalSpecShort": "A4"
+      },
+      "weapon2": {
+        "name": "Crystal Maul",
+        "crystal": "Amulet Crystal x3 + Perfect Fire Crystal",
+        "crystalSpec": {
+          "Amulet Crystal": 3,
+          "Perfect Fire Crystal": 1
+        },
+        "upgrades": [],
+        "crystalSpecShort": "A3+F"
+      },
+      "misc1": {
+        "name": "Bio Spinal Enhancer",
+        "crystal": "Perfect Pink Crystal",
+        "crystalSpec": {
+          "Perfect Pink Crystal": 4
+        },
+        "upgrades": [],
+        "crystalSpecShort": "P4"
+      },
+      "misc2": {
+        "name": "Bio Spinal Enhancer",
+        "crystal": "Perfect Orange Crystal",
+        "crystalSpec": {
+          "Perfect Orange Crystal": 4
+        },
+        "upgrades": [],
+        "crystalSpecShort": "O4"
+      },
+      "attackType": "normal",
+      "label": "CUSTOM"
+    },
+    "defendersByName": {
+      "DL Gun Build 3": {
+        "stats": {
+          "level": 80,
+          "hp": 865,
+          "speed": 60,
+          "dodge": 14,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "Dark Legion Armor",
+          "crystal": "Abyss Crystal",
+          "crystalSpec": {
+            "Abyss Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "B4"
+        },
+        "weapon1": {
+          "name": "Rift Gun",
+          "crystal": "Amulet Crystal",
+          "crystalSpec": {
+            "Amulet Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "A4"
+        },
+        "weapon2": {
+          "name": "Double Barrel Sniper Rifle",
+          "crystal": "Perfect Fire Crystal",
+          "crystalSpec": {
+            "Perfect Fire Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "F4"
+        },
+        "misc1": {
+          "name": "Bio Spinal Enhancer",
+          "crystal": "Perfect Green Crystal",
+          "crystalSpec": {
+            "Perfect Green Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "G4"
+        },
+        "misc2": {
+          "name": "Bio Spinal Enhancer",
+          "crystal": "Perfect Green Crystal",
+          "crystalSpec": {
+            "Perfect Green Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "G4"
+        },
+        "attackType": "normal"
+      },
+      "SG1 Split bombs": {
+        "stats": {
+          "level": 80,
+          "hp": 865,
+          "speed": 60,
+          "dodge": 14,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "SG1 Armor",
+          "crystal": "Abyss Crystal",
+          "crystalSpec": {
+            "Abyss Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "B4"
+        },
+        "weapon1": {
+          "name": "Split Crystal Bombs T2",
+          "crystal": "Amulet Crystal",
+          "crystalSpec": {
+            "Amulet Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "A4"
+        },
+        "weapon2": {
+          "name": "Split Crystal Bombs T2",
+          "crystal": "Amulet Crystal",
+          "crystalSpec": {
+            "Amulet Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "A4"
+        },
+        "misc1": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "crystalSpec": {
+            "Amulet Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "A4"
+        },
+        "misc2": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "crystalSpec": {
+            "Amulet Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "A4"
+        },
+        "attackType": "normal"
+      },
+      "T2 Scythe Build": {
+        "stats": {
+          "level": 80,
+          "hp": 865,
+          "speed": 60,
+          "dodge": 14,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "Dark Legion Armor",
+          "crystal": "Abyss Crystal",
+          "crystalSpec": {
+            "Abyss Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "B4"
+        },
+        "weapon1": {
+          "name": "Scythe T2",
+          "crystal": "Amulet Crystal",
+          "crystalSpec": {
+            "Amulet Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "A4"
+        },
+        "weapon2": {
+          "name": "Scythe T2",
+          "crystal": "Amulet Crystal",
+          "crystalSpec": {
+            "Amulet Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "A4"
+        },
+        "misc1": {
+          "name": "Bio Spinal Enhancer",
+          "crystal": "Amulet Crystal",
+          "crystalSpec": {
+            "Amulet Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "A4"
+        },
+        "misc2": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "crystalSpec": {
+            "Amulet Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "A4"
+        },
+        "attackType": "normal"
+      },
+      "HF Core/Void": {
+        "stats": {
+          "level": 80,
+          "hp": 865,
+          "speed": 60,
+          "dodge": 14,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "Hellforged Armor",
+          "crystal": "Cabrusion Crystal",
+          "crystalSpec": {
+            "Cabrusion Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "C4"
+        },
+        "weapon1": {
+          "name": "Void Sword",
+          "crystal": "Perfect Fire Crystal",
+          "crystalSpec": {
+            "Perfect Fire Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "F4"
+        },
+        "weapon2": {
+          "name": "Core Staff",
+          "crystal": "Amulet Crystal",
+          "crystalSpec": {
+            "Amulet Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "A4"
+        },
+        "misc1": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "crystalSpec": {
+            "Amulet Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "A4"
+        },
+        "misc2": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "crystalSpec": {
+            "Amulet Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "A4"
+        },
+        "attackType": "normal"
+      },
+      "Core/Void Build 1": {
+        "stats": {
+          "level": 80,
+          "hp": 865,
+          "speed": 60,
+          "dodge": 14,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "Dark Legion Armor",
+          "crystal": "Abyss Crystal",
+          "crystalSpec": {
+            "Abyss Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "B4"
+        },
+        "weapon1": {
+          "name": "Core Staff",
+          "crystal": "Amulet Crystal",
+          "crystalSpec": {
+            "Amulet Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "A4"
+        },
+        "weapon2": {
+          "name": "Void Sword",
+          "crystal": "Perfect Fire Crystal",
+          "crystalSpec": {
+            "Perfect Fire Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "F4"
+        },
+        "misc1": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "crystalSpec": {
+            "Amulet Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "A4"
+        },
+        "misc2": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "crystalSpec": {
+            "Amulet Crystal": 4
+          },
+          "upgrades": [],
+          "crystalSpecShort": "A4"
+        },
+        "attackType": "normal"
+      }
+    }
+  },
+  "resolvedHashes": {
+    "attacker": "4d627351",
+    "defendersByName": {
+      "DL Gun Build 3": "2a0173ef",
+      "SG1 Split bombs": "52d0e874",
+      "T2 Scythe Build": "d53ae419",
+      "HF Core/Void": "e9483aef",
+      "Core/Void Build 1": "6074334e"
+    }
+  },
+  "attacker": {
+    "label": "CUSTOM",
+    "attackType": "normal"
+  },
+  "fingerprint": {
+    "sourceSimFile": "/Users/danielhook/Desktop/code_projects/legacy_sims/tmp/legacy-sim-v1.0.4-clean.droid-truth-pack-reconcile.js",
+    "sharedDefsFile": "../data/legacy-defs.js",
+    "attackerHash": "4d627351",
+    "attackerKey": "9191a9b3",
+    "configKey": "45ac337f",
+    "defsKey": "dc7b17f6",
+    "logicKey": "5af3d146",
+    "runKey": "c135a283",
+    "critical": {
+      "hitRollMode": "int",
+      "hitGe": true,
+      "hitQround": "round",
+      "skillRollMode": "int",
+      "skillGe": true,
+      "skillQround": "round",
+      "dmgRoll": "int",
+      "armorK": 8,
+      "armorApply": "per_weapon",
+      "armorRound": "ceil",
+      "sharedHit": true,
+      "sharedSkillMode": "none",
+      "diagW2AfterAppliedW1": "auto",
+      "diagSplitMultiweaponAction": "auto",
+      "diagDroidVsHfShellMode": "same_name_refresh_hit_sg1_armor",
+      "diagQueuedSecondAction": "auto",
+      "diagFirstActorOverride": "auto",
+      "actionStopOnKill": false,
+      "speedTieMode": "random",
+      "roundResolveMode": "baseline",
+      "crystalStackStats": "iter4",
+      "crystalStackDmg": "sum4",
+      "crystalSlots": 4,
+      "attackerAttackType": "normal",
+      "defenderAttackType": "payload",
+      "attackStyleRoundMode": "floor"
+    }
+  },
+  "defenders": {
+    "sourceFile": "/Users/danielhook/Desktop/code_projects/legacy_sims/data/legacy-defenders.js",
+    "requested": "DL Gun Build 3,SG1 Split bombs,T2 Scythe Build,HF Core/Void,Core/Void Build 1",
+    "selector": "csv",
+    "names": [
+      "DL Gun Build 3",
+      "SG1 Split bombs",
+      "T2 Scythe Build",
+      "HF Core/Void",
+      "Core/Void Build 1"
+    ],
+    "attackTypeOverride": null
+  },
+  "run": {
+    "trials": 50000,
+    "seed": 1337,
+    "deterministic": true,
+    "rngMode": "fast",
+    "maxTurns": 200,
+    "outputMode": "compact",
+    "compareBaselines": false,
+    "baselineFile": "",
+    "baselineKeyOverride": "",
+    "attackStyleRoundMode": "floor"
+  },
+  "variants": [
+    {
+      "variantIndex": 1,
+      "variantCount": 1,
+      "logicKey": "5af3d146",
+      "runKey": "c135a283",
+      "attackerKey": "9191a9b3",
+      "configKey": "45ac337f",
+      "defsKey": "dc7b17f6",
+      "baselineKey": "5af3d146",
+      "attackerAttackType": "normal",
+      "defenderAttackType": "payload",
+      "config": {
+        "hitRollMode": "int",
+        "hitGe": true,
+        "hitQround": "round",
+        "skillRollMode": "int",
+        "skillGe": true,
+        "skillQround": "round",
+        "dmgRoll": "int",
+        "armorK": 8,
+        "armorApply": "per_weapon",
+        "armorRound": "ceil",
+        "projDefMult": 1,
+        "hiddenPreset": "none",
+        "speedTieMode": "random",
+        "roundResolveMode": "baseline",
+        "tacticsMode": "none",
+        "tacticsVal": 5,
+        "sharedHit": true,
+        "sharedSkillMode": "none",
+        "sharedSkillAttackerOverride": "auto",
+        "sharedSkillDefenderOverride": "auto",
+        "diagW2AfterAppliedW1": "auto",
+        "diagSplitMultiweaponAction": "auto",
+        "diagDroidVsHfShellMode": "same_name_refresh_hit_sg1_armor",
+        "diagQueuedSecondAction": "auto",
+        "diagFirstActorOverride": "auto",
+        "attackerAttackType": "normal",
+        "defenderAttackType": "payload",
+        "attackStyleRoundMode": "floor",
+        "crystalStackStats": "iter4",
+        "crystalStackDmg": "sum4",
+        "crystalSlots": 4,
+        "actionStopOnKill": false,
+        "maxTurns": 200,
+        "rngMode": "fast",
+        "miscSkillTag": "none",
+        "hfArmorBaseOverride": 125,
+        "voidSwordBaseMaxOverride": 120,
+        "armorStatStack": "sum4",
+        "armorStatRound": "ceil",
+        "armorStatSlots": 4
+      },
+      "defenders": [
+        {
+          "name": "DL Gun Build 3",
+          "first": "D",
+          "attackerAttackType": "normal",
+          "defenderAttackType": "normal",
+          "winPct": 48.224000000000004,
+          "avgTurns": 8.28704,
+          "turnsMin": 4,
+          "turnsMax": 19,
+          "firstMove": {
+            "attackerRate": 0,
+            "defenderRate": 100,
+            "attackerWinWhenFirst": 0,
+            "defenderWinWhenFirst": 51.775999999999996
+          },
+          "endState": {
+            "p1_alive_only": 24112,
+            "p2_alive_only": 25888,
+            "both_alive_equal_hp": 0,
+            "both_alive_p1_hp_lead": 0,
+            "both_alive_p2_hp_lead": 0,
+            "both_dead": 0
+          },
+          "a": {
+            "disp": [
+              48.69794884468059,
+              48.79474031055645
+            ],
+            "hit": [
+              79.5759710037481,
+              79.5759710037481
+            ],
+            "skillGivenHit": [
+              61.19680128362728,
+              61.31843532045392
+            ],
+            "range": [
+              84,
+              215
+            ],
+            "dmgPerFight": 720.9
+          },
+          "d": {
+            "disp": [
+              40.075105224543385,
+              40.23607946866433
+            ],
+            "hit": [
+              81.24131173494999,
+              81.24131173494999
+            ],
+            "skillGivenHit": [
+              49.328481247679164,
+              49.52662458225028
+            ],
+            "range": [
+              61,
+              186
+            ],
+            "dmgPerFight": 558.4
+          },
+          "actionCounters": null,
+          "weaponCounters": null,
+          "runtimeCombatAudit": null,
+          "compiledSnapshot": null,
+          "compare": null
+        },
+        {
+          "name": "SG1 Split bombs",
+          "first": "D",
+          "attackerAttackType": "normal",
+          "defenderAttackType": "normal",
+          "winPct": 50.476,
+          "avgTurns": 12.48688,
+          "turnsMin": 5,
+          "turnsMax": 29,
+          "firstMove": {
+            "attackerRate": 0,
+            "defenderRate": 100,
+            "attackerWinWhenFirst": 0,
+            "defenderWinWhenFirst": 49.524
+          },
+          "endState": {
+            "p1_alive_only": 25238,
+            "p2_alive_only": 24762,
+            "both_alive_equal_hp": 0,
+            "both_alive_p1_hp_lead": 0,
+            "both_alive_p2_hp_lead": 0,
+            "both_dead": 0
+          },
+          "a": {
+            "disp": [
+              32.23862624294925,
+              32.338695958184196
+            ],
+            "hit": [
+              82.87823850615929,
+              82.87823850615929
+            ],
+            "skillGivenHit": [
+              38.89878311126674,
+              39.01952616401334
+            ],
+            "range": [
+              83,
+              211
+            ],
+            "dmgPerFight": 729.6
+          },
+          "d": {
+            "disp": [
+              32.01328113988443,
+              31.98204835795651
+            ],
+            "hit": [
+              64.45789500659893,
+              64.45789500659893
+            ],
+            "skillGivenHit": [
+              49.66541513123728,
+              49.6169605828461
+            ],
+            "range": [
+              56,
+              176
+            ],
+            "dmgPerFight": 551.3
+          },
+          "actionCounters": null,
+          "weaponCounters": null,
+          "runtimeCombatAudit": null,
+          "compiledSnapshot": null,
+          "compare": null
+        },
+        {
+          "name": "T2 Scythe Build",
+          "first": "D",
+          "attackerAttackType": "normal",
+          "defenderAttackType": "normal",
+          "winPct": 62.306,
+          "avgTurns": 9.83128,
+          "turnsMin": 4,
+          "turnsMax": 24,
+          "firstMove": {
+            "attackerRate": 0,
+            "defenderRate": 100,
+            "attackerWinWhenFirst": 0,
+            "defenderWinWhenFirst": 37.694
+          },
+          "endState": {
+            "p1_alive_only": 31153,
+            "p2_alive_only": 18847,
+            "both_alive_equal_hp": 0,
+            "both_alive_p1_hp_lead": 0,
+            "both_alive_p2_hp_lead": 0,
+            "both_dead": 0
+          },
+          "a": {
+            "disp": [
+              42.68811995337591,
+              42.891412832625015
+            ],
+            "hit": [
+              77.96609810943968,
+              77.96609810943968
+            ],
+            "skillGivenHit": [
+              54.75215637116445,
+              55.012901597844575
+            ],
+            "range": [
+              84,
+              215
+            ],
+            "dmgPerFight": 764.7
+          },
+          "d": {
+            "disp": [
+              29.615879112384146,
+              29.594722152151093
+            ],
+            "hit": [
+              68.17118422016259,
+              68.17118422016259
+            ],
+            "skillGivenHit": [
+              43.44339833783441,
+              43.41236328911834
+            ],
+            "range": [
+              82,
+              206
+            ],
+            "dmgPerFight": 511.6
+          },
+          "actionCounters": null,
+          "weaponCounters": null,
+          "runtimeCombatAudit": null,
+          "compiledSnapshot": null,
+          "compare": null
+        },
+        {
+          "name": "HF Core/Void",
+          "first": "D",
+          "attackerAttackType": "normal",
+          "defenderAttackType": "normal",
+          "winPct": 64.05999999999999,
+          "avgTurns": 9.851,
+          "turnsMin": 4,
+          "turnsMax": 20,
+          "firstMove": {
+            "attackerRate": 0,
+            "defenderRate": 100,
+            "attackerWinWhenFirst": 0,
+            "defenderWinWhenFirst": 35.94
+          },
+          "endState": {
+            "p1_alive_only": 32030,
+            "p2_alive_only": 17970,
+            "both_alive_equal_hp": 0,
+            "both_alive_p1_hp_lead": 0,
+            "both_alive_p2_hp_lead": 0,
+            "both_dead": 0
+          },
+          "a": {
+            "disp": [
+              53.1798643010662,
+              53.141514602385264
+            ],
+            "hit": [
+              91.79716802225126,
+              91.79716802225126
+            ],
+            "skillGivenHit": [
+              57.931922571048844,
+              57.89014601137149
+            ],
+            "range": [
+              68,
+              175
+            ],
+            "dmgPerFight": 781.5
+          },
+          "d": {
+            "disp": [
+              30.843366155720233,
+              30.86184143741752
+            ],
+            "hit": [
+              78.40726829763476,
+              78.40726829763476
+            ],
+            "skillGivenHit": [
+              39.33738137469413,
+              39.36094460052564
+            ],
+            "range": [
+              51,
+              198
+            ],
+            "dmgPerFight": 511.8
+          },
+          "actionCounters": null,
+          "weaponCounters": null,
+          "runtimeCombatAudit": null,
+          "compiledSnapshot": null,
+          "compare": null
+        },
+        {
+          "name": "Core/Void Build 1",
+          "first": "D",
+          "attackerAttackType": "normal",
+          "defenderAttackType": "normal",
+          "winPct": 64.79,
+          "avgTurns": 9.62776,
+          "turnsMin": 4,
+          "turnsMax": 22,
+          "firstMove": {
+            "attackerRate": 0,
+            "defenderRate": 100,
+            "attackerWinWhenFirst": 0,
+            "defenderWinWhenFirst": 35.21
+          },
+          "endState": {
+            "p1_alive_only": 32395,
+            "p2_alive_only": 17605,
+            "both_alive_equal_hp": 0,
+            "both_alive_p1_hp_lead": 0,
+            "both_alive_p2_hp_lead": 0,
+            "both_dead": 0
+          },
+          "a": {
+            "disp": [
+              44.268979242447436,
+              44.21895584788575
+            ],
+            "hit": [
+              76.48059545088974,
+              76.48059545088974
+            ],
+            "skillGivenHit": [
+              57.88262889620641,
+              57.81722224728224
+            ],
+            "range": [
+              84,
+              215
+            ],
+            "dmgPerFight": 773.7
+          },
+          "d": {
+            "disp": [
+              30.89939923720575,
+              30.882157428103735
+            ],
+            "hit": [
+              78.42966588282218,
+              78.42966588282218
+            ],
+            "skillGivenHit": [
+              39.39759131878872,
+              39.37560753381663
+            ],
+            "range": [
+              51,
+              198
+            ],
+            "dmgPerFight": 500.7
+          },
+          "actionCounters": null,
+          "weaponCounters": null,
+          "runtimeCombatAudit": null,
+          "compiledSnapshot": null,
+          "compare": null
+        }
+      ],
+      "summary": {
+        "meanWin": 57.971199999999996,
+        "minWin": 48.224000000000004,
+        "minName": "DL Gun Build 3",
+        "maxWin": 64.79,
+        "maxName": "Core/Void Build 1"
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+JSON_SAVE: ON
+FILTERS attackers=CUSTOM_MAUL_A4_SG1_PINK defenders=DL Rift/Bombs Scout
+PROGRESS variant=- jobs=0/1 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/1 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=1/1 100.0% elapsed=00:00:00 eta=00:00:00 current=CUSTOM_MAUL_A4_SG1_PINK | DL Rift/Bombs Scout
+MATCHUPS=1 COMPARED=1 TRIALS=200 WORKERS=1 VARIANT=baseline ENV=(default env)
+SUMMARY meanAbsΔwin=0.25 meanAbsΔavgT=0.4572 worstAbsΔwin=0.25 (CUSTOM_MAUL_A4_SG1_PINK vs DL Rift/Bombs Scout)
+Worst mismatches (top 15):
+01 CUSTOM_MAUL_A4_SG1_PINK | DL Rift/Bombs Scout | win 57.25->57.00 s/a -0.25 / 0.25 | avgT 10.3678->10.8250 s/a +0.4572 / 0.4572
+   A hit 77->76 s/a -1 / 1 | dmg1 52->51 s/a -1 / 1 | dmg2 52->51 s/a -1 / 1 | dmg/f 797.0->755.4 s/a -41.6 / 41.6 | rng 84-211->84-212 s/a +0/+1 / 0/1
+   D hit 84->86 s/a +2 / 2 | dmg1 44->44 s/a +0 / 0 | dmg2 50->46 s/a -4 / 4 | dmg/f 567.9->551.0 s/a -16.9 / 16.9 | rng 57-156->56-154 s/a -1/-2 / 1/2
+
+By attacker:
+CUSTOM_MAUL_A4_SG1_PINK | avgAbsΔwin=0.25 | worst=0.25 (-0.25) | vs=DL Rift/Bombs Scout
+
+By defender:
+DL Rift/Bombs Scout | avgAbsΔwin=0.25 | worst=0.25 (-0.25) | vs=CUSTOM_MAUL_A4_SG1_PINK
+
+Saved /Users/danielhook/Desktop/code_projects/legacy_sims/results/replay/legacy-replay--legacy-truth-v4-custom-maul-a4-sg1-pink-full15--legacy-sim-v1.0.4-clean.runtime-gate-inspect--none--2026-03-15T23-09-54-695Z.json

@@ -1,0 +1,2688 @@
+{
+  "createdUtc": "2026-03-16T00:13:59.303Z",
+  "truthFile": "legacy-truth-current-attacker-vs-meta.json",
+  "simFile": "legacy-sim-v1.0.4-clean.droid-split-decomp.js",
+  "truthMatchups": 15,
+  "trials": 200000,
+  "topN": 15,
+  "sweepMode": "none",
+  "workers": 1,
+  "totalJobs": 1,
+  "progressMode": "lines",
+  "progressEveryMs": 2000,
+  "outDir": "/Users/danielhook/Desktop/code_projects/legacy_sims/tmp/replay-droid-split-decomp-4atk",
+  "tag": "codex-droid-split-4atk-custom-off",
+  "variant": "baseline",
+  "env": {},
+  "summary": {
+    "matchups": 1,
+    "compared": 1,
+    "meanAbsWinPct": 3.05,
+    "meanAbsAvgTurns": 0.0188,
+    "worstAbsWinPct": 3.05,
+    "worstAbsAvgTurns": 0.0188,
+    "worstAttacker": "CUSTOM",
+    "worstDefender": "SG1 Double Maul Droid",
+    "topAbsWinPctSum": 3.05,
+    "topAbsAvgTurnsSum": 0.0188
+  },
+  "byAttacker": [
+    {
+      "name": "CUSTOM",
+      "matchups": 1,
+      "avgAbsWinPct": 3.05,
+      "worstAbsWinPct": 3.05,
+      "worstSignedWinPct": -3.05,
+      "worstAbsAvgTurns": 0.0188,
+      "worstCounterpart": "SG1 Double Maul Droid"
+    }
+  ],
+  "byDefender": [
+    {
+      "name": "SG1 Double Maul Droid",
+      "matchups": 1,
+      "avgAbsWinPct": 3.05,
+      "worstAbsWinPct": 3.05,
+      "worstSignedWinPct": -3.05,
+      "worstAbsAvgTurns": 0.0188,
+      "worstCounterpart": "CUSTOM"
+    }
+  ],
+  "worstMismatches": [
+    {
+      "attacker": "CUSTOM",
+      "defender": "SG1 Double Maul Droid",
+      "truth": {
+        "winPct": 88.05,
+        "avgTurns": 8.5253,
+        "A_hit": 67,
+        "A_dmg1": 59,
+        "A_dmg2": 59,
+        "D_hit": 92,
+        "D_dmg1": 27,
+        "D_dmg2": 27,
+        "A_rng": [
+          87,
+          222
+        ],
+        "D_rng": [
+          97,
+          224
+        ],
+        "A_damageTotal": 7096312,
+        "D_damageTotal": 3968689.6666666665,
+        "A_damagePerFight": 709.6,
+        "D_damagePerFight": 396.9
+      },
+      "sim": {
+        "winPct": 84.997,
+        "avgTurns": 8.5441,
+        "A_hit": 68.47818962793039,
+        "A_dmg1": 59.134791641207386,
+        "A_dmg2": 59.16418910430886,
+        "D_hit": 92.25909881948967,
+        "D_dmg1": 27.94527321482531,
+        "D_dmg2": 27.895122021656583,
+        "A_rng": [
+          86,
+          219
+        ],
+        "D_rng": [
+          96,
+          220
+        ],
+        "A_damageTotal": null,
+        "D_damageTotal": null,
+        "A_damagePerFight": 625.6,
+        "D_damagePerFight": 400.7
+      },
+      "delta": {
+        "winPct": -3.05,
+        "avgTurns": 0.0188,
+        "A_hit": 1,
+        "A_dmg1": 0,
+        "A_dmg2": 0,
+        "D_hit": 0,
+        "D_dmg1": 1,
+        "D_dmg2": 1,
+        "A_damageTotal": -7096312,
+        "D_damageTotal": -3968690,
+        "A_damagePerFight": -84,
+        "D_damagePerFight": 3.8,
+        "A_rng": {
+          "min": -1,
+          "max": -3
+        },
+        "D_rng": {
+          "min": -1,
+          "max": -4
+        }
+      },
+      "absDelta": {
+        "winPct": 3.05,
+        "avgTurns": 0.0188,
+        "A_hit": 1,
+        "A_dmg1": 0,
+        "A_dmg2": 0,
+        "D_hit": 0,
+        "D_dmg1": 1,
+        "D_dmg2": 1,
+        "A_damageTotal": 7096312,
+        "D_damageTotal": 3968690,
+        "A_damagePerFight": 84,
+        "D_damagePerFight": 3.8,
+        "A_rng": {
+          "min": 1,
+          "max": 3
+        },
+        "D_rng": {
+          "min": 1,
+          "max": 4
+        }
+      },
+      "error": null,
+      "replaySource": "pageBuilds-exact",
+      "matchupKey": "CUSTOM__SG1 Double Maul Droid",
+      "requestedPageBuilds": {
+        "attacker": {
+          "stats": {
+            "level": 80,
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "armor": {
+            "name": "SG1 Armor",
+            "upgrades": [
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal"
+            ]
+          },
+          "weapon1": {
+            "name": "Reaper Axe",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal"
+            ]
+          },
+          "weapon2": {
+            "name": "Crystal Maul",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Perfect Fire Crystal"
+            ]
+          },
+          "misc1": {
+            "name": "Bio Spinal Enhancer",
+            "upgrades": [
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal"
+            ]
+          },
+          "misc2": {
+            "name": "Bio Spinal Enhancer",
+            "upgrades": [
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal"
+            ]
+          },
+          "attackType": "normal"
+        },
+        "defender": {
+          "stats": {
+            "level": 94,
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "armor": {
+            "name": "SG1 Armor",
+            "upgrades": [
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal"
+            ]
+          },
+          "weapon1": {
+            "name": "Crystal Maul",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Perfect Fire Crystal",
+              "Perfect Fire Crystal"
+            ]
+          },
+          "weapon2": {
+            "name": "Crystal Maul",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal"
+            ]
+          },
+          "misc1": {
+            "name": "Scout Drones",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal"
+            ]
+          },
+          "misc2": {
+            "name": "Droid Drone",
+            "upgrades": [
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal"
+            ]
+          },
+          "attackType": "normal"
+        }
+      },
+      "verifiedPageBuilds": {
+        "attacker": {
+          "stats": {
+            "level": 80,
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "armor": {
+            "name": "SG1 Armor",
+            "upgrades": [
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal"
+            ]
+          },
+          "weapon1": {
+            "name": "Reaper Axe",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal"
+            ]
+          },
+          "weapon2": {
+            "name": "Crystal Maul",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Perfect Fire Crystal"
+            ]
+          },
+          "misc1": {
+            "name": "Bio Spinal Enhancer",
+            "upgrades": [
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal"
+            ]
+          },
+          "misc2": {
+            "name": "Bio Spinal Enhancer",
+            "upgrades": [
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal"
+            ]
+          },
+          "attackType": "normal"
+        },
+        "defender": {
+          "stats": {
+            "level": 94,
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "armor": {
+            "name": "SG1 Armor",
+            "upgrades": [
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal"
+            ]
+          },
+          "weapon1": {
+            "name": "Crystal Maul",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Perfect Fire Crystal",
+              "Perfect Fire Crystal"
+            ]
+          },
+          "weapon2": {
+            "name": "Crystal Maul",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal"
+            ]
+          },
+          "misc1": {
+            "name": "Scout Drones",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal"
+            ]
+          },
+          "misc2": {
+            "name": "Droid Drone",
+            "upgrades": [
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal"
+            ]
+          },
+          "attackType": "normal"
+        }
+      },
+      "requestedHashes": {
+        "attacker": "c8b48c9f",
+        "defender": "6d30f4ec"
+      },
+      "verifiedHashes": {
+        "attacker": "c8b48c9f",
+        "defender": "6d30f4ec"
+      },
+      "buildVerified": true,
+      "resolvedBuilds": {
+        "attacker": {
+          "stats": {
+            "level": 80,
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "armor": {
+            "name": "SG1 Armor",
+            "crystal": "Perfect Pink Crystal",
+            "crystalSpec": {
+              "Perfect Pink Crystal": 4
+            },
+            "upgrades": [],
+            "crystalSpecShort": "P4"
+          },
+          "weapon1": {
+            "name": "Reaper Axe",
+            "crystal": "Amulet Crystal",
+            "crystalSpec": {
+              "Amulet Crystal": 4
+            },
+            "upgrades": [],
+            "crystalSpecShort": "A4"
+          },
+          "weapon2": {
+            "name": "Crystal Maul",
+            "crystal": "Amulet Crystal x3 + Perfect Fire Crystal",
+            "crystalSpec": {
+              "Amulet Crystal": 3,
+              "Perfect Fire Crystal": 1
+            },
+            "upgrades": [],
+            "crystalSpecShort": "A3+F"
+          },
+          "misc1": {
+            "name": "Bio Spinal Enhancer",
+            "crystal": "Perfect Pink Crystal",
+            "crystalSpec": {
+              "Perfect Pink Crystal": 4
+            },
+            "upgrades": [],
+            "crystalSpecShort": "P4"
+          },
+          "misc2": {
+            "name": "Bio Spinal Enhancer",
+            "crystal": "Perfect Orange Crystal",
+            "crystalSpec": {
+              "Perfect Orange Crystal": 4
+            },
+            "upgrades": [],
+            "crystalSpecShort": "O4"
+          },
+          "attackType": "normal"
+        },
+        "defender": {
+          "stats": {
+            "level": 94,
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "armor": {
+            "name": "SG1 Armor",
+            "crystal": "Perfect Pink Crystal",
+            "crystalSpec": {
+              "Perfect Pink Crystal": 4
+            },
+            "upgrades": [],
+            "crystalSpecShort": "P4"
+          },
+          "weapon1": {
+            "name": "Crystal Maul",
+            "crystal": "Amulet Crystal x2 + Perfect Fire Crystal x2",
+            "crystalSpec": {
+              "Amulet Crystal": 2,
+              "Perfect Fire Crystal": 2
+            },
+            "upgrades": [],
+            "crystalSpecShort": "A2+F2"
+          },
+          "weapon2": {
+            "name": "Crystal Maul",
+            "crystal": "Amulet Crystal",
+            "crystalSpec": {
+              "Amulet Crystal": 4
+            },
+            "upgrades": [],
+            "crystalSpecShort": "A4"
+          },
+          "misc1": {
+            "name": "Scout Drones",
+            "crystal": "Amulet Crystal",
+            "crystalSpec": {
+              "Amulet Crystal": 4
+            },
+            "upgrades": [],
+            "crystalSpecShort": "A4"
+          },
+          "misc2": {
+            "name": "Droid Drone",
+            "crystal": "Perfect Orange Crystal",
+            "crystalSpec": {
+              "Perfect Orange Crystal": 4
+            },
+            "upgrades": [],
+            "crystalSpecShort": "O4"
+          },
+          "attackType": "normal"
+        }
+      },
+      "resolvedHashes": {
+        "attacker": "c8b48c9f",
+        "defender": "6d30f4ec"
+      },
+      "exportResolvedHashes": {
+        "attacker": "ccfa331c",
+        "defender": "7ab247af"
+      },
+      "resolvedConfig": {
+        "attackerLabel": "CUSTOM",
+        "defenderSourceFile": "/var/folders/_m/pnr1j20n5ysbl010kddx6hs80000gn/T/legacy-replay-baseline-KoitCL/CUSTOM--SG1-Double-Maul-Droid--defender.js",
+        "sharedDefsFile": "../data/legacy-defs.js"
+      },
+      "identityMatch": true,
+      "identityMismatchReason": null,
+      "sanityFingerprint": {
+        "sourceSimFile": "/Users/danielhook/Desktop/code_projects/legacy_sims/tmp/.legacy-sim-custom--58289--baseline--1.js",
+        "sourceDefsFile": "../data/legacy-defs.js",
+        "sourceDefenderFile": "/var/folders/_m/pnr1j20n5ysbl010kddx6hs80000gn/T/legacy-replay-baseline-KoitCL/CUSTOM--SG1-Double-Maul-Droid--defender.js",
+        "attackerHash": "c8b48c9f",
+        "defenderHash": "6d30f4ec",
+        "logicKey": "b72c04bd",
+        "configKey": "796ef4ad",
+        "runKey": "e380a026",
+        "critical": {
+          "hitRollMode": "int",
+          "hitGe": true,
+          "hitQround": "round",
+          "skillRollMode": "int",
+          "skillGe": true,
+          "skillQround": "round",
+          "dmgRoll": "int",
+          "armorK": 8,
+          "armorApply": "per_weapon",
+          "armorRound": "ceil",
+          "sharedHit": true,
+          "sharedSkillMode": "none",
+          "actionStopOnKill": false,
+          "speedTieMode": "random",
+          "roundResolveMode": "baseline",
+          "crystalStackStats": "iter4",
+          "crystalStackDmg": "sum4",
+          "crystalSlots": 4,
+          "attackerAttackType": "normal",
+          "defenderAttackType": "normal",
+          "attackStyleRoundMode": "floor"
+        }
+      },
+      "debugAudit": null,
+      "identity": {
+        "replaySource": "pageBuilds-exact",
+        "truthBuildVerified": true,
+        "truthRequestedHashes": {
+          "attacker": "c8b48c9f",
+          "defender": "6d30f4ec"
+        },
+        "truthVerifiedHashes": {
+          "attacker": "c8b48c9f",
+          "defender": "6d30f4ec"
+        },
+        "identityMatch": true,
+        "identityMismatchReason": null,
+        "simResolvedHashes": {
+          "attacker": "c8b48c9f",
+          "defender": "6d30f4ec"
+        },
+        "simExportResolvedHashes": {
+          "attacker": "ccfa331c",
+          "defender": "7ab247af"
+        }
+      },
+      "dWinPct": -3.05,
+      "absWinPct": 3.05,
+      "dAvgTurns": 0.0188,
+      "absAvgTurns": 0.0188
+    }
+  ],
+  "rows": [
+    {
+      "attacker": "CUSTOM",
+      "defender": "SG1 Double Maul Droid",
+      "truth": {
+        "winPct": 88.05,
+        "avgTurns": 8.5253,
+        "A_hit": 67,
+        "A_dmg1": 59,
+        "A_dmg2": 59,
+        "D_hit": 92,
+        "D_dmg1": 27,
+        "D_dmg2": 27,
+        "A_rng": [
+          87,
+          222
+        ],
+        "D_rng": [
+          97,
+          224
+        ],
+        "A_damageTotal": 7096312,
+        "D_damageTotal": 3968689.6666666665,
+        "A_damagePerFight": 709.6,
+        "D_damagePerFight": 396.9
+      },
+      "sim": {
+        "winPct": 84.997,
+        "avgTurns": 8.5441,
+        "A_hit": 68.47818962793039,
+        "A_dmg1": 59.134791641207386,
+        "A_dmg2": 59.16418910430886,
+        "D_hit": 92.25909881948967,
+        "D_dmg1": 27.94527321482531,
+        "D_dmg2": 27.895122021656583,
+        "A_rng": [
+          86,
+          219
+        ],
+        "D_rng": [
+          96,
+          220
+        ],
+        "A_damageTotal": null,
+        "D_damageTotal": null,
+        "A_damagePerFight": 625.6,
+        "D_damagePerFight": 400.7
+      },
+      "delta": {
+        "winPct": -3.05,
+        "avgTurns": 0.0188,
+        "A_hit": 1,
+        "A_dmg1": 0,
+        "A_dmg2": 0,
+        "D_hit": 0,
+        "D_dmg1": 1,
+        "D_dmg2": 1,
+        "A_damageTotal": -7096312,
+        "D_damageTotal": -3968690,
+        "A_damagePerFight": -84,
+        "D_damagePerFight": 3.8,
+        "A_rng": {
+          "min": -1,
+          "max": -3
+        },
+        "D_rng": {
+          "min": -1,
+          "max": -4
+        }
+      },
+      "absDelta": {
+        "winPct": 3.05,
+        "avgTurns": 0.0188,
+        "A_hit": 1,
+        "A_dmg1": 0,
+        "A_dmg2": 0,
+        "D_hit": 0,
+        "D_dmg1": 1,
+        "D_dmg2": 1,
+        "A_damageTotal": 7096312,
+        "D_damageTotal": 3968690,
+        "A_damagePerFight": 84,
+        "D_damagePerFight": 3.8,
+        "A_rng": {
+          "min": 1,
+          "max": 3
+        },
+        "D_rng": {
+          "min": 1,
+          "max": 4
+        }
+      },
+      "error": null,
+      "replaySource": "pageBuilds-exact",
+      "matchupKey": "CUSTOM__SG1 Double Maul Droid",
+      "requestedPageBuilds": {
+        "attacker": {
+          "stats": {
+            "level": 80,
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "armor": {
+            "name": "SG1 Armor",
+            "upgrades": [
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal"
+            ]
+          },
+          "weapon1": {
+            "name": "Reaper Axe",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal"
+            ]
+          },
+          "weapon2": {
+            "name": "Crystal Maul",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Perfect Fire Crystal"
+            ]
+          },
+          "misc1": {
+            "name": "Bio Spinal Enhancer",
+            "upgrades": [
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal"
+            ]
+          },
+          "misc2": {
+            "name": "Bio Spinal Enhancer",
+            "upgrades": [
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal"
+            ]
+          },
+          "attackType": "normal"
+        },
+        "defender": {
+          "stats": {
+            "level": 94,
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "armor": {
+            "name": "SG1 Armor",
+            "upgrades": [
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal"
+            ]
+          },
+          "weapon1": {
+            "name": "Crystal Maul",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Perfect Fire Crystal",
+              "Perfect Fire Crystal"
+            ]
+          },
+          "weapon2": {
+            "name": "Crystal Maul",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal"
+            ]
+          },
+          "misc1": {
+            "name": "Scout Drones",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal"
+            ]
+          },
+          "misc2": {
+            "name": "Droid Drone",
+            "upgrades": [
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal"
+            ]
+          },
+          "attackType": "normal"
+        }
+      },
+      "verifiedPageBuilds": {
+        "attacker": {
+          "stats": {
+            "level": 80,
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "armor": {
+            "name": "SG1 Armor",
+            "upgrades": [
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal"
+            ]
+          },
+          "weapon1": {
+            "name": "Reaper Axe",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal"
+            ]
+          },
+          "weapon2": {
+            "name": "Crystal Maul",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Perfect Fire Crystal"
+            ]
+          },
+          "misc1": {
+            "name": "Bio Spinal Enhancer",
+            "upgrades": [
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal"
+            ]
+          },
+          "misc2": {
+            "name": "Bio Spinal Enhancer",
+            "upgrades": [
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal"
+            ]
+          },
+          "attackType": "normal"
+        },
+        "defender": {
+          "stats": {
+            "level": 94,
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "armor": {
+            "name": "SG1 Armor",
+            "upgrades": [
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal",
+              "Perfect Pink Crystal"
+            ]
+          },
+          "weapon1": {
+            "name": "Crystal Maul",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Perfect Fire Crystal",
+              "Perfect Fire Crystal"
+            ]
+          },
+          "weapon2": {
+            "name": "Crystal Maul",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal"
+            ]
+          },
+          "misc1": {
+            "name": "Scout Drones",
+            "upgrades": [
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal",
+              "Amulet Crystal"
+            ]
+          },
+          "misc2": {
+            "name": "Droid Drone",
+            "upgrades": [
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal",
+              "Perfect Orange Crystal"
+            ]
+          },
+          "attackType": "normal"
+        }
+      },
+      "requestedHashes": {
+        "attacker": "c8b48c9f",
+        "defender": "6d30f4ec"
+      },
+      "verifiedHashes": {
+        "attacker": "c8b48c9f",
+        "defender": "6d30f4ec"
+      },
+      "buildVerified": true,
+      "resolvedBuilds": {
+        "attacker": {
+          "stats": {
+            "level": 80,
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "armor": {
+            "name": "SG1 Armor",
+            "crystal": "Perfect Pink Crystal",
+            "crystalSpec": {
+              "Perfect Pink Crystal": 4
+            },
+            "upgrades": [],
+            "crystalSpecShort": "P4"
+          },
+          "weapon1": {
+            "name": "Reaper Axe",
+            "crystal": "Amulet Crystal",
+            "crystalSpec": {
+              "Amulet Crystal": 4
+            },
+            "upgrades": [],
+            "crystalSpecShort": "A4"
+          },
+          "weapon2": {
+            "name": "Crystal Maul",
+            "crystal": "Amulet Crystal x3 + Perfect Fire Crystal",
+            "crystalSpec": {
+              "Amulet Crystal": 3,
+              "Perfect Fire Crystal": 1
+            },
+            "upgrades": [],
+            "crystalSpecShort": "A3+F"
+          },
+          "misc1": {
+            "name": "Bio Spinal Enhancer",
+            "crystal": "Perfect Pink Crystal",
+            "crystalSpec": {
+              "Perfect Pink Crystal": 4
+            },
+            "upgrades": [],
+            "crystalSpecShort": "P4"
+          },
+          "misc2": {
+            "name": "Bio Spinal Enhancer",
+            "crystal": "Perfect Orange Crystal",
+            "crystalSpec": {
+              "Perfect Orange Crystal": 4
+            },
+            "upgrades": [],
+            "crystalSpecShort": "O4"
+          },
+          "attackType": "normal"
+        },
+        "defender": {
+          "stats": {
+            "level": 94,
+            "hp": 650,
+            "speed": 60,
+            "dodge": 57,
+            "accuracy": 14
+          },
+          "armor": {
+            "name": "SG1 Armor",
+            "crystal": "Perfect Pink Crystal",
+            "crystalSpec": {
+              "Perfect Pink Crystal": 4
+            },
+            "upgrades": [],
+            "crystalSpecShort": "P4"
+          },
+          "weapon1": {
+            "name": "Crystal Maul",
+            "crystal": "Amulet Crystal x2 + Perfect Fire Crystal x2",
+            "crystalSpec": {
+              "Amulet Crystal": 2,
+              "Perfect Fire Crystal": 2
+            },
+            "upgrades": [],
+            "crystalSpecShort": "A2+F2"
+          },
+          "weapon2": {
+            "name": "Crystal Maul",
+            "crystal": "Amulet Crystal",
+            "crystalSpec": {
+              "Amulet Crystal": 4
+            },
+            "upgrades": [],
+            "crystalSpecShort": "A4"
+          },
+          "misc1": {
+            "name": "Scout Drones",
+            "crystal": "Amulet Crystal",
+            "crystalSpec": {
+              "Amulet Crystal": 4
+            },
+            "upgrades": [],
+            "crystalSpecShort": "A4"
+          },
+          "misc2": {
+            "name": "Droid Drone",
+            "crystal": "Perfect Orange Crystal",
+            "crystalSpec": {
+              "Perfect Orange Crystal": 4
+            },
+            "upgrades": [],
+            "crystalSpecShort": "O4"
+          },
+          "attackType": "normal"
+        }
+      },
+      "resolvedHashes": {
+        "attacker": "c8b48c9f",
+        "defender": "6d30f4ec"
+      },
+      "exportResolvedHashes": {
+        "attacker": "ccfa331c",
+        "defender": "7ab247af"
+      },
+      "resolvedConfig": {
+        "attackerLabel": "CUSTOM",
+        "defenderSourceFile": "/var/folders/_m/pnr1j20n5ysbl010kddx6hs80000gn/T/legacy-replay-baseline-KoitCL/CUSTOM--SG1-Double-Maul-Droid--defender.js",
+        "sharedDefsFile": "../data/legacy-defs.js"
+      },
+      "identityMatch": true,
+      "identityMismatchReason": null,
+      "sanityFingerprint": {
+        "sourceSimFile": "/Users/danielhook/Desktop/code_projects/legacy_sims/tmp/.legacy-sim-custom--58289--baseline--1.js",
+        "sourceDefsFile": "../data/legacy-defs.js",
+        "sourceDefenderFile": "/var/folders/_m/pnr1j20n5ysbl010kddx6hs80000gn/T/legacy-replay-baseline-KoitCL/CUSTOM--SG1-Double-Maul-Droid--defender.js",
+        "attackerHash": "c8b48c9f",
+        "defenderHash": "6d30f4ec",
+        "logicKey": "b72c04bd",
+        "configKey": "796ef4ad",
+        "runKey": "e380a026",
+        "critical": {
+          "hitRollMode": "int",
+          "hitGe": true,
+          "hitQround": "round",
+          "skillRollMode": "int",
+          "skillGe": true,
+          "skillQround": "round",
+          "dmgRoll": "int",
+          "armorK": 8,
+          "armorApply": "per_weapon",
+          "armorRound": "ceil",
+          "sharedHit": true,
+          "sharedSkillMode": "none",
+          "actionStopOnKill": false,
+          "speedTieMode": "random",
+          "roundResolveMode": "baseline",
+          "crystalStackStats": "iter4",
+          "crystalStackDmg": "sum4",
+          "crystalSlots": 4,
+          "attackerAttackType": "normal",
+          "defenderAttackType": "normal",
+          "attackStyleRoundMode": "floor"
+        }
+      },
+      "debugAudit": null,
+      "identity": {
+        "replaySource": "pageBuilds-exact",
+        "truthBuildVerified": true,
+        "truthRequestedHashes": {
+          "attacker": "c8b48c9f",
+          "defender": "6d30f4ec"
+        },
+        "truthVerifiedHashes": {
+          "attacker": "c8b48c9f",
+          "defender": "6d30f4ec"
+        },
+        "identityMatch": true,
+        "identityMismatchReason": null,
+        "simResolvedHashes": {
+          "attacker": "c8b48c9f",
+          "defender": "6d30f4ec"
+        },
+        "simExportResolvedHashes": {
+          "attacker": "ccfa331c",
+          "defender": "7ab247af"
+        }
+      },
+      "dWinPct": -3.05,
+      "absWinPct": 3.05,
+      "dAvgTurns": 0.0188,
+      "absAvgTurns": 0.0188
+    }
+  ],
+  "scores": null,
+  "best": null,
+  "variants": [
+    {
+      "variant": "baseline",
+      "env": {},
+      "rows": [
+        {
+          "attacker": "CUSTOM",
+          "defender": "SG1 Double Maul Droid",
+          "truth": {
+            "winPct": 88.05,
+            "avgTurns": 8.5253,
+            "A_hit": 67,
+            "A_dmg1": 59,
+            "A_dmg2": 59,
+            "D_hit": 92,
+            "D_dmg1": 27,
+            "D_dmg2": 27,
+            "A_rng": [
+              87,
+              222
+            ],
+            "D_rng": [
+              97,
+              224
+            ],
+            "A_damageTotal": 7096312,
+            "D_damageTotal": 3968689.6666666665,
+            "A_damagePerFight": 709.6,
+            "D_damagePerFight": 396.9
+          },
+          "sim": {
+            "winPct": 84.997,
+            "avgTurns": 8.5441,
+            "A_hit": 68.47818962793039,
+            "A_dmg1": 59.134791641207386,
+            "A_dmg2": 59.16418910430886,
+            "D_hit": 92.25909881948967,
+            "D_dmg1": 27.94527321482531,
+            "D_dmg2": 27.895122021656583,
+            "A_rng": [
+              86,
+              219
+            ],
+            "D_rng": [
+              96,
+              220
+            ],
+            "A_damageTotal": null,
+            "D_damageTotal": null,
+            "A_damagePerFight": 625.6,
+            "D_damagePerFight": 400.7
+          },
+          "delta": {
+            "winPct": -3.05,
+            "avgTurns": 0.0188,
+            "A_hit": 1,
+            "A_dmg1": 0,
+            "A_dmg2": 0,
+            "D_hit": 0,
+            "D_dmg1": 1,
+            "D_dmg2": 1,
+            "A_damageTotal": -7096312,
+            "D_damageTotal": -3968690,
+            "A_damagePerFight": -84,
+            "D_damagePerFight": 3.8,
+            "A_rng": {
+              "min": -1,
+              "max": -3
+            },
+            "D_rng": {
+              "min": -1,
+              "max": -4
+            }
+          },
+          "absDelta": {
+            "winPct": 3.05,
+            "avgTurns": 0.0188,
+            "A_hit": 1,
+            "A_dmg1": 0,
+            "A_dmg2": 0,
+            "D_hit": 0,
+            "D_dmg1": 1,
+            "D_dmg2": 1,
+            "A_damageTotal": 7096312,
+            "D_damageTotal": 3968690,
+            "A_damagePerFight": 84,
+            "D_damagePerFight": 3.8,
+            "A_rng": {
+              "min": 1,
+              "max": 3
+            },
+            "D_rng": {
+              "min": 1,
+              "max": 4
+            }
+          },
+          "error": null,
+          "replaySource": "pageBuilds-exact",
+          "matchupKey": "CUSTOM__SG1 Double Maul Droid",
+          "requestedPageBuilds": {
+            "attacker": {
+              "stats": {
+                "level": 80,
+                "hp": 650,
+                "speed": 60,
+                "dodge": 57,
+                "accuracy": 14
+              },
+              "armor": {
+                "name": "SG1 Armor",
+                "upgrades": [
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal"
+                ]
+              },
+              "weapon1": {
+                "name": "Reaper Axe",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal"
+                ]
+              },
+              "weapon2": {
+                "name": "Crystal Maul",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Perfect Fire Crystal"
+                ]
+              },
+              "misc1": {
+                "name": "Bio Spinal Enhancer",
+                "upgrades": [
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal"
+                ]
+              },
+              "misc2": {
+                "name": "Bio Spinal Enhancer",
+                "upgrades": [
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal"
+                ]
+              },
+              "attackType": "normal"
+            },
+            "defender": {
+              "stats": {
+                "level": 94,
+                "hp": 650,
+                "speed": 60,
+                "dodge": 57,
+                "accuracy": 14
+              },
+              "armor": {
+                "name": "SG1 Armor",
+                "upgrades": [
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal"
+                ]
+              },
+              "weapon1": {
+                "name": "Crystal Maul",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Perfect Fire Crystal",
+                  "Perfect Fire Crystal"
+                ]
+              },
+              "weapon2": {
+                "name": "Crystal Maul",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal"
+                ]
+              },
+              "misc1": {
+                "name": "Scout Drones",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal"
+                ]
+              },
+              "misc2": {
+                "name": "Droid Drone",
+                "upgrades": [
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal"
+                ]
+              },
+              "attackType": "normal"
+            }
+          },
+          "verifiedPageBuilds": {
+            "attacker": {
+              "stats": {
+                "level": 80,
+                "hp": 650,
+                "speed": 60,
+                "dodge": 57,
+                "accuracy": 14
+              },
+              "armor": {
+                "name": "SG1 Armor",
+                "upgrades": [
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal"
+                ]
+              },
+              "weapon1": {
+                "name": "Reaper Axe",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal"
+                ]
+              },
+              "weapon2": {
+                "name": "Crystal Maul",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Perfect Fire Crystal"
+                ]
+              },
+              "misc1": {
+                "name": "Bio Spinal Enhancer",
+                "upgrades": [
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal"
+                ]
+              },
+              "misc2": {
+                "name": "Bio Spinal Enhancer",
+                "upgrades": [
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal"
+                ]
+              },
+              "attackType": "normal"
+            },
+            "defender": {
+              "stats": {
+                "level": 94,
+                "hp": 650,
+                "speed": 60,
+                "dodge": 57,
+                "accuracy": 14
+              },
+              "armor": {
+                "name": "SG1 Armor",
+                "upgrades": [
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal"
+                ]
+              },
+              "weapon1": {
+                "name": "Crystal Maul",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Perfect Fire Crystal",
+                  "Perfect Fire Crystal"
+                ]
+              },
+              "weapon2": {
+                "name": "Crystal Maul",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal"
+                ]
+              },
+              "misc1": {
+                "name": "Scout Drones",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal"
+                ]
+              },
+              "misc2": {
+                "name": "Droid Drone",
+                "upgrades": [
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal"
+                ]
+              },
+              "attackType": "normal"
+            }
+          },
+          "requestedHashes": {
+            "attacker": "c8b48c9f",
+            "defender": "6d30f4ec"
+          },
+          "verifiedHashes": {
+            "attacker": "c8b48c9f",
+            "defender": "6d30f4ec"
+          },
+          "buildVerified": true,
+          "resolvedBuilds": {
+            "attacker": {
+              "stats": {
+                "level": 80,
+                "hp": 650,
+                "speed": 60,
+                "dodge": 57,
+                "accuracy": 14
+              },
+              "armor": {
+                "name": "SG1 Armor",
+                "crystal": "Perfect Pink Crystal",
+                "crystalSpec": {
+                  "Perfect Pink Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "P4"
+              },
+              "weapon1": {
+                "name": "Reaper Axe",
+                "crystal": "Amulet Crystal",
+                "crystalSpec": {
+                  "Amulet Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "A4"
+              },
+              "weapon2": {
+                "name": "Crystal Maul",
+                "crystal": "Amulet Crystal x3 + Perfect Fire Crystal",
+                "crystalSpec": {
+                  "Amulet Crystal": 3,
+                  "Perfect Fire Crystal": 1
+                },
+                "upgrades": [],
+                "crystalSpecShort": "A3+F"
+              },
+              "misc1": {
+                "name": "Bio Spinal Enhancer",
+                "crystal": "Perfect Pink Crystal",
+                "crystalSpec": {
+                  "Perfect Pink Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "P4"
+              },
+              "misc2": {
+                "name": "Bio Spinal Enhancer",
+                "crystal": "Perfect Orange Crystal",
+                "crystalSpec": {
+                  "Perfect Orange Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "O4"
+              },
+              "attackType": "normal"
+            },
+            "defender": {
+              "stats": {
+                "level": 94,
+                "hp": 650,
+                "speed": 60,
+                "dodge": 57,
+                "accuracy": 14
+              },
+              "armor": {
+                "name": "SG1 Armor",
+                "crystal": "Perfect Pink Crystal",
+                "crystalSpec": {
+                  "Perfect Pink Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "P4"
+              },
+              "weapon1": {
+                "name": "Crystal Maul",
+                "crystal": "Amulet Crystal x2 + Perfect Fire Crystal x2",
+                "crystalSpec": {
+                  "Amulet Crystal": 2,
+                  "Perfect Fire Crystal": 2
+                },
+                "upgrades": [],
+                "crystalSpecShort": "A2+F2"
+              },
+              "weapon2": {
+                "name": "Crystal Maul",
+                "crystal": "Amulet Crystal",
+                "crystalSpec": {
+                  "Amulet Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "A4"
+              },
+              "misc1": {
+                "name": "Scout Drones",
+                "crystal": "Amulet Crystal",
+                "crystalSpec": {
+                  "Amulet Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "A4"
+              },
+              "misc2": {
+                "name": "Droid Drone",
+                "crystal": "Perfect Orange Crystal",
+                "crystalSpec": {
+                  "Perfect Orange Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "O4"
+              },
+              "attackType": "normal"
+            }
+          },
+          "resolvedHashes": {
+            "attacker": "c8b48c9f",
+            "defender": "6d30f4ec"
+          },
+          "exportResolvedHashes": {
+            "attacker": "ccfa331c",
+            "defender": "7ab247af"
+          },
+          "resolvedConfig": {
+            "attackerLabel": "CUSTOM",
+            "defenderSourceFile": "/var/folders/_m/pnr1j20n5ysbl010kddx6hs80000gn/T/legacy-replay-baseline-KoitCL/CUSTOM--SG1-Double-Maul-Droid--defender.js",
+            "sharedDefsFile": "../data/legacy-defs.js"
+          },
+          "identityMatch": true,
+          "identityMismatchReason": null,
+          "sanityFingerprint": {
+            "sourceSimFile": "/Users/danielhook/Desktop/code_projects/legacy_sims/tmp/.legacy-sim-custom--58289--baseline--1.js",
+            "sourceDefsFile": "../data/legacy-defs.js",
+            "sourceDefenderFile": "/var/folders/_m/pnr1j20n5ysbl010kddx6hs80000gn/T/legacy-replay-baseline-KoitCL/CUSTOM--SG1-Double-Maul-Droid--defender.js",
+            "attackerHash": "c8b48c9f",
+            "defenderHash": "6d30f4ec",
+            "logicKey": "b72c04bd",
+            "configKey": "796ef4ad",
+            "runKey": "e380a026",
+            "critical": {
+              "hitRollMode": "int",
+              "hitGe": true,
+              "hitQround": "round",
+              "skillRollMode": "int",
+              "skillGe": true,
+              "skillQround": "round",
+              "dmgRoll": "int",
+              "armorK": 8,
+              "armorApply": "per_weapon",
+              "armorRound": "ceil",
+              "sharedHit": true,
+              "sharedSkillMode": "none",
+              "actionStopOnKill": false,
+              "speedTieMode": "random",
+              "roundResolveMode": "baseline",
+              "crystalStackStats": "iter4",
+              "crystalStackDmg": "sum4",
+              "crystalSlots": 4,
+              "attackerAttackType": "normal",
+              "defenderAttackType": "normal",
+              "attackStyleRoundMode": "floor"
+            }
+          },
+          "debugAudit": null,
+          "identity": {
+            "replaySource": "pageBuilds-exact",
+            "truthBuildVerified": true,
+            "truthRequestedHashes": {
+              "attacker": "c8b48c9f",
+              "defender": "6d30f4ec"
+            },
+            "truthVerifiedHashes": {
+              "attacker": "c8b48c9f",
+              "defender": "6d30f4ec"
+            },
+            "identityMatch": true,
+            "identityMismatchReason": null,
+            "simResolvedHashes": {
+              "attacker": "c8b48c9f",
+              "defender": "6d30f4ec"
+            },
+            "simExportResolvedHashes": {
+              "attacker": "ccfa331c",
+              "defender": "7ab247af"
+            }
+          },
+          "dWinPct": -3.05,
+          "absWinPct": 3.05,
+          "dAvgTurns": 0.0188,
+          "absAvgTurns": 0.0188
+        }
+      ],
+      "topRows": [
+        {
+          "attacker": "CUSTOM",
+          "defender": "SG1 Double Maul Droid",
+          "truth": {
+            "winPct": 88.05,
+            "avgTurns": 8.5253,
+            "A_hit": 67,
+            "A_dmg1": 59,
+            "A_dmg2": 59,
+            "D_hit": 92,
+            "D_dmg1": 27,
+            "D_dmg2": 27,
+            "A_rng": [
+              87,
+              222
+            ],
+            "D_rng": [
+              97,
+              224
+            ],
+            "A_damageTotal": 7096312,
+            "D_damageTotal": 3968689.6666666665,
+            "A_damagePerFight": 709.6,
+            "D_damagePerFight": 396.9
+          },
+          "sim": {
+            "winPct": 84.997,
+            "avgTurns": 8.5441,
+            "A_hit": 68.47818962793039,
+            "A_dmg1": 59.134791641207386,
+            "A_dmg2": 59.16418910430886,
+            "D_hit": 92.25909881948967,
+            "D_dmg1": 27.94527321482531,
+            "D_dmg2": 27.895122021656583,
+            "A_rng": [
+              86,
+              219
+            ],
+            "D_rng": [
+              96,
+              220
+            ],
+            "A_damageTotal": null,
+            "D_damageTotal": null,
+            "A_damagePerFight": 625.6,
+            "D_damagePerFight": 400.7
+          },
+          "delta": {
+            "winPct": -3.05,
+            "avgTurns": 0.0188,
+            "A_hit": 1,
+            "A_dmg1": 0,
+            "A_dmg2": 0,
+            "D_hit": 0,
+            "D_dmg1": 1,
+            "D_dmg2": 1,
+            "A_damageTotal": -7096312,
+            "D_damageTotal": -3968690,
+            "A_damagePerFight": -84,
+            "D_damagePerFight": 3.8,
+            "A_rng": {
+              "min": -1,
+              "max": -3
+            },
+            "D_rng": {
+              "min": -1,
+              "max": -4
+            }
+          },
+          "absDelta": {
+            "winPct": 3.05,
+            "avgTurns": 0.0188,
+            "A_hit": 1,
+            "A_dmg1": 0,
+            "A_dmg2": 0,
+            "D_hit": 0,
+            "D_dmg1": 1,
+            "D_dmg2": 1,
+            "A_damageTotal": 7096312,
+            "D_damageTotal": 3968690,
+            "A_damagePerFight": 84,
+            "D_damagePerFight": 3.8,
+            "A_rng": {
+              "min": 1,
+              "max": 3
+            },
+            "D_rng": {
+              "min": 1,
+              "max": 4
+            }
+          },
+          "error": null,
+          "replaySource": "pageBuilds-exact",
+          "matchupKey": "CUSTOM__SG1 Double Maul Droid",
+          "requestedPageBuilds": {
+            "attacker": {
+              "stats": {
+                "level": 80,
+                "hp": 650,
+                "speed": 60,
+                "dodge": 57,
+                "accuracy": 14
+              },
+              "armor": {
+                "name": "SG1 Armor",
+                "upgrades": [
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal"
+                ]
+              },
+              "weapon1": {
+                "name": "Reaper Axe",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal"
+                ]
+              },
+              "weapon2": {
+                "name": "Crystal Maul",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Perfect Fire Crystal"
+                ]
+              },
+              "misc1": {
+                "name": "Bio Spinal Enhancer",
+                "upgrades": [
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal"
+                ]
+              },
+              "misc2": {
+                "name": "Bio Spinal Enhancer",
+                "upgrades": [
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal"
+                ]
+              },
+              "attackType": "normal"
+            },
+            "defender": {
+              "stats": {
+                "level": 94,
+                "hp": 650,
+                "speed": 60,
+                "dodge": 57,
+                "accuracy": 14
+              },
+              "armor": {
+                "name": "SG1 Armor",
+                "upgrades": [
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal"
+                ]
+              },
+              "weapon1": {
+                "name": "Crystal Maul",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Perfect Fire Crystal",
+                  "Perfect Fire Crystal"
+                ]
+              },
+              "weapon2": {
+                "name": "Crystal Maul",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal"
+                ]
+              },
+              "misc1": {
+                "name": "Scout Drones",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal"
+                ]
+              },
+              "misc2": {
+                "name": "Droid Drone",
+                "upgrades": [
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal"
+                ]
+              },
+              "attackType": "normal"
+            }
+          },
+          "verifiedPageBuilds": {
+            "attacker": {
+              "stats": {
+                "level": 80,
+                "hp": 650,
+                "speed": 60,
+                "dodge": 57,
+                "accuracy": 14
+              },
+              "armor": {
+                "name": "SG1 Armor",
+                "upgrades": [
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal"
+                ]
+              },
+              "weapon1": {
+                "name": "Reaper Axe",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal"
+                ]
+              },
+              "weapon2": {
+                "name": "Crystal Maul",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Perfect Fire Crystal"
+                ]
+              },
+              "misc1": {
+                "name": "Bio Spinal Enhancer",
+                "upgrades": [
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal"
+                ]
+              },
+              "misc2": {
+                "name": "Bio Spinal Enhancer",
+                "upgrades": [
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal"
+                ]
+              },
+              "attackType": "normal"
+            },
+            "defender": {
+              "stats": {
+                "level": 94,
+                "hp": 650,
+                "speed": 60,
+                "dodge": 57,
+                "accuracy": 14
+              },
+              "armor": {
+                "name": "SG1 Armor",
+                "upgrades": [
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal"
+                ]
+              },
+              "weapon1": {
+                "name": "Crystal Maul",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Perfect Fire Crystal",
+                  "Perfect Fire Crystal"
+                ]
+              },
+              "weapon2": {
+                "name": "Crystal Maul",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal"
+                ]
+              },
+              "misc1": {
+                "name": "Scout Drones",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal"
+                ]
+              },
+              "misc2": {
+                "name": "Droid Drone",
+                "upgrades": [
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal"
+                ]
+              },
+              "attackType": "normal"
+            }
+          },
+          "requestedHashes": {
+            "attacker": "c8b48c9f",
+            "defender": "6d30f4ec"
+          },
+          "verifiedHashes": {
+            "attacker": "c8b48c9f",
+            "defender": "6d30f4ec"
+          },
+          "buildVerified": true,
+          "resolvedBuilds": {
+            "attacker": {
+              "stats": {
+                "level": 80,
+                "hp": 650,
+                "speed": 60,
+                "dodge": 57,
+                "accuracy": 14
+              },
+              "armor": {
+                "name": "SG1 Armor",
+                "crystal": "Perfect Pink Crystal",
+                "crystalSpec": {
+                  "Perfect Pink Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "P4"
+              },
+              "weapon1": {
+                "name": "Reaper Axe",
+                "crystal": "Amulet Crystal",
+                "crystalSpec": {
+                  "Amulet Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "A4"
+              },
+              "weapon2": {
+                "name": "Crystal Maul",
+                "crystal": "Amulet Crystal x3 + Perfect Fire Crystal",
+                "crystalSpec": {
+                  "Amulet Crystal": 3,
+                  "Perfect Fire Crystal": 1
+                },
+                "upgrades": [],
+                "crystalSpecShort": "A3+F"
+              },
+              "misc1": {
+                "name": "Bio Spinal Enhancer",
+                "crystal": "Perfect Pink Crystal",
+                "crystalSpec": {
+                  "Perfect Pink Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "P4"
+              },
+              "misc2": {
+                "name": "Bio Spinal Enhancer",
+                "crystal": "Perfect Orange Crystal",
+                "crystalSpec": {
+                  "Perfect Orange Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "O4"
+              },
+              "attackType": "normal"
+            },
+            "defender": {
+              "stats": {
+                "level": 94,
+                "hp": 650,
+                "speed": 60,
+                "dodge": 57,
+                "accuracy": 14
+              },
+              "armor": {
+                "name": "SG1 Armor",
+                "crystal": "Perfect Pink Crystal",
+                "crystalSpec": {
+                  "Perfect Pink Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "P4"
+              },
+              "weapon1": {
+                "name": "Crystal Maul",
+                "crystal": "Amulet Crystal x2 + Perfect Fire Crystal x2",
+                "crystalSpec": {
+                  "Amulet Crystal": 2,
+                  "Perfect Fire Crystal": 2
+                },
+                "upgrades": [],
+                "crystalSpecShort": "A2+F2"
+              },
+              "weapon2": {
+                "name": "Crystal Maul",
+                "crystal": "Amulet Crystal",
+                "crystalSpec": {
+                  "Amulet Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "A4"
+              },
+              "misc1": {
+                "name": "Scout Drones",
+                "crystal": "Amulet Crystal",
+                "crystalSpec": {
+                  "Amulet Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "A4"
+              },
+              "misc2": {
+                "name": "Droid Drone",
+                "crystal": "Perfect Orange Crystal",
+                "crystalSpec": {
+                  "Perfect Orange Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "O4"
+              },
+              "attackType": "normal"
+            }
+          },
+          "resolvedHashes": {
+            "attacker": "c8b48c9f",
+            "defender": "6d30f4ec"
+          },
+          "exportResolvedHashes": {
+            "attacker": "ccfa331c",
+            "defender": "7ab247af"
+          },
+          "resolvedConfig": {
+            "attackerLabel": "CUSTOM",
+            "defenderSourceFile": "/var/folders/_m/pnr1j20n5ysbl010kddx6hs80000gn/T/legacy-replay-baseline-KoitCL/CUSTOM--SG1-Double-Maul-Droid--defender.js",
+            "sharedDefsFile": "../data/legacy-defs.js"
+          },
+          "identityMatch": true,
+          "identityMismatchReason": null,
+          "sanityFingerprint": {
+            "sourceSimFile": "/Users/danielhook/Desktop/code_projects/legacy_sims/tmp/.legacy-sim-custom--58289--baseline--1.js",
+            "sourceDefsFile": "../data/legacy-defs.js",
+            "sourceDefenderFile": "/var/folders/_m/pnr1j20n5ysbl010kddx6hs80000gn/T/legacy-replay-baseline-KoitCL/CUSTOM--SG1-Double-Maul-Droid--defender.js",
+            "attackerHash": "c8b48c9f",
+            "defenderHash": "6d30f4ec",
+            "logicKey": "b72c04bd",
+            "configKey": "796ef4ad",
+            "runKey": "e380a026",
+            "critical": {
+              "hitRollMode": "int",
+              "hitGe": true,
+              "hitQround": "round",
+              "skillRollMode": "int",
+              "skillGe": true,
+              "skillQround": "round",
+              "dmgRoll": "int",
+              "armorK": 8,
+              "armorApply": "per_weapon",
+              "armorRound": "ceil",
+              "sharedHit": true,
+              "sharedSkillMode": "none",
+              "actionStopOnKill": false,
+              "speedTieMode": "random",
+              "roundResolveMode": "baseline",
+              "crystalStackStats": "iter4",
+              "crystalStackDmg": "sum4",
+              "crystalSlots": 4,
+              "attackerAttackType": "normal",
+              "defenderAttackType": "normal",
+              "attackStyleRoundMode": "floor"
+            }
+          },
+          "debugAudit": null,
+          "identity": {
+            "replaySource": "pageBuilds-exact",
+            "truthBuildVerified": true,
+            "truthRequestedHashes": {
+              "attacker": "c8b48c9f",
+              "defender": "6d30f4ec"
+            },
+            "truthVerifiedHashes": {
+              "attacker": "c8b48c9f",
+              "defender": "6d30f4ec"
+            },
+            "identityMatch": true,
+            "identityMismatchReason": null,
+            "simResolvedHashes": {
+              "attacker": "c8b48c9f",
+              "defender": "6d30f4ec"
+            },
+            "simExportResolvedHashes": {
+              "attacker": "ccfa331c",
+              "defender": "7ab247af"
+            }
+          },
+          "dWinPct": -3.05,
+          "absWinPct": 3.05,
+          "dAvgTurns": 0.0188,
+          "absAvgTurns": 0.0188
+        }
+      ],
+      "worstMismatches": [
+        {
+          "attacker": "CUSTOM",
+          "defender": "SG1 Double Maul Droid",
+          "truth": {
+            "winPct": 88.05,
+            "avgTurns": 8.5253,
+            "A_hit": 67,
+            "A_dmg1": 59,
+            "A_dmg2": 59,
+            "D_hit": 92,
+            "D_dmg1": 27,
+            "D_dmg2": 27,
+            "A_rng": [
+              87,
+              222
+            ],
+            "D_rng": [
+              97,
+              224
+            ],
+            "A_damageTotal": 7096312,
+            "D_damageTotal": 3968689.6666666665,
+            "A_damagePerFight": 709.6,
+            "D_damagePerFight": 396.9
+          },
+          "sim": {
+            "winPct": 84.997,
+            "avgTurns": 8.5441,
+            "A_hit": 68.47818962793039,
+            "A_dmg1": 59.134791641207386,
+            "A_dmg2": 59.16418910430886,
+            "D_hit": 92.25909881948967,
+            "D_dmg1": 27.94527321482531,
+            "D_dmg2": 27.895122021656583,
+            "A_rng": [
+              86,
+              219
+            ],
+            "D_rng": [
+              96,
+              220
+            ],
+            "A_damageTotal": null,
+            "D_damageTotal": null,
+            "A_damagePerFight": 625.6,
+            "D_damagePerFight": 400.7
+          },
+          "delta": {
+            "winPct": -3.05,
+            "avgTurns": 0.0188,
+            "A_hit": 1,
+            "A_dmg1": 0,
+            "A_dmg2": 0,
+            "D_hit": 0,
+            "D_dmg1": 1,
+            "D_dmg2": 1,
+            "A_damageTotal": -7096312,
+            "D_damageTotal": -3968690,
+            "A_damagePerFight": -84,
+            "D_damagePerFight": 3.8,
+            "A_rng": {
+              "min": -1,
+              "max": -3
+            },
+            "D_rng": {
+              "min": -1,
+              "max": -4
+            }
+          },
+          "absDelta": {
+            "winPct": 3.05,
+            "avgTurns": 0.0188,
+            "A_hit": 1,
+            "A_dmg1": 0,
+            "A_dmg2": 0,
+            "D_hit": 0,
+            "D_dmg1": 1,
+            "D_dmg2": 1,
+            "A_damageTotal": 7096312,
+            "D_damageTotal": 3968690,
+            "A_damagePerFight": 84,
+            "D_damagePerFight": 3.8,
+            "A_rng": {
+              "min": 1,
+              "max": 3
+            },
+            "D_rng": {
+              "min": 1,
+              "max": 4
+            }
+          },
+          "error": null,
+          "replaySource": "pageBuilds-exact",
+          "matchupKey": "CUSTOM__SG1 Double Maul Droid",
+          "requestedPageBuilds": {
+            "attacker": {
+              "stats": {
+                "level": 80,
+                "hp": 650,
+                "speed": 60,
+                "dodge": 57,
+                "accuracy": 14
+              },
+              "armor": {
+                "name": "SG1 Armor",
+                "upgrades": [
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal"
+                ]
+              },
+              "weapon1": {
+                "name": "Reaper Axe",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal"
+                ]
+              },
+              "weapon2": {
+                "name": "Crystal Maul",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Perfect Fire Crystal"
+                ]
+              },
+              "misc1": {
+                "name": "Bio Spinal Enhancer",
+                "upgrades": [
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal"
+                ]
+              },
+              "misc2": {
+                "name": "Bio Spinal Enhancer",
+                "upgrades": [
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal"
+                ]
+              },
+              "attackType": "normal"
+            },
+            "defender": {
+              "stats": {
+                "level": 94,
+                "hp": 650,
+                "speed": 60,
+                "dodge": 57,
+                "accuracy": 14
+              },
+              "armor": {
+                "name": "SG1 Armor",
+                "upgrades": [
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal"
+                ]
+              },
+              "weapon1": {
+                "name": "Crystal Maul",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Perfect Fire Crystal",
+                  "Perfect Fire Crystal"
+                ]
+              },
+              "weapon2": {
+                "name": "Crystal Maul",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal"
+                ]
+              },
+              "misc1": {
+                "name": "Scout Drones",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal"
+                ]
+              },
+              "misc2": {
+                "name": "Droid Drone",
+                "upgrades": [
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal"
+                ]
+              },
+              "attackType": "normal"
+            }
+          },
+          "verifiedPageBuilds": {
+            "attacker": {
+              "stats": {
+                "level": 80,
+                "hp": 650,
+                "speed": 60,
+                "dodge": 57,
+                "accuracy": 14
+              },
+              "armor": {
+                "name": "SG1 Armor",
+                "upgrades": [
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal"
+                ]
+              },
+              "weapon1": {
+                "name": "Reaper Axe",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal"
+                ]
+              },
+              "weapon2": {
+                "name": "Crystal Maul",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Perfect Fire Crystal"
+                ]
+              },
+              "misc1": {
+                "name": "Bio Spinal Enhancer",
+                "upgrades": [
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal"
+                ]
+              },
+              "misc2": {
+                "name": "Bio Spinal Enhancer",
+                "upgrades": [
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal"
+                ]
+              },
+              "attackType": "normal"
+            },
+            "defender": {
+              "stats": {
+                "level": 94,
+                "hp": 650,
+                "speed": 60,
+                "dodge": 57,
+                "accuracy": 14
+              },
+              "armor": {
+                "name": "SG1 Armor",
+                "upgrades": [
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal",
+                  "Perfect Pink Crystal"
+                ]
+              },
+              "weapon1": {
+                "name": "Crystal Maul",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Perfect Fire Crystal",
+                  "Perfect Fire Crystal"
+                ]
+              },
+              "weapon2": {
+                "name": "Crystal Maul",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal"
+                ]
+              },
+              "misc1": {
+                "name": "Scout Drones",
+                "upgrades": [
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal",
+                  "Amulet Crystal"
+                ]
+              },
+              "misc2": {
+                "name": "Droid Drone",
+                "upgrades": [
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal",
+                  "Perfect Orange Crystal"
+                ]
+              },
+              "attackType": "normal"
+            }
+          },
+          "requestedHashes": {
+            "attacker": "c8b48c9f",
+            "defender": "6d30f4ec"
+          },
+          "verifiedHashes": {
+            "attacker": "c8b48c9f",
+            "defender": "6d30f4ec"
+          },
+          "buildVerified": true,
+          "resolvedBuilds": {
+            "attacker": {
+              "stats": {
+                "level": 80,
+                "hp": 650,
+                "speed": 60,
+                "dodge": 57,
+                "accuracy": 14
+              },
+              "armor": {
+                "name": "SG1 Armor",
+                "crystal": "Perfect Pink Crystal",
+                "crystalSpec": {
+                  "Perfect Pink Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "P4"
+              },
+              "weapon1": {
+                "name": "Reaper Axe",
+                "crystal": "Amulet Crystal",
+                "crystalSpec": {
+                  "Amulet Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "A4"
+              },
+              "weapon2": {
+                "name": "Crystal Maul",
+                "crystal": "Amulet Crystal x3 + Perfect Fire Crystal",
+                "crystalSpec": {
+                  "Amulet Crystal": 3,
+                  "Perfect Fire Crystal": 1
+                },
+                "upgrades": [],
+                "crystalSpecShort": "A3+F"
+              },
+              "misc1": {
+                "name": "Bio Spinal Enhancer",
+                "crystal": "Perfect Pink Crystal",
+                "crystalSpec": {
+                  "Perfect Pink Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "P4"
+              },
+              "misc2": {
+                "name": "Bio Spinal Enhancer",
+                "crystal": "Perfect Orange Crystal",
+                "crystalSpec": {
+                  "Perfect Orange Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "O4"
+              },
+              "attackType": "normal"
+            },
+            "defender": {
+              "stats": {
+                "level": 94,
+                "hp": 650,
+                "speed": 60,
+                "dodge": 57,
+                "accuracy": 14
+              },
+              "armor": {
+                "name": "SG1 Armor",
+                "crystal": "Perfect Pink Crystal",
+                "crystalSpec": {
+                  "Perfect Pink Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "P4"
+              },
+              "weapon1": {
+                "name": "Crystal Maul",
+                "crystal": "Amulet Crystal x2 + Perfect Fire Crystal x2",
+                "crystalSpec": {
+                  "Amulet Crystal": 2,
+                  "Perfect Fire Crystal": 2
+                },
+                "upgrades": [],
+                "crystalSpecShort": "A2+F2"
+              },
+              "weapon2": {
+                "name": "Crystal Maul",
+                "crystal": "Amulet Crystal",
+                "crystalSpec": {
+                  "Amulet Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "A4"
+              },
+              "misc1": {
+                "name": "Scout Drones",
+                "crystal": "Amulet Crystal",
+                "crystalSpec": {
+                  "Amulet Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "A4"
+              },
+              "misc2": {
+                "name": "Droid Drone",
+                "crystal": "Perfect Orange Crystal",
+                "crystalSpec": {
+                  "Perfect Orange Crystal": 4
+                },
+                "upgrades": [],
+                "crystalSpecShort": "O4"
+              },
+              "attackType": "normal"
+            }
+          },
+          "resolvedHashes": {
+            "attacker": "c8b48c9f",
+            "defender": "6d30f4ec"
+          },
+          "exportResolvedHashes": {
+            "attacker": "ccfa331c",
+            "defender": "7ab247af"
+          },
+          "resolvedConfig": {
+            "attackerLabel": "CUSTOM",
+            "defenderSourceFile": "/var/folders/_m/pnr1j20n5ysbl010kddx6hs80000gn/T/legacy-replay-baseline-KoitCL/CUSTOM--SG1-Double-Maul-Droid--defender.js",
+            "sharedDefsFile": "../data/legacy-defs.js"
+          },
+          "identityMatch": true,
+          "identityMismatchReason": null,
+          "sanityFingerprint": {
+            "sourceSimFile": "/Users/danielhook/Desktop/code_projects/legacy_sims/tmp/.legacy-sim-custom--58289--baseline--1.js",
+            "sourceDefsFile": "../data/legacy-defs.js",
+            "sourceDefenderFile": "/var/folders/_m/pnr1j20n5ysbl010kddx6hs80000gn/T/legacy-replay-baseline-KoitCL/CUSTOM--SG1-Double-Maul-Droid--defender.js",
+            "attackerHash": "c8b48c9f",
+            "defenderHash": "6d30f4ec",
+            "logicKey": "b72c04bd",
+            "configKey": "796ef4ad",
+            "runKey": "e380a026",
+            "critical": {
+              "hitRollMode": "int",
+              "hitGe": true,
+              "hitQround": "round",
+              "skillRollMode": "int",
+              "skillGe": true,
+              "skillQround": "round",
+              "dmgRoll": "int",
+              "armorK": 8,
+              "armorApply": "per_weapon",
+              "armorRound": "ceil",
+              "sharedHit": true,
+              "sharedSkillMode": "none",
+              "actionStopOnKill": false,
+              "speedTieMode": "random",
+              "roundResolveMode": "baseline",
+              "crystalStackStats": "iter4",
+              "crystalStackDmg": "sum4",
+              "crystalSlots": 4,
+              "attackerAttackType": "normal",
+              "defenderAttackType": "normal",
+              "attackStyleRoundMode": "floor"
+            }
+          },
+          "debugAudit": null,
+          "identity": {
+            "replaySource": "pageBuilds-exact",
+            "truthBuildVerified": true,
+            "truthRequestedHashes": {
+              "attacker": "c8b48c9f",
+              "defender": "6d30f4ec"
+            },
+            "truthVerifiedHashes": {
+              "attacker": "c8b48c9f",
+              "defender": "6d30f4ec"
+            },
+            "identityMatch": true,
+            "identityMismatchReason": null,
+            "simResolvedHashes": {
+              "attacker": "c8b48c9f",
+              "defender": "6d30f4ec"
+            },
+            "simExportResolvedHashes": {
+              "attacker": "ccfa331c",
+              "defender": "7ab247af"
+            }
+          },
+          "dWinPct": -3.05,
+          "absWinPct": 3.05,
+          "dAvgTurns": 0.0188,
+          "absAvgTurns": 0.0188
+        }
+      ],
+      "byAttacker": [
+        {
+          "name": "CUSTOM",
+          "matchups": 1,
+          "avgAbsWinPct": 3.05,
+          "worstAbsWinPct": 3.05,
+          "worstSignedWinPct": -3.05,
+          "worstAbsAvgTurns": 0.0188,
+          "worstCounterpart": "SG1 Double Maul Droid"
+        }
+      ],
+      "byDefender": [
+        {
+          "name": "SG1 Double Maul Droid",
+          "matchups": 1,
+          "avgAbsWinPct": 3.05,
+          "worstAbsWinPct": 3.05,
+          "worstSignedWinPct": -3.05,
+          "worstAbsAvgTurns": 0.0188,
+          "worstCounterpart": "CUSTOM"
+        }
+      ],
+      "summary": {
+        "matchups": 1,
+        "compared": 1,
+        "meanAbsWinPct": 3.05,
+        "meanAbsAvgTurns": 0.0188,
+        "worstAbsWinPct": 3.05,
+        "worstAbsAvgTurns": 0.0188,
+        "worstAttacker": "CUSTOM",
+        "worstDefender": "SG1 Double Maul Droid",
+        "topAbsWinPctSum": 3.05,
+        "topAbsAvgTurnsSum": 0.0188
+      }
+    }
+  ]
+}

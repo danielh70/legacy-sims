@@ -1,0 +1,34 @@
+JSON_SAVE: ON
+FILTERS attackers=CUSTOM_MAUL_A4_SG1_PINK defenders=SG1 Double Maul Droid, DL Rift/Bombs Scout, HF Scythe Pair
+PROGRESS variant=- jobs=0/3 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/3 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/3 0.0% elapsed=00:00:02 eta=00:00:00 current=CUSTOM_MAUL_A4_SG1_PINK | DL Rift/Bombs Scout
+PROGRESS variant=baseline jobs=0/3 0.0% elapsed=00:00:04 eta=00:00:00 current=CUSTOM_MAUL_A4_SG1_PINK | DL Rift/Bombs Scout
+PROGRESS variant=baseline jobs=1/3 33.3% elapsed=00:00:04 eta=00:00:08 current=CUSTOM_MAUL_A4_SG1_PINK | DL Rift/Bombs Scout
+PROGRESS variant=baseline jobs=1/3 33.3% elapsed=00:00:06 eta=00:00:12 current=CUSTOM_MAUL_A4_SG1_PINK | HF Scythe Pair
+PROGRESS variant=baseline jobs=2/3 66.7% elapsed=00:00:08 eta=00:00:04 current=CUSTOM_MAUL_A4_SG1_PINK | HF Scythe Pair
+PROGRESS variant=baseline jobs=2/3 66.7% elapsed=00:00:08 eta=00:00:04 current=CUSTOM_MAUL_A4_SG1_PINK | SG1 Double Maul Droid
+PROGRESS variant=baseline jobs=2/3 66.7% elapsed=00:00:10 eta=00:00:05 current=CUSTOM_MAUL_A4_SG1_PINK | SG1 Double Maul Droid
+PROGRESS variant=baseline jobs=3/3 100.0% elapsed=00:00:11 eta=00:00:00 current=CUSTOM_MAUL_A4_SG1_PINK | SG1 Double Maul Droid
+MATCHUPS=3 COMPARED=3 TRIALS=200000 WORKERS=1 VARIANT=baseline ENV=(default env)
+SUMMARY meanAbsΔwin=1.60 meanAbsΔavgT=0.0143 worstAbsΔwin=4.62 (CUSTOM_MAUL_A4_SG1_PINK vs SG1 Double Maul Droid)
+Worst mismatches (top 15):
+01 CUSTOM_MAUL_A4_SG1_PINK | SG1 Double Maul Droid | win 90.50->85.88 s/a -4.62 / 4.62 | avgT 8.3479->8.3569 s/a +0.0090 / 0.0090
+   A hit 70->70 s/a +0 / 0 | dmg1 59->59 s/a +0 / 0 | dmg2 59->59 s/a +0 / 0 | dmg/f 703.5->626.4 s/a -77.1 / 77.1 | rng 87-218->86-216 s/a -1/-2 / 1/2
+   D hit 93->94 s/a +1 / 1 | dmg1 27->28 s/a +1 / 1 | dmg2 27->28 s/a +1 / 1 | dmg/f 376.3->387.2 s/a +10.9 / 10.9 | rng 97-216->96-214 s/a -1/-2 / 1/2
+02 CUSTOM_MAUL_A4_SG1_PINK | HF Scythe Pair | win 64.47->64.64 s/a +0.17 / 0.17 | avgT 9.5196->9.5248 s/a +0.0052 / 0.0052
+   A hit 89->90 s/a +1 / 1 | dmg1 61->61 s/a +0 / 0 | dmg2 61->61 s/a +0 / 0 | dmg/f 836.3->784.0 s/a -52.3 / 52.3 | rng 72-180->71-180 s/a -1/+0 / 1/0
+   D hit 61->62 s/a +1 / 1 | dmg1 49->49 s/a +0 / 0 | dmg2 49->49 s/a +0 / 0 | dmg/f 536.8->509.1 s/a -27.7 / 27.7 | rng 82-208->82-206 s/a +0/-2 / 0/2
+03 CUSTOM_MAUL_A4_SG1_PINK | DL Rift/Bombs Scout | win 57.25->57.26 s/a +0.01 / 0.01 | avgT 10.3678->10.3392 s/a -0.0286 / 0.0286
+   A hit 77->78 s/a +1 / 1 | dmg1 52->53 s/a +1 / 1 | dmg2 52->53 s/a +1 / 1 | dmg/f 797.0->761.0 s/a -36.0 / 36.0 | rng 84-211->84-212 s/a +0/+1 / 0/1
+   D hit 84->85 s/a +1 / 1 | dmg1 44->44 s/a +0 / 0 | dmg2 50->50 s/a +0 / 0 | dmg/f 567.9->541.5 s/a -26.4 / 26.4 | rng 57-156->56-154 s/a -1/-2 / 1/2
+
+By attacker:
+CUSTOM_MAUL_A4_SG1_PINK | avgAbsΔwin=1.60 | worst=4.62 (-4.62) | vs=SG1 Double Maul Droid
+
+By defender:
+SG1 Double Maul Droid | avgAbsΔwin=4.62 | worst=4.62 (-4.62) | vs=CUSTOM_MAUL_A4_SG1_PINK
+HF Scythe Pair | avgAbsΔwin=0.17 | worst=0.17 (+0.17) | vs=CUSTOM_MAUL_A4_SG1_PINK
+DL Rift/Bombs Scout | avgAbsΔwin=0.01 | worst=0.01 (+0.01) | vs=CUSTOM_MAUL_A4_SG1_PINK
+
+Saved /Users/danielhook/Desktop/code_projects/legacy_sims/tmp/replay-droid-applied-proof/legacy-replay--legacy-truth-v4-custom-maul-a4-sg1-pink-full15--legacy-sim-v1.0.4-clean--none--codex-droid-proof-w2gate-maul-sg1--2026-03-16T00-00-53-304Z.json

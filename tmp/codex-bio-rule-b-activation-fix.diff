@@ -1,0 +1,135 @@
+295-   }
+296- 
+297-   let winnerIsP1;
+298-   if (p1hp > 0 && p2hp <= 0) winnerIsP1 = 1;
+299-@@ -1438,9 +1592,9 @@ function fightOnceCalibFast(p1, p2, MAX_TURNS) {
+300- function runMatchPacked(p1, p2, trials, MAX_TURNS) {
+301-   let wins = 0;
+302-   let exSum = 0;
+303-   for (let i = 0; i < trials; i++) {
+304--    const packed = fightOnceCalibFast(p1, p2, MAX_TURNS);
+305-+    const packed = fightOnceCalibFast(p1, p2, MAX_TURNS, i);
+306-     wins += (packed >>> 16) & 1;
+307-     exSum += packed & 0xffff;
+308-   }
+309-   return [wins, exSum];
+310-@@ -2590,8 +2744,40 @@ function computeVariantFromCrystalSpec(itemName, crystalSpec, upgrade1, upgrade2
+311-     __misc: miscMeta,
+312-   };
+313- }
+314- 
+315:+function isValidatedDuplicateBioPinkVariant(v) {
+316-+  if (!v || v.itemName !== 'Bio Spinal Enhancer') return false;
+317:+  if (v.crystalName === 'Perfect Pink Crystal') return true;
+318-+  const mix = v.crystalMix || null;
+319-+  if (!mix || typeof mix !== 'object') return false;
+320-+  const names = Object.keys(mix);
+321-+  return names.length === 1 && names[0] === 'Perfect Pink Crystal' && Number(mix[names[0]]) === 4;
+322-+}
+323-+
+324-+function scaleVariantCrystalDelta(v, scale) {
+325-+  if (!v || !Number.isFinite(scale) || scale === 1) return v;
+326-+  const flat = (ItemDefs[v.itemName] && ItemDefs[v.itemName].flatStats) || {};
+327-+  return {
+328-+    ...v,
+329-+    addSpeed: (flat.speed || 0) + ((v.addSpeed || 0) - (flat.speed || 0)) * scale,
+330-+    addAcc: (flat.accuracy || 0) + ((v.addAcc || 0) - (flat.accuracy || 0)) * scale,
+331-+    addDod: (flat.dodge || 0) + ((v.addDod || 0) - (flat.dodge || 0)) * scale,
+332-+    addGun: (flat.gunSkill || 0) + ((v.addGun || 0) - (flat.gunSkill || 0)) * scale,
+333-+    addMel: (flat.meleeSkill || 0) + ((v.addMel || 0) - (flat.meleeSkill || 0)) * scale,
+334-+    addPrj: (flat.projSkill || 0) + ((v.addPrj || 0) - (flat.projSkill || 0)) * scale,
+335-+    addDef: (flat.defSkill || 0) + ((v.addDef || 0) - (flat.defSkill || 0)) * scale,
+336-+    addArmStat: (flat.armor || 0) + ((v.addArmStat || 0) - (flat.armor || 0)) * scale,
+337-+  };
+338-+}
+339-+
+340-+function applyValidatedDuplicateBioPinkScaling(m1V, m2V) {
+341:+  if (!isValidatedDuplicateBioPinkVariant(m1V) || !isValidatedDuplicateBioPinkVariant(m2V))
+342-+    return [m1V, m2V];
+343-+  // Validated duplicate-Bio patch: boost only the second exact Bio[P4] crystal delta.
+344-+  return [m1V, scaleVariantCrystalDelta(m2V, 1.5)];
+345-+}
+346-+
+347- function buildVariantsForArmors(names) {
+348-   const out = [];
+349-   const cache = new Map();
+350-   for (const nm of names) {
+351-@@ -3204,10 +3390,9 @@ function compileDefender(def, variantCacheLocal) {
+352-   const m1V = variantCacheLocal.get(defenderVariantKeyFromCrystalSpec(m1Name, m1Cr, '', '', 1));
+353-   const m2V = variantCacheLocal.get(defenderVariantKeyFromCrystalSpec(m2Name, m2Cr, '', '', 2));
+354-   if (!armorV || !w1V || !w2V || !m1V || !m2V)
+355-     throw new Error(`Missing variant cache entries for defender ${def.name}`);
+356--  const m1Eff = m1V;
+357--  const m2Eff = m2V;
+358-+  const [m1Eff, m2Eff] = applyValidatedDuplicateBioPinkScaling(m1V, m2V);
+359- 
+360-   const baseSpeed = Math.floor(Number(st.speed));
+361-   const baseAcc = Math.floor(Number(st.accuracy));
+--
+602-       speed: buildStatDebug(fs.speed || 0, 'speed', 'speed', result.addSpeed || 0),
+603-       accuracy: buildStatDebug(fs.accuracy || 0, 'accuracy', 'accuracy', result.addAcc || 0),
+604-       dodge: buildStatDebug(fs.dodge || 0, 'dodge', 'dodge', result.addDod || 0),
+605-       gunSkill: buildStatDebug(fs.gunSkill || 0, 'gunSkill', 'gunSkill', result.addGun || 0),
+606--      meleeSkill: buildStatDebug(fs.meleeSkill || 0, 'meleeSkill', 'meleeSkill', result.addMel || 0),
+607-+      meleeSkill: buildStatDebug(
+608-+        fs.meleeSkill || 0,
+609-+        'meleeSkill',
+610-+        'meleeSkill',
+611-+        result.addMel || 0,
+612-+      ),
+613-       projSkill: buildStatDebug(fs.projSkill || 0, 'projSkill', 'projSkill', result.addPrj || 0),
+614-       defSkill: buildStatDebug(fs.defSkill || 0, 'defSkill', 'defSkill', result.addDef || 0),
+615-       armor: buildStatDebug(fs.armor || 0, 'armor', 'armor', result.addArmStat || 0),
+616-     },
+617-@@ -2442,8 +2582,40 @@ function computeVariantFromCrystalSpec(itemName, crystalSpec, upgrades = [], cfg
+618- 
+619-   return result;
+620- }
+621- 
+622:+function isValidatedDuplicateBioPinkVariant(v) {
+623-+  if (!v || v.itemName !== 'Bio Spinal Enhancer') return false;
+624:+  if (v.crystalName === 'Perfect Pink Crystal') return true;
+625-+  const mix = v.crystalMix || null;
+626-+  if (!mix || typeof mix !== 'object') return false;
+627-+  const names = Object.keys(mix);
+628-+  return names.length === 1 && names[0] === 'Perfect Pink Crystal' && Number(mix[names[0]]) === 4;
+629-+}
+630-+
+631-+function scaleVariantCrystalDelta(v, scale) {
+632-+  if (!v || !Number.isFinite(scale) || scale === 1) return v;
+633-+  const flat = (ItemDefs[v.itemName] && ItemDefs[v.itemName].flatStats) || {};
+634-+  return {
+635-+    ...v,
+636-+    addSpeed: (flat.speed || 0) + ((v.addSpeed || 0) - (flat.speed || 0)) * scale,
+637-+    addAcc: (flat.accuracy || 0) + ((v.addAcc || 0) - (flat.accuracy || 0)) * scale,
+638-+    addDod: (flat.dodge || 0) + ((v.addDod || 0) - (flat.dodge || 0)) * scale,
+639-+    addGun: (flat.gunSkill || 0) + ((v.addGun || 0) - (flat.gunSkill || 0)) * scale,
+640-+    addMel: (flat.meleeSkill || 0) + ((v.addMel || 0) - (flat.meleeSkill || 0)) * scale,
+641-+    addPrj: (flat.projSkill || 0) + ((v.addPrj || 0) - (flat.projSkill || 0)) * scale,
+642-+    addDef: (flat.defSkill || 0) + ((v.addDef || 0) - (flat.defSkill || 0)) * scale,
+643-+    addArmStat: (flat.armor || 0) + ((v.addArmStat || 0) - (flat.armor || 0)) * scale,
+644-+  };
+645-+}
+646-+
+647-+function applyValidatedDuplicateBioPinkScaling(m1V, m2V) {
+648:+  if (!isValidatedDuplicateBioPinkVariant(m1V) || !isValidatedDuplicateBioPinkVariant(m2V))
+649-+    return [m1V, m2V];
+650-+  // Validated duplicate-Bio patch: boost only the second exact Bio[P4] crystal delta.
+651-+  return [m1V, scaleVariantCrystalDelta(m2V, 1.5)];
+652-+}
+653-+
+654- function compileCombatantFromParts({
+655-   name,
+656-   stats,
+657-   armorV,
+658-@@ -2457,17 +2629,18 @@ function compileCombatantFromParts({
+659-   attackStyleRoundMode,
+660- }) {
+661-   const level = Math.floor(Number(stats.level));
+662-   const hp = Math.floor(Number(stats.hp));
+663-+  const [m1Eff, m2Eff] = applyValidatedDuplicateBioPinkScaling(m1V, m2V);
+664- 
+665-   const baseSpeed = Math.floor(Number(stats.speed));
+666-   const baseAcc = Math.floor(Number(stats.accuracy));
+667-   const baseDod = Math.floor(Number(stats.dodge));
+668- 

@@ -1,0 +1,16 @@
+/Users/danielhook/Desktop/code_projects/legacy_sims/legacy-sim-v1.0.4-clean.js:5204
+      throw new Error(
+      ^
+
+Error: Unknown defender name(s): DL Dual Rift Bio. Try exact names (examples): DL Gun Build, DL Gun Build 2, DL Gun Build 3, DL Gun Build 4, DL Gun Build 5, DL Gun Build 6, DL Gun Build 7, DL Gun Build 8, Core/Void Build 1, Dual Bow Build 1, Rift Bow Build 1, T2 Scythe Build, SG1 Split Bombs T2, HF Core/Void, Armour stack Cores, Dual Bow Build, Bow/rift build ...
+    at main (/Users/danielhook/Desktop/code_projects/legacy_sims/legacy-sim-v1.0.4-clean.js:5204:13)
+    at Object.<anonymous> (/Users/danielhook/Desktop/code_projects/legacy_sims/legacy-sim-v1.0.4-clean.js:6597:3)
+    at Module._compile (node:internal/modules/cjs/loader:1809:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1940:10)
+    at Module.load (node:internal/modules/cjs/loader:1530:32)
+    at Module._load (node:internal/modules/cjs/loader:1332:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+    at node:internal/main/run_main_module:33:47
+
+Node.js v25.6.0

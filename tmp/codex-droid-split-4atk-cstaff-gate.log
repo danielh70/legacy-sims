@@ -1,0 +1,25 @@
+JSON_SAVE: ON
+FILTERS attackers=CUSTOM_CSTAFF_A4 defenders=SG1 Double Maul Droid
+PROGRESS variant=- jobs=0/1 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/1 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/1 0.0% elapsed=00:00:02 eta=00:00:00 current=CUSTOM_CSTAFF_A4 | SG1 Double Maul Droid
+PROGRESS variant=baseline jobs=0/1 0.0% elapsed=00:00:04 eta=00:00:00 current=CUSTOM_CSTAFF_A4 | SG1 Double Maul Droid
+PROGRESS variant=baseline jobs=0/1 0.0% elapsed=00:00:06 eta=00:00:00 current=CUSTOM_CSTAFF_A4 | SG1 Double Maul Droid
+PROGRESS variant=baseline jobs=0/1 0.0% elapsed=00:00:08 eta=00:00:00 current=CUSTOM_CSTAFF_A4 | SG1 Double Maul Droid
+PROGRESS variant=baseline jobs=0/1 0.0% elapsed=00:00:10 eta=00:00:00 current=CUSTOM_CSTAFF_A4 | SG1 Double Maul Droid
+PROGRESS variant=baseline jobs=0/1 0.0% elapsed=00:00:12 eta=00:00:00 current=CUSTOM_CSTAFF_A4 | SG1 Double Maul Droid
+PROGRESS variant=baseline jobs=1/1 100.0% elapsed=00:00:14 eta=00:00:00 current=CUSTOM_CSTAFF_A4 | SG1 Double Maul Droid
+MATCHUPS=1 COMPARED=1 TRIALS=200000 WORKERS=1 VARIANT=baseline ENV=(default env)
+SUMMARY meanAbsΔwin=6.55 meanAbsΔavgT=0.1700 worstAbsΔwin=6.55 (CUSTOM_CSTAFF_A4 vs SG1 Double Maul Droid)
+Worst mismatches (top 15):
+01 CUSTOM_CSTAFF_A4 | SG1 Double Maul Droid | win 63.59->57.04 s/a -6.55 / 6.55 | avgT 10.9552->10.7852 s/a -0.1700 / 0.1700
+   A hit 50->50 s/a +0 / 0 | dmg1 72->72 s/a +0 / 0 | dmg2 72->72 s/a +0 / 0 | dmg/f 619.3->561.3 s/a -58.0 / 58.0 | rng 52-172->51-170 s/a -1/-2 / 1/2
+   D hit 86->87 s/a +1 / 1 | dmg1 30->31 s/a +1 / 1 | dmg2 30->31 s/a +1 / 1 | dmg/f 521.8->514.1 s/a -7.7 / 7.7 | rng 94-208->94-210 s/a +0/+2 / 0/2
+
+By attacker:
+CUSTOM_CSTAFF_A4 | avgAbsΔwin=6.55 | worst=6.55 (-6.55) | vs=SG1 Double Maul Droid
+
+By defender:
+SG1 Double Maul Droid | avgAbsΔwin=6.55 | worst=6.55 (-6.55) | vs=CUSTOM_CSTAFF_A4
+
+Saved /Users/danielhook/Desktop/code_projects/legacy_sims/tmp/replay-droid-split-decomp-4atk/legacy-replay--legacy-truth-v4-custom-cstaff-full15-merged--legacy-sim-v1.0.4-clean.droid-split-decomp--none--codex-droid-split-4atk-cstaff-gate--2026-03-16T00-14-55-993Z.json

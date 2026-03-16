@@ -1,0 +1,1412 @@
+diff --git a/brute-sim-v1.4.6.js b/brute-sim-v1.4.6.js
+index 7ef0163..51c35e1 100644
+--- a/brute-sim-v1.4.6.js
++++ b/brute-sim-v1.4.6.js
+@@ -1115,6 +1115,18 @@ const PROJ_DEF_MULT = _envNum('LEGACY_PROJ_DEF_MULT', 1);
+ 
+ // main-calib compatibility: whether the 2nd weapon is skipped if the 1st weapon kills the target
+ const ACTION_STOP_ON_KILL = _envBool('LEGACY_ACTION_STOP_ON_KILL', false);
++const DIAG_W2_AFTER_APPLIED_W1 = _envStr('LEGACY_DIAG_W2_AFTER_APPLIED_W1', 'auto')
++  .trim()
++  .toLowerCase();
++const DIAG_SPLIT_MULTIWEAPON_ACTION = _envStr('LEGACY_DIAG_SPLIT_MULTIWEAPON_ACTION', 'auto')
++  .trim()
++  .toLowerCase();
++const DIAG_QUEUED_SECOND_ACTION = _envStr('LEGACY_DIAG_QUEUED_SECOND_ACTION', 'auto')
++  .trim()
++  .toLowerCase();
++const DIAG_FIRST_ACTOR_OVERRIDE = _envStr('LEGACY_DIAG_FIRST_ACTOR_OVERRIDE', 'auto')
++  .trim()
++  .toLowerCase();
+ 
+ // main-calib compatibility: shared hit roll once per action (forces both weapons to use same hit result)
+ const SHARED_HIT = _envBool('LEGACY_SHARED_HIT', false);
+@@ -1122,6 +1134,18 @@ const SHARED_HIT = _envBool('LEGACY_SHARED_HIT', false);
+ // main-calib compatibility: shared skill roll caching
+ //   none | same_type | gun_same_type
+ const SHARED_SKILL_MODE = _envStr('LEGACY_SHARED_SKILL', 'none').trim().toLowerCase();
++const SHARED_SKILL_ATTACKER_OVERRIDE = _envStr(
++  'LEGACY_SHARED_SKILL_ATTACKER_OVERRIDE',
++  'auto',
++)
++  .trim()
++  .toLowerCase();
++const SHARED_SKILL_DEFENDER_OVERRIDE = _envStr(
++  'LEGACY_SHARED_SKILL_DEFENDER_OVERRIDE',
++  'auto',
++)
++  .trim()
++  .toLowerCase();
+ 
+ // tactics/base damage bonus support (matches legacy_simulator.canonical semantics)
+ //   LEGACY_TACTICS_MODE: none | base | both
+@@ -1220,6 +1244,97 @@ function rollVs(off, def, rollMode, ge, qround) {
+ function skillValue(att, skillCode) {
+   return skillCode === 0 ? att.gun : skillCode === 1 ? att.mel : att.prj;
+ }
++function normalizeSharedSkillOverride(v) {
++  return v === 'off' || v === 'broad' || v === 'exact' || v === 'auto' ? v : 'auto';
++}
++function normalizeDiagW2AfterAppliedW1(v) {
++  return v === 'off' || v === 'attacker' || v === 'defender' || v === 'both' || v === 'auto'
++    ? v
++    : 'auto';
++}
++function normalizeDiagSplitMultiweaponAction(v) {
++  return v === 'off' || v === 'attacker' || v === 'defender' || v === 'both' || v === 'auto'
++    ? v
++    : 'auto';
++}
++function normalizeDiagQueuedSecondAction(v) {
++  return v === 'off' || v === 'attacker' || v === 'defender' || v === 'both' || v === 'auto'
++    ? v
++    : 'auto';
++}
++function normalizeDiagFirstActorOverride(v) {
++  return v === 'off' ||
++    v === 'attacker' ||
++    v === 'defender' ||
++    v === 'alternate' ||
++    v === 'auto'
++    ? v
++    : 'auto';
++}
++function sharedSkillBroadAllowed(mode, skillCode) {
++  return mode === 'same_type' || (mode === 'gun_same_type' && skillCode === 0);
++}
++function sharedSkillOverrideForActor(att) {
++  return att && att.name === 'Attacker'
++    ? normalizeSharedSkillOverride(SHARED_SKILL_ATTACKER_OVERRIDE)
++    : normalizeSharedSkillOverride(SHARED_SKILL_DEFENDER_OVERRIDE);
++}
++function resolveSharedSkillEligibility(att) {
++  const override = sharedSkillOverrideForActor(att);
++  if (!att || !att.w1 || !att.w2 || att.w1.skill !== att.w2.skill) {
++    return { enabled: false, skillCode: null, override };
++  }
++
++  const skillCode = att.w1.skill;
++  const broadAllowed = sharedSkillBroadAllowed(SHARED_SKILL_MODE, skillCode);
++  if (!broadAllowed || override === 'off') {
++    return { enabled: false, skillCode: null, override };
++  }
++  if (override === 'exact') {
++    const w1Name = String((att.w1 && att.w1.name) || '');
++    const w2Name = String((att.w2 && att.w2.name) || '');
++    const exactAllowed = !!w1Name && w1Name === w2Name;
++    return { enabled: exactAllowed, skillCode: exactAllowed ? skillCode : null, override };
++  }
++
++  return { enabled: true, skillCode, override };
++}
++function diagW2AfterAppliedW1EnabledForActor(mode, att) {
++  const normalized = normalizeDiagW2AfterAppliedW1(mode);
++  if (normalized === 'auto' || normalized === 'off') return false;
++  const actorIsAttacker = !!(att && att.name === 'Attacker');
++  if (normalized === 'both') return true;
++  if (normalized === 'attacker') return actorIsAttacker;
++  if (normalized === 'defender') return !actorIsAttacker;
++  return false;
++}
++function diagSplitMultiweaponActionEnabledForActor(mode, att) {
++  const normalized = normalizeDiagSplitMultiweaponAction(mode);
++  if (normalized === 'auto' || normalized === 'off') return false;
++  const actorIsAttacker = !!(att && att.name === 'Attacker');
++  if (normalized === 'both') return true;
++  if (normalized === 'attacker') return actorIsAttacker;
++  if (normalized === 'defender') return !actorIsAttacker;
++  return false;
++}
++function diagQueuedSecondActionEnabledForActor(mode, actor) {
++  const normalized = normalizeDiagQueuedSecondAction(mode);
++  if (normalized === 'auto' || normalized === 'off') return false;
++  const actorIsAttacker = !!(actor && actor.name === 'Attacker');
++  if (normalized === 'both') return true;
++  if (normalized === 'attacker') return actorIsAttacker;
++  if (normalized === 'defender') return !actorIsAttacker;
++  return false;
++}
++function resolveFirstActor(attacker, defender, speedTieMode, diagFirstActorOverride, fightIndex) {
++  const override = normalizeDiagFirstActorOverride(diagFirstActorOverride);
++  if (override === 'attacker') return true;
++  if (override === 'defender') return false;
++  if (override === 'alternate') return fightIndex % 2 === 0;
++  if (attacker.speed > defender.speed) return true;
++  if (attacker.speed < defender.speed) return false;
++  return speedTieMode === 'random' ? RNG() < 0.5 : true;
++}
+ 
+ function rollDamage(min, max, dmgRollMode) {
+   if (dmgRollMode === 'int') return randLegacyInt(min, max);
+@@ -1319,42 +1434,68 @@ function attemptWeaponFast(att, def, w, pre, out) {
+ function doActionFast(att, def, targetHp0) {
+   if (targetHp0 <= 0) return 0;
+ 
+-  // Shared hit (if enabled): one hit roll per action, applied to both weapons.
+-  _PRE_ACTION.forceHit = SHARED_HIT
+-    ? rollVs(att.acc, def.dodge, HIT_ROLL_MODE, HIT_GE, HIT_QROUND)
+-    : null;
++  function preparePreAction() {
++    _PRE_ACTION.forceHit = SHARED_HIT
++      ? rollVs(att.acc, def.dodge, HIT_ROLL_MODE, HIT_GE, HIT_QROUND)
++      : null;
++
++    _PRE_ACTION.sharedSkillOn = false;
++    _PRE_ACTION.sharedSkillSkillCode = null;
++    _PRE_ACTION.sharedSkillCached = false;
++    _PRE_ACTION.sharedSkillCachedVal = false;
+ 
+-  // Shared skill (if enabled + eligible): cache a single skill roll per action.
+-  _PRE_ACTION.sharedSkillOn = false;
+-  _PRE_ACTION.sharedSkillSkillCode = null;
+-  _PRE_ACTION.sharedSkillCached = false;
+-  _PRE_ACTION.sharedSkillCachedVal = false;
+-
+-  if (SHARED_SKILL_MODE !== 'none' && att.w1 && att.w2 && att.w1.skill === att.w2.skill) {
+-    const sc = att.w1.skill;
+-    const allow =
+-      SHARED_SKILL_MODE === 'same_type' || (SHARED_SKILL_MODE === 'gun_same_type' && sc === 0);
+-    if (allow) {
++    const sharedSkillDecision = resolveSharedSkillEligibility(att);
++    if (sharedSkillDecision.enabled) {
+       _PRE_ACTION.sharedSkillOn = true;
+-      _PRE_ACTION.sharedSkillSkillCode = sc;
++      _PRE_ACTION.sharedSkillSkillCode = sharedSkillDecision.skillCode;
+     }
+   }
+ 
++  const splitMultiweaponActionEnabled =
++    targetHp0 > 0 &&
++    ARMOR_APPLY === 'per_weapon' &&
++    TACTICS_BASE_VAL === 0 &&
++    !!att &&
++    !!att.w1 &&
++    !!att.w2 &&
++    diagSplitMultiweaponActionEnabledForActor(DIAG_SPLIT_MULTIWEAPON_ACTION, att);
++
++  preparePreAction();
++
+   // weapon 1
+   attemptWeaponFast(att, def, att.w1, _PRE_ACTION, _TW1);
+ 
+-  // optional "stop on kill" optimization must match legacy_simulator.canonical:
+-  // only valid for ARMOR_APPLY=per_weapon AND baseVal==0 (tactics disabled),
+-  // otherwise rolling weapon2 changes RNG consumption and/or damage semantics.
+   let skipW2 = false;
+-  if (
+-    ACTION_STOP_ON_KILL &&
+-    targetHp0 > 0 &&
+-    ARMOR_APPLY === 'per_weapon' &&
+-    TACTICS_BASE_VAL === 0 &&
+-    _TW1[0] >= targetHp0
+-  ) {
+-    skipW2 = true;
++  if (splitMultiweaponActionEnabled) {
++    const postW1Hp = Math.max(0, targetHp0 - Math.min(_TW1[0], targetHp0));
++    if (postW1Hp <= 0) {
++      skipW2 = true;
++    } else {
++      preparePreAction();
++    }
++  } else {
++    const diagW2AfterAppliedW1Enabled =
++      targetHp0 > 0 &&
++      ARMOR_APPLY === 'per_weapon' &&
++      TACTICS_BASE_VAL === 0 &&
++      diagW2AfterAppliedW1EnabledForActor(DIAG_W2_AFTER_APPLIED_W1, att);
++    const w1AppliedPreW2Gate =
++      diagW2AfterAppliedW1Enabled && _TW1[0] > 0 ? Math.min(_TW1[0], targetHp0) : 0;
++
++    // optional "stop on kill" optimization must match legacy_simulator.canonical:
++    // only valid for ARMOR_APPLY=per_weapon AND baseVal==0 (tactics disabled),
++    // otherwise rolling weapon2 changes RNG consumption and/or damage semantics.
++    if (
++      ACTION_STOP_ON_KILL &&
++      targetHp0 > 0 &&
++      ARMOR_APPLY === 'per_weapon' &&
++      TACTICS_BASE_VAL === 0 &&
++      _TW1[0] >= targetHp0
++    ) {
++      skipW2 = true;
++    } else if (diagW2AfterAppliedW1Enabled && w1AppliedPreW2Gate >= targetHp0) {
++      skipW2 = true;
++    }
+   }
+ 
+   if (!skipW2) attemptWeaponFast(att, def, att.w2, _PRE_ACTION, _TW2);
+@@ -1394,14 +1535,17 @@ function doActionFast(att, def, targetHp0) {
+   return actionDmg >= targetHp0 ? targetHp0 : actionDmg;
+ }
+ 
+-function fightOnceCalibFast(p1, p2, MAX_TURNS) {
++function fightOnceCalibFast(p1, p2, MAX_TURNS, fightIndex = 0) {
+   let p1hp = p1.hp;
+   let p2hp = p2.hp;
+ 
+-  let p1First;
+-  if (p1.speed > p2.speed) p1First = true;
+-  else if (p1.speed < p2.speed) p1First = false;
+-  else p1First = SPEED_TIE_MODE === 'random' ? RNG() < 0.5 : true;
++  const p1First = resolveFirstActor(
++    p1,
++    p2,
++    SPEED_TIE_MODE,
++    DIAG_FIRST_ACTOR_OVERRIDE,
++    fightIndex,
++  );
+ 
+   const first = p1First ? p1 : p2;
+   const second = p1First ? p2 : p1;
+@@ -1410,16 +1554,26 @@ function fightOnceCalibFast(p1, p2, MAX_TURNS) {
+ 
+   while (p1hp > 0 && p2hp > 0 && turns < MAX_TURNS) {
+     turns++;
++    const p1hp0 = p1hp;
++    const p2hp0 = p2hp;
+ 
+     // first acts
+     if (second === p1) p1hp -= doActionFast(first, second, p1hp);
+     else p2hp -= doActionFast(first, second, p2hp);
+ 
+-    if (p1hp <= 0 || p2hp <= 0) break;
++    const secondKilled = second === p1 ? p1hp <= 0 : p2hp <= 0;
++    const firstAlive = first === p1 ? p1hp > 0 : p2hp > 0;
++    const queuedSecondActionEnabled =
++      secondKilled &&
++      firstAlive &&
++      diagQueuedSecondActionEnabledForActor(DIAG_QUEUED_SECOND_ACTION, second);
++
++    if (secondKilled && !queuedSecondActionEnabled) break;
+ 
+     // second acts
+-    if (first === p1) p1hp -= doActionFast(second, first, p1hp);
+-    else p2hp -= doActionFast(second, first, p2hp);
++    if (first === p1)
++      p1hp -= doActionFast(second, first, queuedSecondActionEnabled ? p1hp0 : p1hp);
++    else p2hp -= doActionFast(second, first, queuedSecondActionEnabled ? p2hp0 : p2hp);
+   }
+ 
+   let winnerIsP1;
+@@ -1439,7 +1593,7 @@ function runMatchPacked(p1, p2, trials, MAX_TURNS) {
+   let wins = 0;
+   let exSum = 0;
+   for (let i = 0; i < trials; i++) {
+-    const packed = fightOnceCalibFast(p1, p2, MAX_TURNS);
++    const packed = fightOnceCalibFast(p1, p2, MAX_TURNS, i);
+     wins += (packed >>> 16) & 1;
+     exSum += packed & 0xffff;
+   }
+@@ -2591,6 +2745,72 @@ function computeVariantFromCrystalSpec(itemName, crystalSpec, upgrade1, upgrade2
+   };
+ }
+ 
++function getValidatedBioCrystalColor(v) {
++  if (!v || v.itemName !== 'Bio Spinal Enhancer') return '';
++  if (v.crystalName === 'Perfect Pink Crystal') return 'pink';
++  if (v.crystalName === 'Perfect Orange Crystal') return 'orange';
++  const mix = v.crystalMix || null;
++  if (!mix || typeof mix !== 'object') return '';
++  const names = Object.keys(mix);
++  if (names.length !== 1 || Number(mix[names[0]]) !== 4) return '';
++  if (names[0] === 'Perfect Pink Crystal') return 'pink';
++  if (names[0] === 'Perfect Orange Crystal') return 'orange';
++  return '';
++}
++
++function isValidatedDuplicateBioPinkVariant(v) {
++  return getValidatedBioCrystalColor(v) === 'pink';
++}
++
++function scaleVariantCrystalDelta(v, scale) {
++  if (!v || !Number.isFinite(scale) || scale === 1) return v;
++  const flat = (ItemDefs[v.itemName] && ItemDefs[v.itemName].flatStats) || {};
++  return {
++    ...v,
++    addSpeed: (flat.speed || 0) + ((v.addSpeed || 0) - (flat.speed || 0)) * scale,
++    addAcc: (flat.accuracy || 0) + ((v.addAcc || 0) - (flat.accuracy || 0)) * scale,
++    addDod: (flat.dodge || 0) + ((v.addDod || 0) - (flat.dodge || 0)) * scale,
++    addGun: (flat.gunSkill || 0) + ((v.addGun || 0) - (flat.gunSkill || 0)) * scale,
++    addMel: (flat.meleeSkill || 0) + ((v.addMel || 0) - (flat.meleeSkill || 0)) * scale,
++    addPrj: (flat.projSkill || 0) + ((v.addPrj || 0) - (flat.projSkill || 0)) * scale,
++    addDef: (flat.defSkill || 0) + ((v.addDef || 0) - (flat.defSkill || 0)) * scale,
++    addArmStat: (flat.armor || 0) + ((v.addArmStat || 0) - (flat.armor || 0)) * scale,
++  };
++}
++
++function applyValidatedDuplicateBioPinkScaling(m1V, m2V) {
++  let m1Eff = m1V;
++  let m2Eff = m2V;
++  let pinkScaled = false;
++  let orangeScaled = false;
++
++  const c1 = getValidatedBioCrystalColor(m1V);
++  const c2 = getValidatedBioCrystalColor(m2V);
++
++  // Validated Bio helper patch: first exact Bio crystal copy per color scales to 1.20x.
++  if (c1 === 'pink' && !pinkScaled) {
++    m1Eff = scaleVariantCrystalDelta(m1Eff, 1.2);
++    pinkScaled = true;
++  } else if (c1 === 'orange' && !orangeScaled) {
++    m1Eff = scaleVariantCrystalDelta(m1Eff, 1.2);
++    orangeScaled = true;
++  }
++
++  if (c2 === 'pink' && !pinkScaled) {
++    m2Eff = scaleVariantCrystalDelta(m2Eff, 1.2);
++    pinkScaled = true;
++  } else if (c2 === 'orange' && !orangeScaled) {
++    m2Eff = scaleVariantCrystalDelta(m2Eff, 1.2);
++    orangeScaled = true;
++  }
++
++  if (c1 === 'pink' && c2 === 'pink') {
++    m2Eff = scaleVariantCrystalDelta(m2V, 1.2);
++  }
++
++  return [m1Eff, m2Eff];
++}
++
+ function buildVariantsForArmors(names) {
+   const out = [];
+   const cache = new Map();
+@@ -3205,8 +3425,7 @@ function compileDefender(def, variantCacheLocal) {
+   const m2V = variantCacheLocal.get(defenderVariantKeyFromCrystalSpec(m2Name, m2Cr, '', '', 2));
+   if (!armorV || !w1V || !w2V || !m1V || !m2V)
+     throw new Error(`Missing variant cache entries for defender ${def.name}`);
+-  const m1Eff = m1V;
+-  const m2Eff = m2V;
++  const [m1Eff, m2Eff] = applyValidatedDuplicateBioPinkScaling(m1V, m2V);
+ 
+   const baseSpeed = Math.floor(Number(st.speed));
+   const baseAcc = Math.floor(Number(st.accuracy));
+@@ -3269,8 +3488,10 @@ function compileDefender(def, variantCacheLocal) {
+ // =====================
+ function compileAttacker(plan, av, w1v, w2v, m1v, m2v, attackTypeRaw = ATTACKER_ATTACK_TYPE) {
+   const level = BASE.level;
+-  const m1Eff = m1v;
+-  const m2Eff = rebuildMiscVariantForSlot(m2v, 2);
++  const [m1Eff, m2Eff] = applyValidatedDuplicateBioPinkScaling(
++    m1v,
++    rebuildMiscVariantForSlot(m2v, 2),
++  );
+ 
+   const speed =
+     BASE.speed + av.addSpeed + w1v.addSpeed + w2v.addSpeed + m1Eff.addSpeed + m2Eff.addSpeed;
+diff --git a/legacy-sim-v1.0.4-clean.js b/legacy-sim-v1.0.4-clean.js
+index b98d639..11b9271 100644
+--- a/legacy-sim-v1.0.4-clean.js
++++ b/legacy-sim-v1.0.4-clean.js
+@@ -28,8 +28,8 @@ const USER_CONFIG = {
+     attackType: 'normal',
+     stats: { level: 80, hp: 650, speed: 60, dodge: 57, accuracy: 14 },
+     armor: {
+-      name: 'Dark Legion Armor',
+-      crystal: 'Abyss Crystal',
++      name: 'SG1 Armor',
++      crystal: 'Perfect Pink Crystal',
+       upgrades: [],
+     },
+ 
+@@ -156,7 +156,13 @@ const __DEFAULT_ENV__ = {
+ 
+   LEGACY_SHARED_HIT: '0',
+   LEGACY_ACTION_STOP_ON_KILL: '0',
++  LEGACY_DIAG_W2_AFTER_APPLIED_W1: 'auto',
++  LEGACY_DIAG_SPLIT_MULTIWEAPON_ACTION: 'auto',
++  LEGACY_DIAG_QUEUED_SECOND_ACTION: 'auto',
++  LEGACY_DIAG_FIRST_ACTOR_OVERRIDE: 'auto',
+   LEGACY_SHARED_SKILL: 'none',
++  LEGACY_SHARED_SKILL_ATTACKER_OVERRIDE: 'auto',
++  LEGACY_SHARED_SKILL_DEFENDER_OVERRIDE: 'auto',
+ 
+   LEGACY_HIT_ROLL_MODE: 'int',
+   LEGACY_HIT_GE: '1',
+@@ -192,6 +198,48 @@ function parseCsv(str) {
+     .map((s) => s.trim())
+     .filter(Boolean);
+ }
++function normalizeSharedSkillOverride(v) {
++  const s = String(v || 'auto')
++    .trim()
++    .toLowerCase();
++  return s === 'off' || s === 'broad' || s === 'exact' || s === 'auto' ? s : 'auto';
++}
++function normalizeDiagW2AfterAppliedW1(v) {
++  const s = String(v || 'auto')
++    .trim()
++    .toLowerCase();
++  return s === 'off' || s === 'attacker' || s === 'defender' || s === 'both' || s === 'auto'
++    ? s
++    : 'auto';
++}
++function normalizeDiagSplitMultiweaponAction(v) {
++  const s = String(v || 'auto')
++    .trim()
++    .toLowerCase();
++  return s === 'off' || s === 'attacker' || s === 'defender' || s === 'both' || s === 'auto'
++    ? s
++    : 'auto';
++}
++function normalizeDiagQueuedSecondAction(v) {
++  const s = String(v || 'auto')
++    .trim()
++    .toLowerCase();
++  return s === 'off' || s === 'attacker' || s === 'defender' || s === 'both' || s === 'auto'
++    ? s
++    : 'auto';
++}
++function normalizeDiagFirstActorOverride(v) {
++  const s = String(v || 'auto')
++    .trim()
++    .toLowerCase();
++  return s === 'off' ||
++    s === 'attacker' ||
++    s === 'defender' ||
++    s === 'alternate' ||
++    s === 'auto'
++    ? s
++    : 'auto';
++}
+ function parseNumCsv(str) {
+   return parseCsv(str).map((s) => Number(s));
+ }
+@@ -520,9 +568,14 @@ function expandCrystalCountsToEntries(counts) {
+   return out;
+ }
+ 
+-function normalizeResolvedBuildPartForTruthCollector(part, totalSlots = resolvedBuildCrystalSlots()) {
++function normalizeResolvedBuildPartForTruthCollector(
++  part,
++  totalSlots = resolvedBuildCrystalSlots(),
++) {
+   const resolved = normalizeResolvedBuildPart(part, totalSlots);
+-  const counts = resolved.crystalSpec ? normalizeCrystalCounts(resolved.crystalSpec, totalSlots) : null;
++  const counts = resolved.crystalSpec
++    ? normalizeCrystalCounts(resolved.crystalSpec, totalSlots)
++    : null;
+   const out = {
+     name: resolved.name,
+     crystal: resolved.crystal,
+@@ -1245,6 +1298,67 @@ function rollDamage(min, max, dmgRollMode) {
+ function skillValue(att, skillCode) {
+   return skillCode === 0 ? att.gun : skillCode === 1 ? att.mel : att.prj;
+ }
++function sharedSkillBroadAllowed(mode, skillCode) {
++  return mode === 'same_type' || (mode === 'gun_same_type' && skillCode === 0);
++}
++function sharedSkillOverrideForActor(att) {
++  return att && att.name === 'Attacker'
++    ? SHARED_SKILL_ATTACKER_OVERRIDE
++    : SHARED_SKILL_DEFENDER_OVERRIDE;
++}
++function resolveSharedSkillEligibility(att, cfg) {
++  const override = sharedSkillOverrideForActor(att);
++  if (!att || !att.w1 || !att.w2 || att.w1.skill !== att.w2.skill) {
++    return { enabled: false, skillCode: null, override };
++  }
++
++  const skillCode = att.w1.skill;
++  const broadAllowed = sharedSkillBroadAllowed(cfg.sharedSkillMode, skillCode);
++  if (!broadAllowed || override === 'off') {
++    return { enabled: false, skillCode: null, override };
++  }
++  if (override === 'exact') {
++    const w1Name = String((att.w1 && att.w1.name) || '');
++    const w2Name = String((att.w2 && att.w2.name) || '');
++    const exactAllowed = !!w1Name && w1Name === w2Name;
++    return { enabled: exactAllowed, skillCode: exactAllowed ? skillCode : null, override };
++  }
++
++  return { enabled: true, skillCode, override };
++}
++function diagW2AfterAppliedW1EnabledForActor(mode, att) {
++  if (mode === 'auto' || mode === 'off') return false;
++  const actorIsAttacker = !!(att && att.name === 'Attacker');
++  if (mode === 'both') return true;
++  if (mode === 'attacker') return actorIsAttacker;
++  if (mode === 'defender') return !actorIsAttacker;
++  return false;
++}
++function diagSplitMultiweaponActionEnabledForActor(mode, att) {
++  if (mode === 'auto' || mode === 'off') return false;
++  const actorIsAttacker = !!(att && att.name === 'Attacker');
++  if (mode === 'both') return true;
++  if (mode === 'attacker') return actorIsAttacker;
++  if (mode === 'defender') return !actorIsAttacker;
++  return false;
++}
++function diagQueuedSecondActionEnabledForActor(mode, actor) {
++  if (mode === 'auto' || mode === 'off') return false;
++  const actorIsAttacker = !!(actor && actor.name === 'Attacker');
++  if (mode === 'both') return true;
++  if (mode === 'attacker') return actorIsAttacker;
++  if (mode === 'defender') return !actorIsAttacker;
++  return false;
++}
++function resolveFirstActor(attacker, defender, speedTieMode, diagFirstActorOverride, fightIndex = 0) {
++  const override = normalizeDiagFirstActorOverride(diagFirstActorOverride);
++  if (override === 'attacker') return true;
++  if (override === 'defender') return false;
++  if (override === 'alternate') return fightIndex % 2 === 0;
++  if (attacker.speed > defender.speed) return true;
++  if (attacker.speed < defender.speed) return false;
++  return speedTieMode === 'random' ? RNG() < 0.5 : true;
++}
+ 
+ function armorFactorForArmorValue(level, armor, armorK) {
+   const k = armorK == null ? 8 : armorK;
+@@ -1650,6 +1764,21 @@ const DISP_ROUND = pickEnv('LEGACY_DISP_ROUND', 'floor');
+ const EXACT_VERBOSE = yn(pickEnv('LEGACY_EXACT_VERBOSE', '0'));
+ const EXACT_SWAP = yn(pickEnv('LEGACY_EXACT_SWAP', '1'));
+ const ACTION_STOP_ON_KILL = yn(pickEnv('LEGACY_ACTION_STOP_ON_KILL', '0'));
++const DIAG_W2_AFTER_APPLIED_W1 = normalizeDiagW2AfterAppliedW1(
++  pickEnv('LEGACY_DIAG_W2_AFTER_APPLIED_W1', 'auto'),
++);
++const DIAG_SPLIT_MULTIWEAPON_ACTION = normalizeDiagSplitMultiweaponAction(
++  pickEnv('LEGACY_DIAG_SPLIT_MULTIWEAPON_ACTION', 'auto'),
++);
++const DIAG_QUEUED_SECOND_ACTION = normalizeDiagQueuedSecondAction(
++  pickEnv('LEGACY_DIAG_QUEUED_SECOND_ACTION', 'auto'),
++);
++const SHARED_SKILL_ATTACKER_OVERRIDE = normalizeSharedSkillOverride(
++  pickEnv('LEGACY_SHARED_SKILL_ATTACKER_OVERRIDE', 'auto'),
++);
++const SHARED_SKILL_DEFENDER_OVERRIDE = normalizeSharedSkillOverride(
++  pickEnv('LEGACY_SHARED_SKILL_DEFENDER_OVERRIDE', 'auto'),
++);
+ const GAME_TRIALS = Math.max(0, parseInt(pickEnv('LEGACY_GAME_TRIALS', '10000'), 10) || 0);
+ 
+ function dispPct(prob01, mode = DISP_ROUND) {
+@@ -1920,7 +2049,10 @@ function buildCrystalStageBreakdown({
+       base: safeBase,
+       slots,
+       aggregatePct: fmtDiagNumber(
+-        names.reduce((sum, crystalName) => sum + (pctLookup(crystalName)[crystalKey] || 0) * 100, 0),
++        names.reduce(
++          (sum, crystalName) => sum + (pctLookup(crystalName)[crystalKey] || 0) * 100,
++          0,
++        ),
+         4,
+       ),
+       totalDelta: fmtDiagNumber(value - safeBase),
+@@ -1928,7 +2060,10 @@ function buildCrystalStageBreakdown({
+     };
+   }
+ 
+-  const pctSum = names.reduce((sum, crystalName) => sum + (pctLookup(crystalName)[crystalKey] || 0), 0);
++  const pctSum = names.reduce(
++    (sum, crystalName) => sum + (pctLookup(crystalName)[crystalKey] || 0),
++    0,
++  );
+   const delta = pctSum ? roundFn(safeBase * pctSum, roundMode) : 0;
+   return {
+     stackMode: mode,
+@@ -2138,7 +2273,12 @@ function buildVariantDebugMath({
+       accuracy: buildStatDebug(fs.accuracy || 0, 'accuracy', 'accuracy', result.addAcc || 0),
+       dodge: buildStatDebug(fs.dodge || 0, 'dodge', 'dodge', result.addDod || 0),
+       gunSkill: buildStatDebug(fs.gunSkill || 0, 'gunSkill', 'gunSkill', result.addGun || 0),
+-      meleeSkill: buildStatDebug(fs.meleeSkill || 0, 'meleeSkill', 'meleeSkill', result.addMel || 0),
++      meleeSkill: buildStatDebug(
++        fs.meleeSkill || 0,
++        'meleeSkill',
++        'meleeSkill',
++        result.addMel || 0,
++      ),
+       projSkill: buildStatDebug(fs.projSkill || 0, 'projSkill', 'projSkill', result.addPrj || 0),
+       defSkill: buildStatDebug(fs.defSkill || 0, 'defSkill', 'defSkill', result.addDef || 0),
+       armor: buildStatDebug(fs.armor || 0, 'armor', 'armor', result.addArmStat || 0),
+@@ -2443,6 +2583,72 @@ function computeVariantFromCrystalSpec(itemName, crystalSpec, upgrades = [], cfg
+   return result;
+ }
+ 
++function getValidatedBioCrystalColor(v) {
++  if (!v || v.itemName !== 'Bio Spinal Enhancer') return '';
++  if (v.crystalName === 'Perfect Pink Crystal') return 'pink';
++  if (v.crystalName === 'Perfect Orange Crystal') return 'orange';
++  const mix = v.crystalMix || null;
++  if (!mix || typeof mix !== 'object') return '';
++  const names = Object.keys(mix);
++  if (names.length !== 1 || Number(mix[names[0]]) !== 4) return '';
++  if (names[0] === 'Perfect Pink Crystal') return 'pink';
++  if (names[0] === 'Perfect Orange Crystal') return 'orange';
++  return '';
++}
++
++function isValidatedDuplicateBioPinkVariant(v) {
++  return getValidatedBioCrystalColor(v) === 'pink';
++}
++
++function scaleVariantCrystalDelta(v, scale) {
++  if (!v || !Number.isFinite(scale) || scale === 1) return v;
++  const flat = (ItemDefs[v.itemName] && ItemDefs[v.itemName].flatStats) || {};
++  return {
++    ...v,
++    addSpeed: (flat.speed || 0) + ((v.addSpeed || 0) - (flat.speed || 0)) * scale,
++    addAcc: (flat.accuracy || 0) + ((v.addAcc || 0) - (flat.accuracy || 0)) * scale,
++    addDod: (flat.dodge || 0) + ((v.addDod || 0) - (flat.dodge || 0)) * scale,
++    addGun: (flat.gunSkill || 0) + ((v.addGun || 0) - (flat.gunSkill || 0)) * scale,
++    addMel: (flat.meleeSkill || 0) + ((v.addMel || 0) - (flat.meleeSkill || 0)) * scale,
++    addPrj: (flat.projSkill || 0) + ((v.addPrj || 0) - (flat.projSkill || 0)) * scale,
++    addDef: (flat.defSkill || 0) + ((v.addDef || 0) - (flat.defSkill || 0)) * scale,
++    addArmStat: (flat.armor || 0) + ((v.addArmStat || 0) - (flat.armor || 0)) * scale,
++  };
++}
++
++function applyValidatedDuplicateBioPinkScaling(m1V, m2V) {
++  let m1Eff = m1V;
++  let m2Eff = m2V;
++  let pinkScaled = false;
++  let orangeScaled = false;
++
++  const c1 = getValidatedBioCrystalColor(m1V);
++  const c2 = getValidatedBioCrystalColor(m2V);
++
++  // Validated Bio helper patch: first exact Bio crystal copy per color scales to 1.20x.
++  if (c1 === 'pink' && !pinkScaled) {
++    m1Eff = scaleVariantCrystalDelta(m1Eff, 1.2);
++    pinkScaled = true;
++  } else if (c1 === 'orange' && !orangeScaled) {
++    m1Eff = scaleVariantCrystalDelta(m1Eff, 1.2);
++    orangeScaled = true;
++  }
++
++  if (c2 === 'pink' && !pinkScaled) {
++    m2Eff = scaleVariantCrystalDelta(m2Eff, 1.2);
++    pinkScaled = true;
++  } else if (c2 === 'orange' && !orangeScaled) {
++    m2Eff = scaleVariantCrystalDelta(m2Eff, 1.2);
++    orangeScaled = true;
++  }
++
++  if (c1 === 'pink' && c2 === 'pink') {
++    m2Eff = scaleVariantCrystalDelta(m2V, 1.2);
++  }
++
++  return [m1Eff, m2Eff];
++}
++
+ function compileCombatantFromParts({
+   name,
+   stats,
+@@ -2458,15 +2664,16 @@ function compileCombatantFromParts({
+ }) {
+   const level = Math.floor(Number(stats.level));
+   const hp = Math.floor(Number(stats.hp));
++  const [m1Eff, m2Eff] = applyValidatedDuplicateBioPinkScaling(m1V, m2V);
+ 
+   const baseSpeed = Math.floor(Number(stats.speed));
+   const baseAcc = Math.floor(Number(stats.accuracy));
+   const baseDod = Math.floor(Number(stats.dodge));
+ 
+   const speed =
+-    baseSpeed + armorV.addSpeed + w1V.addSpeed + w2V.addSpeed + m1V.addSpeed + m2V.addSpeed;
+-  const acc = baseAcc + armorV.addAcc + w1V.addAcc + w2V.addAcc + m1V.addAcc + m2V.addAcc;
+-  const dodge = baseDod + armorV.addDod + w1V.addDod + w2V.addDod + m1V.addDod + m2V.addDod;
++    baseSpeed + armorV.addSpeed + w1V.addSpeed + w2V.addSpeed + m1Eff.addSpeed + m2Eff.addSpeed;
++  const acc = baseAcc + armorV.addAcc + w1V.addAcc + w2V.addAcc + m1Eff.addAcc + m2Eff.addAcc;
++  const dodge = baseDod + armorV.addDod + w1V.addDod + w2V.addDod + m1Eff.addDod + m2Eff.addDod;
+ 
+   const w1SkillIdx = w1V.weapon ? w1V.weapon.skill : null;
+   const w2SkillIdx = w2V.weapon ? w2V.weapon.skill : null;
+@@ -2479,11 +2686,12 @@ function compileCombatantFromParts({
+   const w1Prj = w1V.addPrj * (w1SkillIdx === 2 ? w1Mult : 1);
+   const w2Prj = w2V.addPrj * (w2SkillIdx === 2 ? w2Mult : 1);
+ 
+-  const gun = BASE.gunSkill + armorV.addGun + w1Gun + w2Gun + m1V.addGun + m2V.addGun;
+-  const mel = BASE.meleeSkill + armorV.addMel + w1Mel + w2Mel + m1V.addMel + m2V.addMel;
+-  const prj = BASE.projSkill + armorV.addPrj + w1Prj + w2Prj + m1V.addPrj + m2V.addPrj;
++  const gun = BASE.gunSkill + armorV.addGun + w1Gun + w2Gun + m1Eff.addGun + m2Eff.addGun;
++  const mel = BASE.meleeSkill + armorV.addMel + w1Mel + w2Mel + m1Eff.addMel + m2Eff.addMel;
++  const prj = BASE.projSkill + armorV.addPrj + w1Prj + w2Prj + m1Eff.addPrj + m2Eff.addPrj;
+ 
+-  const defSk = BASE.defSkill + armorV.addDef + w1V.addDef + w2V.addDef + m1V.addDef + m2V.addDef;
++  const defSk =
++    BASE.defSkill + armorV.addDef + w1V.addDef + w2V.addDef + m1Eff.addDef + m2Eff.addDef;
+ 
+   const armor = BASE.armor + armorV.addArmStat;
+   const armorFactor = armorFactorForArmorValue(level, armor, cfg.armorK);
+@@ -2527,8 +2735,8 @@ function compileCombatantFromParts({
+       armor: { itemName: armorV.itemName, crystalName: armorV.crystalName },
+       w1: { itemName: w1V.itemName, crystalName: w1V.crystalName },
+       w2: { itemName: w2V.itemName, crystalName: w2V.crystalName },
+-      m1: { itemName: m1V.itemName, crystalName: m1V.crystalName },
+-      m2: { itemName: m2V.itemName, crystalName: m2V.crystalName },
++      m1: { itemName: m1Eff.itemName, crystalName: m1Eff.crystalName },
++      m2: { itemName: m2Eff.itemName, crystalName: m2Eff.crystalName },
+     };
+   }
+ 
+@@ -2545,8 +2753,8 @@ function compileCombatantFromParts({
+       armorV,
+       w1V,
+       w2V,
+-      m1V,
+-      m2V,
++      m1V: m1Eff,
++      m2V: m2Eff,
+       w1SkillIdx,
+       w2SkillIdx,
+       w1Mult,
+@@ -3202,7 +3410,9 @@ function resolveDefenderAttackType(payload) {
+   );
+ }
+ 
+-function resolveLegacyTruthBridgeConfig(rawVerifyCsv = String(pickEnv('LEGACY_VERIFY_DEFENDERS', '')).trim()) {
++function resolveLegacyTruthBridgeConfig(
++  rawVerifyCsv = String(pickEnv('LEGACY_VERIFY_DEFENDERS', '')).trim(),
++) {
+   function metaPath(filePath) {
+     if (!filePath) return '';
+     const rel = path.relative(process.cwd(), filePath);
+@@ -3217,7 +3427,11 @@ function resolveLegacyTruthBridgeConfig(rawVerifyCsv = String(pickEnv('LEGACY_VE
+   }
+ 
+   const totalSlots = resolvedBuildCrystalSlots();
+-  const resolvedAttackerBuild = normalizeResolvedBuild(ATTACKER_BUILD, ATTACKER_ATTACK_TYPE, totalSlots);
++  const resolvedAttackerBuild = normalizeResolvedBuild(
++    ATTACKER_BUILD,
++    ATTACKER_ATTACK_TYPE,
++    totalSlots,
++  );
+   const attackerBuild = normalizeResolvedBuildForTruthCollector(
+     ATTACKER_BUILD,
+     ATTACKER_ATTACK_TYPE,
+@@ -3292,6 +3506,13 @@ function makeActionDiag() {
+     w1Overkill: 0,
+     w2Overkill: 0,
+     w2OnDead: 0,
++    w2StopOnKill: 0,
++    w2AfterAppliedW1Gate: 0,
++    splitAction: 0,
++    splitActionKilledAfterW1: 0,
++    splitActionReachedW2: 0,
++    queuedSecondActionTriggered: 0,
++    queuedSecondActionKilledActorStillActed: 0,
+     killsByW1: 0,
+     killsByW2: 0,
+     totalKills: 0,
+@@ -3322,10 +3543,21 @@ function buildActionCounterSummary(sideStats, diagSide) {
+     w1OverkillCount: diagSide ? diagSide.w1Overkill : 0,
+     w2OverkillCount: diagSide ? diagSide.w2Overkill : 0,
+     w2OnDeadCount: diagSide ? diagSide.w2OnDead : 0,
++    w2StopOnKillCount: diagSide ? diagSide.w2StopOnKill || 0 : 0,
++    w2AfterAppliedW1GateCount: diagSide ? diagSide.w2AfterAppliedW1Gate || 0 : 0,
++    splitActionCount: diagSide ? diagSide.splitAction || 0 : 0,
++    splitActionKilledAfterW1Count: diagSide ? diagSide.splitActionKilledAfterW1 || 0 : 0,
++    splitActionReachedW2Count: diagSide ? diagSide.splitActionReachedW2 || 0 : 0,
++    queuedSecondActionTriggeredCount: diagSide ? diagSide.queuedSecondActionTriggered || 0 : 0,
++    queuedSecondActionKilledActorStillActedCount: diagSide
++      ? diagSide.queuedSecondActionKilledActorStillActed || 0
++      : 0,
+     killsByW1: diagSide ? diagSide.killsByW1 : 0,
+     killsByW2: diagSide ? diagSide.killsByW2 : 0,
+     totalKills: diagSide ? diagSide.totalKills : 0,
+-    averageAppliedDamagePerTurn: sideStats.acts ? fmtDiagNumber(appliedDamageTotal / sideStats.acts) : 0,
++    averageAppliedDamagePerTurn: sideStats.acts
++      ? fmtDiagNumber(appliedDamageTotal / sideStats.acts)
++      : 0,
+     averageAppliedDamagePerSuccessfulSkill: successfulSkills
+       ? fmtDiagNumber(appliedDamageTotal / successfulSkills)
+       : 0,
+@@ -3431,9 +3663,20 @@ function captureCombatantEffectiveStats(c) {
+ }
+ 
+ function buildStatDeltaMap(after, before) {
+-  const keys = ['hp', 'speed', 'accuracy', 'dodge', 'gunSkill', 'meleeSkill', 'projSkill', 'defSkill', 'armor'];
++  const keys = [
++    'hp',
++    'speed',
++    'accuracy',
++    'dodge',
++    'gunSkill',
++    'meleeSkill',
++    'projSkill',
++    'defSkill',
++    'armor',
++  ];
+   const out = {};
+-  for (const key of keys) out[key] = (after && after[key] ? after[key] : 0) - (before && before[key] ? before[key] : 0);
++  for (const key of keys)
++    out[key] = (after && after[key] ? after[key] : 0) - (before && before[key] ? before[key] : 0);
+   return out;
+ }
+ 
+@@ -3446,16 +3689,30 @@ function buildPartContributionDebug(label, variant, overrides = {}) {
+     crystalSpecShort: variant.crystalSpecShort || null,
+     upgrades: Array.isArray(variant.upgrades) ? variant.upgrades.slice() : [],
+     mixedWeaponMultiplier:
+-      overrides.mixedWeaponMultiplier !== undefined ? fmtDiagNumber(overrides.mixedWeaponMultiplier) : null,
++      overrides.mixedWeaponMultiplier !== undefined
++        ? fmtDiagNumber(overrides.mixedWeaponMultiplier)
++        : null,
+     adds: {
+       speed: fmtDiagNumber(overrides.speed !== undefined ? overrides.speed : variant.addSpeed || 0),
+-      accuracy: fmtDiagNumber(overrides.accuracy !== undefined ? overrides.accuracy : variant.addAcc || 0),
++      accuracy: fmtDiagNumber(
++        overrides.accuracy !== undefined ? overrides.accuracy : variant.addAcc || 0,
++      ),
+       dodge: fmtDiagNumber(overrides.dodge !== undefined ? overrides.dodge : variant.addDod || 0),
+-      gunSkill: fmtDiagNumber(overrides.gunSkill !== undefined ? overrides.gunSkill : variant.addGun || 0),
+-      meleeSkill: fmtDiagNumber(overrides.meleeSkill !== undefined ? overrides.meleeSkill : variant.addMel || 0),
+-      projSkill: fmtDiagNumber(overrides.projSkill !== undefined ? overrides.projSkill : variant.addPrj || 0),
+-      defSkill: fmtDiagNumber(overrides.defSkill !== undefined ? overrides.defSkill : variant.addDef || 0),
+-      armor: fmtDiagNumber(overrides.armor !== undefined ? overrides.armor : variant.addArmStat || 0),
++      gunSkill: fmtDiagNumber(
++        overrides.gunSkill !== undefined ? overrides.gunSkill : variant.addGun || 0,
++      ),
++      meleeSkill: fmtDiagNumber(
++        overrides.meleeSkill !== undefined ? overrides.meleeSkill : variant.addMel || 0,
++      ),
++      projSkill: fmtDiagNumber(
++        overrides.projSkill !== undefined ? overrides.projSkill : variant.addPrj || 0,
++      ),
++      defSkill: fmtDiagNumber(
++        overrides.defSkill !== undefined ? overrides.defSkill : variant.addDef || 0,
++      ),
++      armor: fmtDiagNumber(
++        overrides.armor !== undefined ? overrides.armor : variant.addArmStat || 0,
++      ),
+     },
+   };
+ }
+@@ -3513,13 +3770,15 @@ function buildCombatantDebugInfo({
+     slotContributions: {
+       armor: buildPartContributionDebug('armor', armorV),
+       weapon1: buildPartContributionDebug('weapon1', w1V, {
+-        mixedWeaponMultiplier: w1SkillIdx === 0 || w1SkillIdx === 1 || w1SkillIdx === 2 ? w1Mult : null,
++        mixedWeaponMultiplier:
++          w1SkillIdx === 0 || w1SkillIdx === 1 || w1SkillIdx === 2 ? w1Mult : null,
+         gunSkill: w1Gun,
+         meleeSkill: w1Mel,
+         projSkill: w1Prj,
+       }),
+       weapon2: buildPartContributionDebug('weapon2', w2V, {
+-        mixedWeaponMultiplier: w2SkillIdx === 0 || w2SkillIdx === 1 || w2SkillIdx === 2 ? w2Mult : null,
++        mixedWeaponMultiplier:
++          w2SkillIdx === 0 || w2SkillIdx === 1 || w2SkillIdx === 2 ? w2Mult : null,
+         gunSkill: w2Gun,
+         meleeSkill: w2Mel,
+         projSkill: w2Prj,
+@@ -3543,7 +3802,9 @@ function buildWeaponSourceMapping(weapon, cfg) {
+   if (!weapon) return null;
+   const skillType = skillTypeLabel(weapon.skill);
+   const tacticsActive =
+-    cfg && (cfg.tacticsMode === 'base' || cfg.tacticsMode === 'both') ? Number(cfg.tacticsVal) || 0 : 0;
++    cfg && (cfg.tacticsMode === 'base' || cfg.tacticsMode === 'both')
++      ? Number(cfg.tacticsVal) || 0
++      : 0;
+   return {
+     hitCheck: {
+       attackerStat: 'accuracy',
+@@ -3572,11 +3833,14 @@ function buildWeaponSourceMapping(weapon, cfg) {
+ function buildWeaponMathSnapshot(partDebug, compiledWeaponSnapshot) {
+   if (!partDebug && !compiledWeaponSnapshot) return null;
+   return {
+-    itemName: partDebug ? partDebug.itemName : compiledWeaponSnapshot && compiledWeaponSnapshot.name,
++    itemName: partDebug
++      ? partDebug.itemName
++      : compiledWeaponSnapshot && compiledWeaponSnapshot.name,
+     crystalName: partDebug ? partDebug.crystalName : null,
+     crystalSpecShort: partDebug ? partDebug.crystalSpecShort : null,
+     upgrades: partDebug && Array.isArray(partDebug.upgrades) ? partDebug.upgrades.slice() : [],
+-    baseWeaponDamage: partDebug && partDebug.weaponDamage ? partDebug.weaponDamage.baseWeaponDamage : null,
++    baseWeaponDamage:
++      partDebug && partDebug.weaponDamage ? partDebug.weaponDamage.baseWeaponDamage : null,
+     crystalDamageContribution:
+       partDebug && partDebug.weaponDamage ? partDebug.weaponDamage.crystalContribution : null,
+     miscItemStatContributionsAffectingDamage:
+@@ -3586,7 +3850,9 @@ function buildWeaponMathSnapshot(partDebug, compiledWeaponSnapshot) {
+     attackTypeContribution:
+       partDebug && partDebug.weaponDamage ? partDebug.weaponDamage.attackTypeContribution : null,
+     levelOrStatDerivedContribution:
+-      partDebug && partDebug.weaponDamage ? partDebug.weaponDamage.levelOrStatDerivedContribution : null,
++      partDebug && partDebug.weaponDamage
++        ? partDebug.weaponDamage.levelOrStatDerivedContribution
++        : null,
+     upgrade: partDebug && partDebug.weaponDamage ? partDebug.weaponDamage.upgrade : null,
+     finalPreArmorRange:
+       compiledWeaponSnapshot && compiledWeaponSnapshot.preArmorRange
+@@ -3697,8 +3963,14 @@ function buildCompiledCombatSnapshot(self, target, cfg, attackStyleRoundMode) {
+     },
+     debugStatBreakdown: statBreakdown,
+     debugMathBreakdown: {
+-      weapon1: buildWeaponMathSnapshot(statBreakdown && statBreakdown.weaponMath ? statBreakdown.weaponMath.weapon1 : null, weapon1),
+-      weapon2: buildWeaponMathSnapshot(statBreakdown && statBreakdown.weaponMath ? statBreakdown.weaponMath.weapon2 : null, weapon2),
++      weapon1: buildWeaponMathSnapshot(
++        statBreakdown && statBreakdown.weaponMath ? statBreakdown.weaponMath.weapon1 : null,
++        weapon1,
++      ),
++      weapon2: buildWeaponMathSnapshot(
++        statBreakdown && statBreakdown.weaponMath ? statBreakdown.weaponMath.weapon2 : null,
++        weapon2,
++      ),
+     },
+     weaponSourceMapping: {
+       weapon1: weapon1 && weapon1.sourceMapping ? weapon1.sourceMapping : null,
+@@ -4018,27 +4290,36 @@ function doAction(
+ 
+   const traceW = traceLine ? [] : null;
+ 
+-  const sharedHit = cfg.sharedHit
+-    ? rollCtx && rollCtx.enabled
+-      ? rollVsDump(att.acc, def.dodge, cfg.hitRollMode, cfg.hitGe, cfg.hitQround, rollCtx, {
+-          kind: 'HIT_SHARED',
+-          weaponSlot: 0,
+-          weaponName: '',
+-          offStat: 'Acc',
+-          defStat: 'Dod',
+-        })
+-      : rollVs(att.acc, def.dodge, cfg.hitRollMode, cfg.hitGe, cfg.hitQround)
+-    : null;
+-
+-  let sharedSkillSkillCode = null;
+-  let sharedSkillFn = null;
++  const baseEnabled = cfg.tacticsMode === 'base' || cfg.tacticsMode === 'both';
++  const baseVal = baseEnabled ? cfg.tacticsVal : 0;
++  const splitMultiweaponActionEnabled =
++    targetHp0 > 0 &&
++    cfg.armorApply === 'per_weapon' &&
++    baseVal === 0 &&
++    !!att &&
++    !!att.w1 &&
++    !!att.w2 &&
++    diagSplitMultiweaponActionEnabledForActor(cfg.diagSplitMultiweaponAction, att);
++
++  function makePreActionState() {
++    const sharedHit = cfg.sharedHit
++      ? rollCtx && rollCtx.enabled
++        ? rollVsDump(att.acc, def.dodge, cfg.hitRollMode, cfg.hitGe, cfg.hitQround, rollCtx, {
++            kind: 'HIT_SHARED',
++            weaponSlot: 0,
++            weaponName: '',
++            offStat: 'Acc',
++            defStat: 'Dod',
++          })
++        : rollVs(att.acc, def.dodge, cfg.hitRollMode, cfg.hitGe, cfg.hitQround)
++      : null;
+ 
+-  if (att.w1 && att.w2 && att.w1.skill === att.w2.skill) {
+-    const sc = att.w1.skill;
+-    const allow =
+-      cfg.sharedSkillMode === 'same_type' || (cfg.sharedSkillMode === 'gun_same_type' && sc === 0);
++    let sharedSkillSkillCode = null;
++    let sharedSkillFn = null;
++    const sharedSkillDecision = resolveSharedSkillEligibility(att, cfg);
+ 
+-    if (allow) {
++    if (sharedSkillDecision.enabled) {
++      const sc = sharedSkillDecision.skillCode;
+       sharedSkillSkillCode = sc;
+       let cached = false;
+       let cachedVal = false;
+@@ -4062,16 +4343,13 @@ function doAction(
+         return cachedVal;
+       };
+     }
+-  }
+ 
+-  const pre = {
+-    forceHit: cfg.sharedHit ? sharedHit : null,
+-    sharedSkillFn,
+-    sharedSkillSkillCode,
+-  };
+-
+-  const baseEnabled = cfg.tacticsMode === 'base' || cfg.tacticsMode === 'both';
+-  const baseVal = baseEnabled ? cfg.tacticsVal : 0;
++    return {
++      forceHit: cfg.sharedHit ? sharedHit : null,
++      sharedSkillFn,
++      sharedSkillSkillCode,
++    };
++  }
+ 
+   if (!sideStats.runtimeActionAudit) {
+     sideStats.runtimeActionAudit = {
+@@ -4087,24 +4365,64 @@ function doAction(
+       perActionBonusConfigured: baseVal > 0 && cfg.dmgBonusMode === 'per_action',
+       perWeaponBonusConfigured: baseVal > 0 && cfg.dmgBonusMode === 'per_weapon',
+       splitEquippedBonusConfigured: baseVal > 0 && cfg.dmgBonusMode === 'split_equipped',
++      diagW2AfterAppliedW1: cfg.diagW2AfterAppliedW1 || 'auto',
++      diagSplitMultiweaponAction: cfg.diagSplitMultiweaponAction || 'auto',
+     };
+   }
+ 
++  let r2;
++  const pre = makePreActionState();
+   const r1 = attemptWeapon(att, def, att.w1, cfg, sideStats.w1, traceW, pre, rollCtx, 1);
+ 
+-  let r2;
+-  if (
+-    cfg.actionStopOnKill &&
+-    targetHp0 > 0 &&
+-    cfg.armorApply === 'per_weapon' &&
+-    baseVal === 0 &&
+-    (r1.dmg || 0) >= targetHp0
+-  ) {
+-    if (traceW) traceW.push({ h: false, s: false, raw: 0, d: 0, skip: true });
+-    r2 = { raw: 0, dmg: 0, hit: false, skill: false, skipped: true };
+-    if (diagSide) diagSide.w2StopOnKill = (diagSide.w2StopOnKill || 0) + 1;
++  if (splitMultiweaponActionEnabled) {
++    if (diagSide) diagSide.splitAction = (diagSide.splitAction || 0) + 1;
++    const w1AppliedSplit = Math.min(r1.dmg || 0, targetHp0);
++    const postW1Hp = Math.max(0, targetHp0 - w1AppliedSplit);
++
++    if (postW1Hp <= 0) {
++      if (traceW) traceW.push({ h: false, s: false, raw: 0, d: 0, skip: true, diag: 'split' });
++      r2 = { raw: 0, dmg: 0, hit: false, skill: false, skipped: true };
++      if (diagSide) diagSide.splitActionKilledAfterW1 = (diagSide.splitActionKilledAfterW1 || 0) + 1;
++    } else {
++      if (diagSide) diagSide.splitActionReachedW2 = (diagSide.splitActionReachedW2 || 0) + 1;
++      r2 = attemptWeapon(
++        att,
++        def,
++        att.w2,
++        cfg,
++        sideStats.w2,
++        traceW,
++        makePreActionState(),
++        rollCtx,
++        2,
++      );
++    }
+   } else {
+-    r2 = attemptWeapon(att, def, att.w2, cfg, sideStats.w2, traceW, pre, rollCtx, 2);
++    const diagW2AfterAppliedW1Enabled =
++      targetHp0 > 0 &&
++      cfg.armorApply === 'per_weapon' &&
++      baseVal === 0 &&
++      diagW2AfterAppliedW1EnabledForActor(cfg.diagW2AfterAppliedW1, att);
++    const w1AppliedPreW2Gate =
++      diagW2AfterAppliedW1Enabled && (r1.dmg || 0) > 0 ? Math.min(r1.dmg || 0, targetHp0) : 0;
++
++    if (
++      cfg.actionStopOnKill &&
++      targetHp0 > 0 &&
++      cfg.armorApply === 'per_weapon' &&
++      baseVal === 0 &&
++      (r1.dmg || 0) >= targetHp0
++    ) {
++      if (traceW) traceW.push({ h: false, s: false, raw: 0, d: 0, skip: true });
++      r2 = { raw: 0, dmg: 0, hit: false, skill: false, skipped: true };
++      if (diagSide) diagSide.w2StopOnKill = (diagSide.w2StopOnKill || 0) + 1;
++    } else if (diagW2AfterAppliedW1Enabled && w1AppliedPreW2Gate >= targetHp0) {
++      if (traceW) traceW.push({ h: false, s: false, raw: 0, d: 0, skip: true, diag: true });
++      r2 = { raw: 0, dmg: 0, hit: false, skill: false, skipped: true };
++      if (diagSide) diagSide.w2AfterAppliedW1Gate = (diagSide.w2AfterAppliedW1Gate || 0) + 1;
++    } else {
++      r2 = attemptWeapon(att, def, att.w2, cfg, sideStats.w2, traceW, pre, rollCtx, 2);
++    }
+   }
+ 
+   let actionDmg = 0;
+@@ -4184,10 +4502,20 @@ function doAction(
+       if (w2Applied > sideStats.w2.appliedDamageMax) sideStats.w2.appliedDamageMax = w2Applied;
+     }
+     if (w2Applied < w2Dmg) sideStats.w2.overkill++;
+-    if (cfg.armorApply === 'per_weapon' && baseVal === 0 && targetHp0 > 0 && w1Applied >= targetHp0) {
++    if (
++      cfg.armorApply === 'per_weapon' &&
++      baseVal === 0 &&
++      targetHp0 > 0 &&
++      w1Applied >= targetHp0
++    ) {
+       sideStats.w2.onDead++;
+     }
+-    if (w2Applied > 0 && targetHp0 > 0 && w1Applied < targetHp0 && w1Applied + w2Applied >= targetHp0) {
++    if (
++      w2Applied > 0 &&
++      targetHp0 > 0 &&
++      w1Applied < targetHp0 &&
++      w1Applied + w2Applied >= targetHp0
++    ) {
+       sideStats.w2.kills++;
+     }
+   }
+@@ -4224,14 +4552,11 @@ function doAction(
+   return { raw: actionRaw, applied: actionApplied };
+ }
+ 
+-function fightOnce(p1, p2, cfg, stats, trace, rollCtx = null) {
++function fightOnce(p1, p2, cfg, stats, trace, rollCtx = null, fightIndex = 0) {
+   let p1hp = p1.hp;
+   let p2hp = p2.hp;
+ 
+-  let p1First;
+-  if (p1.speed > p2.speed) p1First = true;
+-  else if (p1.speed < p2.speed) p1First = false;
+-  else p1First = cfg.speedTieMode === 'random' ? RNG() < 0.5 : true;
++  const p1First = resolveFirstActor(p1, p2, cfg.speedTieMode, cfg.diagFirstActorOverride, fightIndex);
+ 
+   const first = p1First ? p1 : p2;
+   const second = p1First ? p2 : p1;
+@@ -4296,6 +4621,8 @@ function fightOnce(p1, p2, cfg, stats, trace, rollCtx = null) {
+           `T${turns} ${second === p1 ? 'A' : 'D'}->${first === p1 ? 'A' : 'D'}(simul) | ${t2.join(' ')}`,
+         );
+     } else {
++      const p1hp0 = p1hp;
++      const p2hp0 = p2hp;
+       const t1 = trace ? [] : null;
+       const hpSecond0 = second === p1 ? p1hp : p2hp;
+       const r1 = doAction(
+@@ -4317,10 +4644,17 @@ function fightOnce(p1, p2, cfg, stats, trace, rollCtx = null) {
+           `T${turns} ${first === p1 ? 'A' : 'D'}->${second === p1 ? 'A' : 'D'} | ${t1.join(' ')}`,
+         );
+ 
+-      if (p1hp <= 0 || p2hp <= 0) break;
+-
+       const t2 = trace ? [] : null;
+-      const hpFirst0 = first === p1 ? p1hp : p2hp;
++      const secondKilled = second === p1 ? p1hp <= 0 : p2hp <= 0;
++      const firstAlive = first === p1 ? p1hp > 0 : p2hp > 0;
++      const queuedSecondActionEnabled =
++        secondKilled &&
++        firstAlive &&
++        diagQueuedSecondActionEnabledForActor(cfg.diagQueuedSecondAction, second);
++
++      if (secondKilled && !queuedSecondActionEnabled) break;
++
++      const hpFirst0 = first === p1 ? (queuedSecondActionEnabled ? p1hp0 : p1hp) : queuedSecondActionEnabled ? p2hp0 : p2hp;
+       const r2 = doAction(
+         second,
+         first,
+@@ -4335,24 +4669,39 @@ function fightOnce(p1, p2, cfg, stats, trace, rollCtx = null) {
+       if (first === p1) p1hp -= r2.applied;
+       else p2hp -= r2.applied;
+ 
++      if (queuedSecondActionEnabled && (second === p1 ? stats.diagA : stats.diagD)) {
++        const qDiag = second === p1 ? stats.diagA : stats.diagD;
++        qDiag.queuedSecondActionTriggered = (qDiag.queuedSecondActionTriggered || 0) + 1;
++        qDiag.queuedSecondActionKilledActorStillActed =
++          (qDiag.queuedSecondActionKilledActorStillActed || 0) + 1;
++      }
++
+       if (trace)
+         trace.push(
+-          `T${turns} ${second === p1 ? 'A' : 'D'}->${first === p1 ? 'A' : 'D'}(ret) | ${t2.join(' ')}`,
++          `T${turns} ${second === p1 ? 'A' : 'D'}->${first === p1 ? 'A' : 'D'}${queuedSecondActionEnabled ? '(queued)' : '(ret)'} | ${t2.join(' ')}`,
+         );
+     }
+   }
+ 
+   let winnerIsP1;
++  let endState;
+   if (p1hp > 0 && p2hp <= 0) winnerIsP1 = 1;
+   else if (p2hp > 0 && p1hp <= 0) winnerIsP1 = 0;
+   else if (p1hp > 0 && p2hp > 0) {
+-    if (p1hp === p2hp) winnerIsP1 = p1First ? 1 : 0;
+-    else winnerIsP1 = p1hp > p2hp ? 1 : 0;
++    if (p1hp === p2hp) {
++      winnerIsP1 = p1First ? 1 : 0;
++      endState = 'both_alive_equal_hp';
++    } else {
++      winnerIsP1 = p1hp > p2hp ? 1 : 0;
++      endState = p1hp > p2hp ? 'both_alive_p1_hp_lead' : 'both_alive_p2_hp_lead';
++    }
+   } else {
+     winnerIsP1 = p1First ? 1 : 0;
++    endState = 'both_dead';
+   }
++  if (!endState) endState = winnerIsP1 ? 'p1_alive_only' : 'p2_alive_only';
+ 
+-  return { winnerIsP1, turns, p1First };
++  return { winnerIsP1, turns, p1First, endState };
+ }
+ 
+ function runMatch(attacker, defender, cfg, traceCfg) {
+@@ -4385,6 +4734,14 @@ function runMatch(attacker, defender, cfg, traceCfg) {
+       attackerWins: 0,
+       defenderWins: 0,
+     },
++    endState: {
++      p1_alive_only: 0,
++      p2_alive_only: 0,
++      both_alive_equal_hp: 0,
++      both_alive_p1_hp_lead: 0,
++      both_alive_p2_hp_lead: 0,
++      both_dead: 0,
++    },
+   };
+ 
+   const traceFights = traceCfg.traceFights;
+@@ -4411,7 +4768,15 @@ function runMatch(attacker, defender, cfg, traceCfg) {
+       rollDumpPush(rollCtx, `RD === BEGIN def="${rollCtx.matchName}" fight=${rollCtx.fight} ===`);
+     }
+ 
+-    const { winnerIsP1, turns, p1First } = fightOnce(attacker, defender, cfg, stats, trace, rollCtx);
++    const { winnerIsP1, turns, p1First, endState } = fightOnce(
++      attacker,
++      defender,
++      cfg,
++      stats,
++      trace,
++      rollCtx,
++      i,
++    );
+ 
+     if (rollCtx && rollCtx.out) {
+       rollDumpPush(
+@@ -4428,6 +4793,7 @@ function runMatch(attacker, defender, cfg, traceCfg) {
+       stats.firstMove.defenderCount++;
+       if (!winnerIsP1) stats.firstMove.defenderWins++;
+     }
++    if (stats.endState[endState] !== undefined) stats.endState[endState]++;
+     stats.turnsTotal += turns;
+     if (turns < stats.turnsMin) stats.turnsMin = turns;
+     if (turns > stats.turnsMax) stats.turnsMax = turns;
+@@ -4445,7 +4811,9 @@ function makeVariantList() {
+   const zip = yn(pickEnv('LEGACY_SWEEP_ZIP', '0'));
+ 
+   function normalizeRoundResolveMode(raw) {
+-    const value = String(raw || '').trim().toLowerCase();
++    const value = String(raw || '')
++      .trim()
++      .toLowerCase();
+     if (!value || value === 'baseline') return 'baseline';
+     if (value === 'simultaneous_round') return 'simultaneous_round';
+     throw new Error(
+@@ -4698,8 +5066,7 @@ function makeVariantList() {
+         sharedHit: sharedHit.length === 1 ? sharedHit[0] : sharedHit[i],
+         sharedSkillMode: sharedSkill.length === 1 ? sharedSkill[0] : sharedSkill[i],
+         speedTieMode: speedTieMode.length === 1 ? speedTieMode[0] : speedTieMode[i],
+-        roundResolveMode:
+-          roundResolveMode.length === 1 ? roundResolveMode[0] : roundResolveMode[i],
++        roundResolveMode: roundResolveMode.length === 1 ? roundResolveMode[0] : roundResolveMode[i],
+         hiddenPreset: hiddenPreset.length === 1 ? hiddenPreset[0] : hiddenPreset[i],
+       });
+     }
+@@ -5050,6 +5417,14 @@ function main() {
+       crystalSlots: Number.isFinite(Number(v.crystalSlots)) ? Number(v.crystalSlots) : 4,
+       sharedHit: Number(v.sharedHit) === 1,
+       sharedSkillMode: v.sharedSkillMode || 'none',
++      sharedSkillAttackerOverride: SHARED_SKILL_ATTACKER_OVERRIDE,
++      sharedSkillDefenderOverride: SHARED_SKILL_DEFENDER_OVERRIDE,
++      diagW2AfterAppliedW1: DIAG_W2_AFTER_APPLIED_W1,
++      diagSplitMultiweaponAction: DIAG_SPLIT_MULTIWEAPON_ACTION,
++      diagQueuedSecondAction: DIAG_QUEUED_SECOND_ACTION,
++      diagFirstActorOverride: normalizeDiagFirstActorOverride(
++        pickEnv('LEGACY_DIAG_FIRST_ACTOR_OVERRIDE', 'auto'),
++      ),
+       exactVerbose: EXACT_VERBOSE,
+       exactSwap: EXACT_SWAP,
+       gameTrials: GAME_TRIALS,
+@@ -5180,6 +5555,12 @@ function main() {
+       tacticsVal: cfg.tacticsVal,
+       sharedHit: cfg.sharedHit,
+       sharedSkillMode: cfg.sharedSkillMode,
++      sharedSkillAttackerOverride: cfg.sharedSkillAttackerOverride,
++      sharedSkillDefenderOverride: cfg.sharedSkillDefenderOverride,
++      diagW2AfterAppliedW1: cfg.diagW2AfterAppliedW1,
++      diagSplitMultiweaponAction: cfg.diagSplitMultiweaponAction,
++      diagQueuedSecondAction: cfg.diagQueuedSecondAction,
++      diagFirstActorOverride: cfg.diagFirstActorOverride,
+       attackerAttackType: ATTACKER_ATTACK_TYPE,
+       defenderAttackType: DEFENDER_ATTACK_TYPE_OVERRIDE || 'payload',
+       attackStyleRoundMode: ATTACK_STYLE_ROUND_MODE,
+@@ -5531,15 +5912,10 @@ function main() {
+           firstMove: {
+             attackerRate: pct(stats.firstMove.attackerCount, cfg.trials),
+             defenderRate: pct(stats.firstMove.defenderCount, cfg.trials),
+-            attackerWinWhenFirst: pct(
+-              stats.firstMove.attackerWins,
+-              stats.firstMove.attackerCount,
+-            ),
+-            defenderWinWhenFirst: pct(
+-              stats.firstMove.defenderWins,
+-              stats.firstMove.defenderCount,
+-            ),
++            attackerWinWhenFirst: pct(stats.firstMove.attackerWins, stats.firstMove.attackerCount),
++            defenderWinWhenFirst: pct(stats.firstMove.defenderWins, stats.firstMove.defenderCount),
+           },
++          endState: { ...stats.endState },
+           a: {
+             disp: [A_overall1, A_overall2],
+             hit: [A_hit1, A_hit2],
+@@ -5561,43 +5937,40 @@ function main() {
+                   defender: buildActionCounterSummary(stats.D, stats.diagD),
+                 }
+               : null,
+-          weaponCounters:
+-            cfg.diag
+-              ? {
+-                  attacker: {
+-                    weapon1: buildWeaponCounterSummary(stats.A.w1),
+-                    weapon2: buildWeaponCounterSummary(stats.A.w2),
+-                  },
+-                  defender: {
+-                    weapon1: buildWeaponCounterSummary(stats.D.w1),
+-                    weapon2: buildWeaponCounterSummary(stats.D.w2),
+-                  },
+-                }
+-              : null,
+-          runtimeCombatAudit:
+-            cfg.diag
+-              ? {
+-                  attacker: buildRuntimeSideAuditSummary(stats.A),
+-                  defender: buildRuntimeSideAuditSummary(stats.D),
+-                }
+-              : null,
+-          compiledSnapshot:
+-            cfg.diag
+-              ? {
+-                  attacker: buildCompiledCombatSnapshot(
+-                    attacker,
+-                    defender,
+-                    cfg,
+-                    ATTACK_STYLE_ROUND_MODE,
+-                  ),
+-                  defender: buildCompiledCombatSnapshot(
+-                    defender,
+-                    attacker,
+-                    cfg,
+-                    ATTACK_STYLE_ROUND_MODE,
+-                  ),
+-                }
+-              : null,
++          weaponCounters: cfg.diag
++            ? {
++                attacker: {
++                  weapon1: buildWeaponCounterSummary(stats.A.w1),
++                  weapon2: buildWeaponCounterSummary(stats.A.w2),
++                },
++                defender: {
++                  weapon1: buildWeaponCounterSummary(stats.D.w1),
++                  weapon2: buildWeaponCounterSummary(stats.D.w2),
++                },
++              }
++            : null,
++          runtimeCombatAudit: cfg.diag
++            ? {
++                attacker: buildRuntimeSideAuditSummary(stats.A),
++                defender: buildRuntimeSideAuditSummary(stats.D),
++              }
++            : null,
++          compiledSnapshot: cfg.diag
++            ? {
++                attacker: buildCompiledCombatSnapshot(
++                  attacker,
++                  defender,
++                  cfg,
++                  ATTACK_STYLE_ROUND_MODE,
++                ),
++                defender: buildCompiledCombatSnapshot(
++                  defender,
++                  attacker,
++                  cfg,
++                  ATTACK_STYLE_ROUND_MODE,
++                ),
++              }
++            : null,
+           compare: compareRow,
+         });
+ 
+@@ -6238,6 +6611,10 @@ function main() {
+                   armorRound: firstVariant.config.armorRound,
+                   sharedHit: firstVariant.config.sharedHit,
+                   sharedSkillMode: firstVariant.config.sharedSkillMode,
++                  diagW2AfterAppliedW1: firstVariant.config.diagW2AfterAppliedW1,
++                  diagSplitMultiweaponAction: firstVariant.config.diagSplitMultiweaponAction,
++                  diagQueuedSecondAction: firstVariant.config.diagQueuedSecondAction,
++                  diagFirstActorOverride: firstVariant.config.diagFirstActorOverride,
+                   actionStopOnKill: firstVariant.config.actionStopOnKill,
+                   speedTieMode: firstVariant.config.speedTieMode,
+                   roundResolveMode: firstVariant.config.roundResolveMode,

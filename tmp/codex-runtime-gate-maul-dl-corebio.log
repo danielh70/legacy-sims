@@ -1,0 +1,19 @@
+JSON_SAVE: ON
+FILTERS attackers=CUSTOM_MAUL_A4_DL_ABYSS defenders=DL Core/Rift Bio
+PROGRESS variant=- jobs=0/1 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/1 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=1/1 100.0% elapsed=00:00:00 eta=00:00:00 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Core/Rift Bio
+MATCHUPS=1 COMPARED=1 TRIALS=200 WORKERS=1 VARIANT=baseline ENV=(default env)
+SUMMARY meanAbsΔwin=0.39 meanAbsΔavgT=0.3450 worstAbsΔwin=0.39 (CUSTOM_MAUL_A4_DL_ABYSS vs DL Core/Rift Bio)
+Worst mismatches (top 15):
+01 CUSTOM_MAUL_A4_DL_ABYSS | DL Core/Rift Bio | win 47.39->47.00 s/a -0.39 / 0.39 | avgT 12.8800->13.2250 s/a +0.3450 / 0.3450
+   A hit 80->81 s/a +1 / 1 | dmg1 39->37 s/a -2 / 2 | dmg2 39->37 s/a -2 / 2 | dmg/f 756.6->719.7 s/a -36.9 / 36.9 | rng 84-211->84-211 s/a +0/+0 / 0/0
+   D hit 63->64 s/a +1 / 1 | dmg1 65->63 s/a -2 / 2 | dmg2 59->59 s/a +0 / 0 | dmg/f 597.0->580.5 s/a -16.5 / 16.5 | rng 50-125->50-125 s/a +0/+0 / 0/0
+
+By attacker:
+CUSTOM_MAUL_A4_DL_ABYSS | avgAbsΔwin=0.39 | worst=0.39 (-0.39) | vs=DL Core/Rift Bio
+
+By defender:
+DL Core/Rift Bio | avgAbsΔwin=0.39 | worst=0.39 (-0.39) | vs=CUSTOM_MAUL_A4_DL_ABYSS
+
+Saved /Users/danielhook/Desktop/code_projects/legacy_sims/results/replay/legacy-replay--legacy-truth-v4-custom-maul-a4-dl-abyss-full15--legacy-sim-v1.0.4-clean.runtime-gate-inspect--none--2026-03-15T23-09-54-682Z.json

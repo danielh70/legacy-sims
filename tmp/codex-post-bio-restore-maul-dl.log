@@ -1,0 +1,125 @@
+JSON_SAVE: ON
+FILTERS attackers=CUSTOM_MAUL_A4_DL_ABYSS defenders=(all)
+PROGRESS variant=- jobs=0/15 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/15 0.0% elapsed=00:00:00 eta=00:00:00 current=-
+PROGRESS variant=baseline jobs=0/15 0.0% elapsed=00:00:02 eta=00:00:00 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Rift/Bombs Scout
+PROGRESS variant=baseline jobs=0/15 0.0% elapsed=00:00:04 eta=00:00:00 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Rift/Bombs Scout
+PROGRESS variant=baseline jobs=1/15 6.7% elapsed=00:00:06 eta=00:01:23 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Rift/Bombs Scout
+PROGRESS variant=baseline jobs=1/15 6.7% elapsed=00:00:06 eta=00:01:24 current=CUSTOM_MAUL_A4_DL_ABYSS | SG1 Rift/Bombs Bio
+PROGRESS variant=baseline jobs=1/15 6.7% elapsed=00:00:08 eta=00:01:52 current=CUSTOM_MAUL_A4_DL_ABYSS | SG1 Rift/Bombs Bio
+PROGRESS variant=baseline jobs=1/15 6.7% elapsed=00:00:10 eta=00:02:20 current=CUSTOM_MAUL_A4_DL_ABYSS | SG1 Rift/Bombs Bio
+PROGRESS variant=baseline jobs=2/15 13.3% elapsed=00:00:12 eta=00:01:18 current=CUSTOM_MAUL_A4_DL_ABYSS | SG1 Rift/Bombs Bio
+PROGRESS variant=baseline jobs=2/15 13.3% elapsed=00:00:12 eta=00:01:18 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Maul/Core Orphic
+PROGRESS variant=baseline jobs=2/15 13.3% elapsed=00:00:14 eta=00:01:31 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Maul/Core Orphic
+PROGRESS variant=baseline jobs=2/15 13.3% elapsed=00:00:16 eta=00:01:44 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Maul/Core Orphic
+PROGRESS variant=baseline jobs=3/15 20.0% elapsed=00:00:17 eta=00:01:06 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Maul/Core Orphic
+PROGRESS variant=baseline jobs=3/15 20.0% elapsed=00:00:18 eta=00:01:12 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Reaper/Maul Orphic Bio
+PROGRESS variant=baseline jobs=3/15 20.0% elapsed=00:00:20 eta=00:01:20 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Reaper/Maul Orphic Bio
+PROGRESS variant=baseline jobs=4/15 26.7% elapsed=00:00:21 eta=00:00:58 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Reaper/Maul Orphic Bio
+PROGRESS variant=baseline jobs=4/15 26.7% elapsed=00:00:22 eta=00:01:01 current=CUSTOM_MAUL_A4_DL_ABYSS | Ashley Build
+PROGRESS variant=baseline jobs=4/15 26.7% elapsed=00:00:24 eta=00:01:06 current=CUSTOM_MAUL_A4_DL_ABYSS | Ashley Build
+PROGRESS variant=baseline jobs=4/15 26.7% elapsed=00:00:26 eta=00:01:12 current=CUSTOM_MAUL_A4_DL_ABYSS | Ashley Build
+PROGRESS variant=baseline jobs=5/15 33.3% elapsed=00:00:27 eta=00:00:53 current=CUSTOM_MAUL_A4_DL_ABYSS | Ashley Build
+PROGRESS variant=baseline jobs=5/15 33.3% elapsed=00:00:28 eta=00:00:56 current=CUSTOM_MAUL_A4_DL_ABYSS | HF Scythe Pair
+PROGRESS variant=baseline jobs=5/15 33.3% elapsed=00:00:30 eta=00:01:00 current=CUSTOM_MAUL_A4_DL_ABYSS | HF Scythe Pair
+PROGRESS variant=baseline jobs=5/15 33.3% elapsed=00:00:32 eta=00:01:04 current=CUSTOM_MAUL_A4_DL_ABYSS | HF Scythe Pair
+PROGRESS variant=baseline jobs=6/15 40.0% elapsed=00:00:32 eta=00:00:48 current=CUSTOM_MAUL_A4_DL_ABYSS | HF Scythe Pair
+PROGRESS variant=baseline jobs=6/15 40.0% elapsed=00:00:34 eta=00:00:51 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Core/Rift Bio
+PROGRESS variant=baseline jobs=6/15 40.0% elapsed=00:00:36 eta=00:00:54 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Core/Rift Bio
+PROGRESS variant=baseline jobs=6/15 40.0% elapsed=00:00:38 eta=00:00:57 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Core/Rift Bio
+PROGRESS variant=baseline jobs=6/15 40.0% elapsed=00:00:40 eta=00:01:00 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Core/Rift Bio
+PROGRESS variant=baseline jobs=7/15 46.7% elapsed=00:00:40 eta=00:00:46 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Core/Rift Bio
+PROGRESS variant=baseline jobs=7/15 46.7% elapsed=00:00:42 eta=00:00:48 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Gun Blade Recon
+PROGRESS variant=baseline jobs=7/15 46.7% elapsed=00:00:44 eta=00:00:50 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Gun Blade Recon
+PROGRESS variant=baseline jobs=8/15 53.3% elapsed=00:00:46 eta=00:00:40 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Gun Blade Recon
+PROGRESS variant=baseline jobs=8/15 53.3% elapsed=00:00:46 eta=00:00:40 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Gun Blade Bio
+PROGRESS variant=baseline jobs=8/15 53.3% elapsed=00:00:48 eta=00:00:42 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Gun Blade Bio
+PROGRESS variant=baseline jobs=9/15 60.0% elapsed=00:00:49 eta=00:00:33 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Gun Blade Bio
+PROGRESS variant=baseline jobs=9/15 60.0% elapsed=00:00:50 eta=00:00:33 current=CUSTOM_MAUL_A4_DL_ABYSS | SG1 Split Bombs T2
+PROGRESS variant=baseline jobs=9/15 60.0% elapsed=00:00:52 eta=00:00:35 current=CUSTOM_MAUL_A4_DL_ABYSS | SG1 Split Bombs T2
+PROGRESS variant=baseline jobs=9/15 60.0% elapsed=00:00:54 eta=00:00:36 current=CUSTOM_MAUL_A4_DL_ABYSS | SG1 Split Bombs T2
+PROGRESS variant=baseline jobs=10/15 66.7% elapsed=00:00:54 eta=00:00:27 current=CUSTOM_MAUL_A4_DL_ABYSS | SG1 Split Bombs T2
+PROGRESS variant=baseline jobs=10/15 66.7% elapsed=00:00:56 eta=00:00:28 current=CUSTOM_MAUL_A4_DL_ABYSS | SG1 Void/Reaper
+PROGRESS variant=baseline jobs=10/15 66.7% elapsed=00:00:58 eta=00:00:29 current=CUSTOM_MAUL_A4_DL_ABYSS | SG1 Void/Reaper
+PROGRESS variant=baseline jobs=11/15 73.3% elapsed=00:00:59 eta=00:00:21 current=CUSTOM_MAUL_A4_DL_ABYSS | SG1 Void/Reaper
+PROGRESS variant=baseline jobs=11/15 73.3% elapsed=00:01:00 eta=00:00:22 current=CUSTOM_MAUL_A4_DL_ABYSS | SG1 Double Maul Droid
+PROGRESS variant=baseline jobs=12/15 80.0% elapsed=00:01:02 eta=00:00:15 current=CUSTOM_MAUL_A4_DL_ABYSS | SG1 Double Maul Droid
+PROGRESS variant=baseline jobs=12/15 80.0% elapsed=00:01:02 eta=00:00:16 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Core/Rift Dodge
+PROGRESS variant=baseline jobs=12/15 80.0% elapsed=00:01:04 eta=00:00:16 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Core/Rift Dodge
+PROGRESS variant=baseline jobs=13/15 86.7% elapsed=00:01:05 eta=00:00:10 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Core/Rift Dodge
+PROGRESS variant=baseline jobs=13/15 86.7% elapsed=00:01:06 eta=00:00:10 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Gun Sniper Mix
+PROGRESS variant=baseline jobs=13/15 86.7% elapsed=00:01:08 eta=00:00:10 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Gun Sniper Mix
+PROGRESS variant=baseline jobs=14/15 93.3% elapsed=00:01:09 eta=00:00:05 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Gun Sniper Mix
+PROGRESS variant=baseline jobs=14/15 93.3% elapsed=00:01:10 eta=00:00:05 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Dual Rift Bio
+PROGRESS variant=baseline jobs=14/15 93.3% elapsed=00:01:12 eta=00:00:05 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Dual Rift Bio
+PROGRESS variant=baseline jobs=15/15 100.0% elapsed=00:01:13 eta=00:00:00 current=CUSTOM_MAUL_A4_DL_ABYSS | DL Dual Rift Bio
+MATCHUPS=15 COMPARED=15 TRIALS=200000 WORKERS=1 VARIANT=baseline ENV=(default env)
+SUMMARY meanAbsΔwin=1.77 meanAbsΔavgT=0.0812 worstAbsΔwin=4.58 (CUSTOM_MAUL_A4_DL_ABYSS vs SG1 Double Maul Droid)
+Worst mismatches (top 15):
+01 CUSTOM_MAUL_A4_DL_ABYSS | SG1 Double Maul Droid | win 79.54->74.96 s/a -4.58 / 4.58 | avgT 8.0297->7.9848 s/a -0.0449 / 0.0449
+   A hit 70->70 s/a +0 / 0 | dmg1 59->59 s/a +0 / 0 | dmg2 59->59 s/a +0 / 0 | dmg/f 676.3->604.5 s/a -71.8 / 71.8 | rng 87-218->86-216 s/a -1/-2 / 1/2
+   D hit 86->87 s/a +1 / 1 | dmg1 36->37 s/a +1 / 1 | dmg2 36->37 s/a +1 / 1 | dmg/f 444.1->444.9 s/a +0.8 / 0.8 | rng 94-208->94-210 s/a +0/+2 / 0/2
+02 CUSTOM_MAUL_A4_DL_ABYSS | HF Scythe Pair | win 78.34->74.84 s/a -3.50 / 3.50 | avgT 9.8659->9.7994 s/a -0.0665 / 0.0665
+   A hit 89->90 s/a +1 / 1 | dmg1 61->61 s/a +0 / 0 | dmg2 61->61 s/a +0 / 0 | dmg/f 880.5->809.8 s/a -70.7 / 70.7 | rng 72-180->71-180 s/a -1/+0 / 1/0
+   D hit 46->46 s/a +0 / 0 | dmg1 60->60 s/a +0 / 0 | dmg2 60->60 s/a +0 / 0 | dmg/f 486.9->463.3 s/a -23.6 / 23.6 | rng 79-200->80-202 s/a +1/+2 / 1/2
+03 CUSTOM_MAUL_A4_DL_ABYSS | DL Dual Rift Bio | win 43.88->41.20 s/a -2.68 / 2.68 | avgT 11.1105->11.2446 s/a +0.1341 / 0.1341
+   A hit 80->81 s/a +1 / 1 | dmg1 46->42 s/a -4 / 4 | dmg2 46->42 s/a -4 / 4 | dmg/f 746.2->702.4 s/a -43.8 / 43.8 | rng 84-211->86-217 s/a +2/+6 / 2/6
+   D hit 73->74 s/a +1 / 1 | dmg1 59->59 s/a +0 / 0 | dmg2 59->59 s/a +0 / 0 | dmg/f 611.8->582.8 s/a -29.0 / 29.0 | rng 60-130->60-130 s/a +0/+0 / 0/0
+04 CUSTOM_MAUL_A4_DL_ABYSS | Ashley Build | win 44.12->46.77 s/a +2.65 / 2.65 | avgT 8.9344->8.9453 s/a +0.0109 / 0.0109
+   A hit 56->57 s/a +1 / 1 | dmg1 57->57 s/a +0 / 0 | dmg2 57->57 s/a +0 / 0 | dmg/f 531.0->489.3 s/a -41.7 / 41.7 | rng 84-211->84-212 s/a +0/+1 / 0/1
+   D hit 69->70 s/a +1 / 1 | dmg1 55->55 s/a +0 / 0 | dmg2 55->55 s/a +0 / 0 | dmg/f 602.4->549.3 s/a -53.1 / 53.1 | rng 50-193->50-188 s/a +0/-5 / 0/5
+05 CUSTOM_MAUL_A4_DL_ABYSS | DL Core/Rift Dodge | win 66.83->64.37 s/a -2.46 / 2.46 | avgT 9.3983->9.4012 s/a +0.0029 / 0.0029
+   A hit 61->61 s/a +0 / 0 | dmg1 57->57 s/a +0 / 0 | dmg2 57->57 s/a +0 / 0 | dmg/f 624.5->579.1 s/a -45.4 / 45.4 | rng 84-211->84-212 s/a +0/+1 / 0/1
+   D hit 82->83 s/a +1 / 1 | dmg1 55->56 s/a +1 / 1 | dmg2 62->62 s/a +0 / 0 | dmg/f 536.6->516.9 s/a -19.7 / 19.7 | rng 50-125->50-125 s/a +0/+0 / 0/0
+06 CUSTOM_MAUL_A4_DL_ABYSS | SG1 Split Bombs T2 | win 56.95->58.98 s/a +2.03 / 2.03 | avgT 13.4978->13.1239 s/a -0.3739 / 0.3739
+   A hit 84->84 s/a +0 / 0 | dmg1 39->39 s/a +0 / 0 | dmg2 39->39 s/a +0 / 0 | dmg/f 803.0->762.3 s/a -40.7 / 40.7 | rng 83-207->83-208 s/a +0/+1 / 0/1
+   D hit 49->48 s/a -1 / 1 | dmg1 61->61 s/a +0 / 0 | dmg2 61->61 s/a +0 / 0 | dmg/f 561.4->522.1 s/a -39.3 / 39.3 | rng 55-172->55-172 s/a +0/+0 / 0/0
+07 CUSTOM_MAUL_A4_DL_ABYSS | DL Core/Rift Bio | win 47.39->45.78 s/a -1.61 / 1.61 | avgT 12.8800->12.9815 s/a +0.1014 / 0.1014
+   A hit 80->81 s/a +1 / 1 | dmg1 39->37 s/a -2 / 2 | dmg2 39->37 s/a -2 / 2 | dmg/f 756.6->716.7 s/a -39.9 / 39.9 | rng 84-211->86-217 s/a +2/+6 / 2/6
+   D hit 63->64 s/a +1 / 1 | dmg1 65->65 s/a +0 / 0 | dmg2 59->59 s/a +0 / 0 | dmg/f 597.0->570.7 s/a -26.3 / 26.3 | rng 50-125->50-125 s/a +0/+0 / 0/0
+08 CUSTOM_MAUL_A4_DL_ABYSS | SG1 Rift/Bombs Bio | win 49.21->50.59 s/a +1.38 / 1.38 | avgT 11.2174->11.0686 s/a -0.1487 / 0.1487
+   A hit 90->91 s/a +1 / 1 | dmg1 40->40 s/a +0 / 0 | dmg2 40->40 s/a +0 / 0 | dmg/f 767.6->734.5 s/a -33.1 / 33.1 | rng 87-218->86-216 s/a -1/-2 / 1/2
+   D hit 63->64 s/a +1 / 1 | dmg1 57->57 s/a +0 / 0 | dmg2 66->65 s/a -1 / 1 | dmg/f 589.2->555.3 s/a -33.9 / 33.9 | rng 55-151->55-151 s/a +0/+0 / 0/0
+09 CUSTOM_MAUL_A4_DL_ABYSS | DL Rift/Bombs Scout | win 48.90->50.21 s/a +1.31 / 1.31 | avgT 10.0982->10.0309 s/a -0.0673 / 0.0673
+   A hit 77->78 s/a +1 / 1 | dmg1 52->53 s/a +1 / 1 | dmg2 52->53 s/a +1 / 1 | dmg/f 767.7->736.2 s/a -31.5 / 31.5 | rng 84-211->84-212 s/a +0/+1 / 0/1
+   D hit 75->75 s/a +0 / 0 | dmg1 55->55 s/a +0 / 0 | dmg2 61->60 s/a -1 / 1 | dmg/f 592.9->559.0 s/a -33.9 / 33.9 | rng 55-151->55-151 s/a +0/+0 / 0/0
+10 CUSTOM_MAUL_A4_DL_ABYSS | DL Gun Blade Bio | win 54.30->53.26 s/a -1.04 / 1.04 | avgT 8.0128->8.0068 s/a -0.0060 / 0.0060
+   A hit 62->63 s/a +1 / 1 | dmg1 63->62 s/a -1 / 1 | dmg2 63->63 s/a +0 / 0 | dmg/f 584.7->542.2 s/a -42.5 / 42.5 | rng 84-211->84-212 s/a +0/+1 / 0/1
+   D hit 70->71 s/a +1 / 1 | dmg1 60->60 s/a +0 / 0 | dmg2 60->60 s/a +0 / 0 | dmg/f 570.2->533.9 s/a -36.3 / 36.3 | rng 60-180->60-177 s/a +0/-3 / 0/3
+11 CUSTOM_MAUL_A4_DL_ABYSS | DL Gun Blade Recon | win 50.59->49.69 s/a -0.90 / 0.90 | avgT 7.9384->7.9219 s/a -0.0165 / 0.0165
+   A hit 57->57 s/a +0 / 0 | dmg1 68->68 s/a +0 / 0 | dmg2 68->68 s/a +0 / 0 | dmg/f 573.3->530.1 s/a -43.2 / 43.2 | rng 84-211->84-212 s/a +0/+1 / 0/1
+   D hit 76->76 s/a +0 / 0 | dmg1 57->57 s/a +0 / 0 | dmg2 57->57 s/a +0 / 0 | dmg/f 583.7->545.5 s/a -38.2 / 38.2 | rng 60-180->60-177 s/a +0/-3 / 0/3
+12 CUSTOM_MAUL_A4_DL_ABYSS | DL Maul/Core Orphic | win 55.71->54.82 s/a -0.89 / 0.89 | avgT 8.0000->7.9484 s/a -0.0516 / 0.0516
+   A hit 64->65 s/a +1 / 1 | dmg1 61->61 s/a +0 / 0 | dmg2 61->61 s/a +0 / 0 | dmg/f 588.8->546.7 s/a -42.1 / 42.1 | rng 84-211->84-212 s/a +0/+1 / 0/1
+   D hit 64->65 s/a +1 / 1 | dmg1 64->64 s/a +0 / 0 | dmg2 64->64 s/a +0 / 0 | dmg/f 567.9->524.9 s/a -43.0 / 43.0 | rng 50-180->50-177 s/a +0/-3 / 0/3
+13 CUSTOM_MAUL_A4_DL_ABYSS | DL Reaper/Maul Orphic Bio | win 56.10->56.73 s/a +0.63 / 0.63 | avgT 8.1589->8.1462 s/a -0.0127 / 0.0127
+   A hit 64->65 s/a +1 / 1 | dmg1 60->60 s/a +0 / 0 | dmg2 60->60 s/a +0 / 0 | dmg/f 585.8->548.7 s/a -37.1 / 37.1 | rng 84-211->84-212 s/a +0/+1 / 0/1
+   D hit 61->62 s/a +1 / 1 | dmg1 54->54 s/a +0 / 0 | dmg2 54->54 s/a +0 / 0 | dmg/f 570.1->520.1 s/a -50.0 / 50.0 | rng 84-227->84-224 s/a +0/-3 / 0/3
+14 CUSTOM_MAUL_A4_DL_ABYSS | DL Gun Sniper Mix | win 60.37->60.87 s/a +0.50 / 0.50 | avgT 8.2004->8.2697 s/a +0.0693 / 0.0693
+   A hit 79->79 s/a +0 / 0 | dmg1 64->63 s/a -1 / 1 | dmg2 64->63 s/a -1 / 1 | dmg/f 813.3->773.5 s/a -39.8 / 39.8 | rng 84-211->84-212 s/a +0/+1 / 0/1
+   D hit 79->80 s/a +1 / 1 | dmg1 51->52 s/a +1 / 1 | dmg2 51->52 s/a +1 / 1 | dmg/f 553.2->522.0 s/a -31.2 / 31.2 | rng 60-185->60-182 s/a +0/-3 / 0/3
+15 CUSTOM_MAUL_A4_DL_ABYSS | SG1 Void/Reaper | win 53.02->52.70 s/a -0.32 / 0.32 | avgT 8.6647->8.5532 s/a -0.1115 / 0.1115
+   A hit 73->74 s/a +1 / 1 | dmg1 49->49 s/a +0 / 0 | dmg2 49->49 s/a +0 / 0 | dmg/f 593.1->544.4 s/a -48.7 / 48.7 | rng 87-218->86-216 s/a -1/-2 / 1/2
+   D hit 71->72 s/a +1 / 1 | dmg1 55->55 s/a +0 / 0 | dmg2 53->54 s/a +1 / 1 | dmg/f 572.6->536.4 s/a -36.2 / 36.2 | rng 12-242->12-243 s/a +0/+1 / 0/1
+
+By attacker:
+CUSTOM_MAUL_A4_DL_ABYSS | avgAbsΔwin=1.77 | worst=4.58 (-4.58) | vs=SG1 Double Maul Droid
+
+By defender:
+SG1 Double Maul Droid | avgAbsΔwin=4.58 | worst=4.58 (-4.58) | vs=CUSTOM_MAUL_A4_DL_ABYSS
+HF Scythe Pair | avgAbsΔwin=3.50 | worst=3.50 (-3.50) | vs=CUSTOM_MAUL_A4_DL_ABYSS
+DL Dual Rift Bio | avgAbsΔwin=2.68 | worst=2.68 (-2.68) | vs=CUSTOM_MAUL_A4_DL_ABYSS
+Ashley Build | avgAbsΔwin=2.65 | worst=2.65 (+2.65) | vs=CUSTOM_MAUL_A4_DL_ABYSS
+DL Core/Rift Dodge | avgAbsΔwin=2.46 | worst=2.46 (-2.46) | vs=CUSTOM_MAUL_A4_DL_ABYSS
+SG1 Split Bombs T2 | avgAbsΔwin=2.03 | worst=2.03 (+2.03) | vs=CUSTOM_MAUL_A4_DL_ABYSS
+DL Core/Rift Bio | avgAbsΔwin=1.61 | worst=1.61 (-1.61) | vs=CUSTOM_MAUL_A4_DL_ABYSS
+SG1 Rift/Bombs Bio | avgAbsΔwin=1.38 | worst=1.38 (+1.38) | vs=CUSTOM_MAUL_A4_DL_ABYSS
+DL Rift/Bombs Scout | avgAbsΔwin=1.31 | worst=1.31 (+1.31) | vs=CUSTOM_MAUL_A4_DL_ABYSS
+DL Gun Blade Bio | avgAbsΔwin=1.04 | worst=1.04 (-1.04) | vs=CUSTOM_MAUL_A4_DL_ABYSS
+DL Gun Blade Recon | avgAbsΔwin=0.90 | worst=0.90 (-0.90) | vs=CUSTOM_MAUL_A4_DL_ABYSS
+DL Maul/Core Orphic | avgAbsΔwin=0.89 | worst=0.89 (-0.89) | vs=CUSTOM_MAUL_A4_DL_ABYSS
+DL Reaper/Maul Orphic Bio | avgAbsΔwin=0.63 | worst=0.63 (+0.63) | vs=CUSTOM_MAUL_A4_DL_ABYSS
+DL Gun Sniper Mix | avgAbsΔwin=0.50 | worst=0.50 (+0.50) | vs=CUSTOM_MAUL_A4_DL_ABYSS
+SG1 Void/Reaper | avgAbsΔwin=0.32 | worst=0.32 (-0.32) | vs=CUSTOM_MAUL_A4_DL_ABYSS
+
+Saved /Users/danielhook/Desktop/code_projects/legacy_sims/tmp/replay-post-bio-restore-ranking/legacy-replay--legacy-truth-v4-custom-maul-a4-dl-abyss-full15--legacy-sim-v1.0.4-clean--none--codex-post-bio-restore-maul-dl--2026-03-16T02-31-08-675Z.json
