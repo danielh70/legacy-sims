@@ -42,7 +42,7 @@
  *   LEGACY_HIT_ROLL_MODE=int             LEGACY_HIT_GE=1     LEGACY_HIT_QROUND=round
  *   LEGACY_SKILL_ROLL_MODE=int           LEGACY_SKILL_GE=1   LEGACY_SKILL_QROUND=round
  *   LEGACY_DMG_ROLL=int
- *   LEGACY_ARMOR_K=8                     LEGACY_ARMOR_APPLY=per_weapon  LEGACY_ARMOR_ROUND=ceil
+ *   LEGACY_ARMOR_K=7                     LEGACY_ARMOR_APPLY=per_weapon  LEGACY_ARMOR_ROUND=ceil
  *   LEGACY_ATTACK_STYLE_MODE=lock|sweep
  *   LEGACY_ATTACKER_ATTACK_TYPE=normal|aimed|cover
  *   LEGACY_ATTACK_STYLE_SET=normal,aimed,cover
@@ -1107,7 +1107,7 @@ const SKILL_QROUND = normalizeQround(_envStr('LEGACY_SKILL_QROUND', 'round'));
 
 const DMG_ROLL = String(_envStr('LEGACY_DMG_ROLL', 'int')).trim().toLowerCase();
 
-const ARMOR_K = _envNum('LEGACY_ARMOR_K', 8);
+const ARMOR_K = _envNum('LEGACY_ARMOR_K', 7);
 const ARMOR_APPLY = _envStr('LEGACY_ARMOR_APPLY', 'per_weapon').trim().toLowerCase();
 const ARMOR_ROUND = _envStr('LEGACY_ARMOR_ROUND', 'ceil').trim().toLowerCase();
 
@@ -1342,8 +1342,8 @@ function rollDamage(min, max, dmgRollMode) {
 }
 
 function armorFactorForArmorValue(level, armor, armorK) {
-  const k = armorK == null ? 8 : armorK;
-  const mod = (level * k) / 2;
+  const k = armorK == null ? 7 : armorK;
+  const mod = (Math.min(level, 80) * k) / 2;
   return mod / (mod + armor);
 }
 
@@ -2061,13 +2061,13 @@ const VARIANT_CFG = (() => {
   ).toLowerCase();
   const crystalStackDmg = _envStr(
     'LEGACY_CRYSTAL_STACK_DMG',
-    crystalStackModeDefault || 'sum4',
+    crystalStackModeDefault || 'iter4',
   ).toLowerCase();
   const crystalSlots = _envInt('LEGACY_CRYSTAL_SLOTS', 4);
 
   // Armor-stat stacking appears to differ from normal stat stacking in-game; default it to sum4.
-  const armorStatStackRaw = _envStr('LEGACY_ARMORSTAT_STACK', 'inherit').toLowerCase();
-  const armorStatRoundRaw = _envStr('LEGACY_ARMORSTAT_ROUND', 'inherit').toLowerCase();
+  const armorStatStackRaw = _envStr('LEGACY_ARMORSTAT_STACK', 'iter4').toLowerCase();
+  const armorStatRoundRaw = _envStr('LEGACY_ARMORSTAT_ROUND', 'ceil').toLowerCase();
   const armorStatSlotsRaw = _envStr('LEGACY_ARMORSTAT_SLOTS', 'inherit').toLowerCase();
 
   const armorStatStack = armorStatStackRaw === 'inherit' ? 'sum4' : armorStatStackRaw;
@@ -2760,8 +2760,7 @@ function scaleVariantCrystalDelta(v, scale) {
 function applyValidatedDuplicateBioPinkScaling(m1V, m2V) {
   if (!isValidatedDuplicateBioPinkVariant(m1V) || !isValidatedDuplicateBioPinkVariant(m2V))
     return [m1V, m2V];
-  // Validated duplicate-Bio patch: boost only the second exact Bio[P4] crystal delta.
-  return [m1V, scaleVariantCrystalDelta(m2V, 1.5)];
+  return [m1V, m2V];
 }
 
 function buildVariantsForArmors(names) {
