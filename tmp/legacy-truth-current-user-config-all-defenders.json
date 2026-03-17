@@ -1,0 +1,1138 @@
+{
+  "meta": {
+    "sourceSimFile": "legacy-sim-v1.0.4-clean.js",
+    "sourceSimPath": "/Users/danielhook/Desktop/code_projects/legacy_sims/legacy-sim-v1.0.4-clean.js",
+    "sourceDefenderFile": "data/legacy-defenders-meta-v4-curated.js",
+    "sourceDefenderPath": "/Users/danielhook/Desktop/code_projects/legacy_sims/data/legacy-defenders-meta-v4-curated.js",
+    "defenderTriedFiles": [
+      "data/legacy-defenders-meta-v4-curated.js"
+    ],
+    "attackerSource": "USER_CONFIG.attacker",
+    "attackerMode": "user-config-direct",
+    "attackerLabel": "CUSTOM",
+    "attackerAttackType": "normal",
+    "defenderAttackTypeOverride": "",
+    "attackerHash": "4d627351",
+    "defenderCount": 15,
+    "verifyDefendersRaw": "all",
+    "verifyDefendersMode": "all",
+    "crystalSlots": 4,
+    "generatedAt": "2026-03-16T23:46:01.660Z"
+  },
+  "attackers": [
+    {
+      "name": "CUSTOM",
+      "build": {
+        "stats": {
+          "level": 80,
+          "hp": 650,
+          "speed": 60,
+          "dodge": 57,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "SG1 Armor",
+          "crystal": "Perfect Pink Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal"
+          ]
+        },
+        "weapon1": {
+          "name": "Reaper Axe",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "weapon2": {
+          "name": "Crystal Maul",
+          "crystal": "Amulet Crystal x3 + Perfect Fire Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Perfect Fire Crystal"
+          ]
+        },
+        "misc1": {
+          "name": "Bio Spinal Enhancer",
+          "crystal": "Perfect Pink Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal"
+          ]
+        },
+        "misc2": {
+          "name": "Bio Spinal Enhancer",
+          "crystal": "Perfect Orange Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal"
+          ]
+        },
+        "attackType": "normal",
+        "label": "CUSTOM"
+      }
+    }
+  ],
+  "defenders": [
+    {
+      "name": "DL Rift/Bombs Scout",
+      "build": {
+        "stats": {
+          "level": 108,
+          "hp": 865,
+          "speed": 60,
+          "dodge": 14,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "Dark Legion Armor",
+          "crystal": "Abyss Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal"
+          ]
+        },
+        "weapon1": {
+          "name": "Rift Gun",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "weapon2": {
+          "name": "Split Crystal Bombs T2",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "misc1": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "misc2": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "attackType": "normal"
+      },
+      "hash": "267700f0"
+    },
+    {
+      "name": "SG1 Rift/Bombs Bio",
+      "build": {
+        "stats": {
+          "level": 96,
+          "hp": 865,
+          "speed": 60,
+          "dodge": 14,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "SG1 Armor",
+          "crystal": "Perfect Pink Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal"
+          ]
+        },
+        "weapon1": {
+          "name": "Rift Gun",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "weapon2": {
+          "name": "Split Crystal Bombs T2",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "misc1": {
+          "name": "Bio Spinal Enhancer",
+          "crystal": "Perfect Yellow Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Yellow Crystal",
+            "Perfect Yellow Crystal",
+            "Perfect Yellow Crystal",
+            "Perfect Yellow Crystal"
+          ]
+        },
+        "misc2": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "attackType": "normal"
+      },
+      "hash": "0b7fe5b1"
+    },
+    {
+      "name": "DL Maul/Core Orphic",
+      "build": {
+        "stats": {
+          "level": 103,
+          "hp": 650,
+          "speed": 60,
+          "dodge": 57,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "Dark Legion Armor",
+          "crystal": "Abyss Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal"
+          ]
+        },
+        "weapon1": {
+          "name": "Crystal Maul",
+          "crystal": "Perfect Fire Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Fire Crystal",
+            "Perfect Fire Crystal",
+            "Perfect Fire Crystal",
+            "Perfect Fire Crystal"
+          ]
+        },
+        "weapon2": {
+          "name": "Core Staff",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "misc1": {
+          "name": "Bio Spinal Enhancer",
+          "crystal": "Perfect Pink Crystal x2 + Perfect Orange Crystal x2",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal"
+          ]
+        },
+        "misc2": {
+          "name": "Orphic Amulet",
+          "crystal": "Perfect Orange Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal"
+          ]
+        },
+        "attackType": "normal"
+      },
+      "hash": "306dad03"
+    },
+    {
+      "name": "DL Reaper/Maul Orphic Bio",
+      "build": {
+        "stats": {
+          "level": 101,
+          "hp": 650,
+          "speed": 60,
+          "dodge": 57,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "Dark Legion Armor",
+          "crystal": "Abyss Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal"
+          ]
+        },
+        "weapon1": {
+          "name": "Reaper Axe",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "weapon2": {
+          "name": "Crystal Maul",
+          "crystal": "Perfect Fire Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Fire Crystal",
+            "Perfect Fire Crystal",
+            "Perfect Fire Crystal",
+            "Perfect Fire Crystal"
+          ]
+        },
+        "misc1": {
+          "name": "Orphic Amulet",
+          "crystal": "Perfect Orange Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal"
+          ]
+        },
+        "misc2": {
+          "name": "Bio Spinal Enhancer",
+          "crystal": "Perfect Pink Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal"
+          ]
+        },
+        "attackType": "normal"
+      },
+      "hash": "30fa46d2"
+    },
+    {
+      "name": "Ashley Build",
+      "build": {
+        "stats": {
+          "level": 101,
+          "hp": 600,
+          "speed": 60,
+          "dodge": 67,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "Dark Legion Armor",
+          "crystal": "Abyss Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal"
+          ]
+        },
+        "weapon1": {
+          "name": "Reaper Axe",
+          "crystal": "Berserker Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Berserker Crystal",
+            "Berserker Crystal",
+            "Berserker Crystal",
+            "Berserker Crystal"
+          ]
+        },
+        "weapon2": {
+          "name": "Core Staff",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "misc1": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "misc2": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "attackType": "normal"
+      },
+      "hash": "8b0f9122"
+    },
+    {
+      "name": "HF Scythe Pair",
+      "build": {
+        "stats": {
+          "level": 93,
+          "hp": 865,
+          "speed": 60,
+          "dodge": 14,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "Hellforged Armor",
+          "crystal": "Abyss Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal"
+          ]
+        },
+        "weapon1": {
+          "name": "Scythe T2",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "weapon2": {
+          "name": "Scythe T2",
+          "crystal": "Amulet Crystal x3 + Perfect Fire Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Perfect Fire Crystal"
+          ]
+        },
+        "misc1": {
+          "name": "Scout Drones",
+          "crystal": "Perfect Orange Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal"
+          ]
+        },
+        "misc2": {
+          "name": "Bio Spinal Enhancer",
+          "crystal": "Perfect Orange Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal"
+          ]
+        },
+        "attackType": "normal"
+      },
+      "hash": "32743257"
+    },
+    {
+      "name": "DL Core/Rift Bio",
+      "build": {
+        "stats": {
+          "level": 91,
+          "hp": 865,
+          "speed": 60,
+          "dodge": 14,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "Dark Legion Armor",
+          "crystal": "Abyss Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal"
+          ]
+        },
+        "weapon1": {
+          "name": "Core Staff",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "weapon2": {
+          "name": "Rift Gun",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "misc1": {
+          "name": "Bio Spinal Enhancer",
+          "crystal": "Perfect Pink Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal"
+          ]
+        },
+        "misc2": {
+          "name": "Bio Spinal Enhancer",
+          "crystal": "Perfect Pink Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal"
+          ]
+        },
+        "attackType": "normal"
+      },
+      "hash": "f5e08e39"
+    },
+    {
+      "name": "DL Gun Blade Recon",
+      "build": {
+        "stats": {
+          "level": 127,
+          "hp": 650,
+          "speed": 60,
+          "dodge": 57,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "Dark Legion Armor",
+          "crystal": "Abyss Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal"
+          ]
+        },
+        "weapon1": {
+          "name": "Rift Gun",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "weapon2": {
+          "name": "Gun Blade Mk4",
+          "crystal": "Amulet Crystal",
+          "upgrades": [
+            "Sharpened Blade 1",
+            "Faster Ammo 1"
+          ],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "misc1": {
+          "name": "Recon Drones",
+          "crystal": "Perfect Green Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Green Crystal",
+            "Perfect Green Crystal",
+            "Perfect Green Crystal",
+            "Perfect Green Crystal"
+          ]
+        },
+        "misc2": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "attackType": "normal"
+      },
+      "hash": "3412e03b"
+    },
+    {
+      "name": "DL Gun Blade Bio",
+      "build": {
+        "stats": {
+          "level": 92,
+          "hp": 650,
+          "speed": 60,
+          "dodge": 57,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "Dark Legion Armor",
+          "crystal": "Abyss Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal"
+          ]
+        },
+        "weapon1": {
+          "name": "Rift Gun",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "weapon2": {
+          "name": "Gun Blade Mk4",
+          "crystal": "Amulet Crystal",
+          "upgrades": [
+            "Sharpened Blade 1",
+            "Faster Ammo 1"
+          ],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "misc1": {
+          "name": "Bio Spinal Enhancer",
+          "crystal": "Perfect Green Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Green Crystal",
+            "Perfect Green Crystal",
+            "Perfect Green Crystal",
+            "Perfect Green Crystal"
+          ]
+        },
+        "misc2": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal + Perfect Green Crystal x3",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Perfect Green Crystal",
+            "Perfect Green Crystal",
+            "Perfect Green Crystal"
+          ]
+        },
+        "attackType": "normal"
+      },
+      "hash": "e76944a6"
+    },
+    {
+      "name": "SG1 Split Bombs T2",
+      "build": {
+        "stats": {
+          "level": 110,
+          "hp": 865,
+          "speed": 60,
+          "dodge": 14,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "SG1 Armor",
+          "crystal": "Abyss Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal"
+          ]
+        },
+        "weapon1": {
+          "name": "Split Crystal Bombs T2",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "weapon2": {
+          "name": "Split Crystal Bombs T2",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "misc1": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "misc2": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "attackType": "normal"
+      },
+      "hash": "af5e9742"
+    },
+    {
+      "name": "SG1 Void/Reaper",
+      "build": {
+        "stats": {
+          "level": 103,
+          "hp": 650,
+          "speed": 60,
+          "dodge": 57,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "SG1 Armor",
+          "crystal": "Perfect Pink Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal"
+          ]
+        },
+        "weapon1": {
+          "name": "Void Bow",
+          "crystal": "Amulet Crystal",
+          "upgrades": [
+            "Poisoned Tip"
+          ],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "weapon2": {
+          "name": "Reaper Axe",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "misc1": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "misc2": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "attackType": "normal"
+      },
+      "hash": "c7f11ce0"
+    },
+    {
+      "name": "SG1 Double Maul Droid",
+      "build": {
+        "stats": {
+          "level": 94,
+          "hp": 650,
+          "speed": 60,
+          "dodge": 57,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "SG1 Armor",
+          "crystal": "Perfect Pink Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal"
+          ]
+        },
+        "weapon1": {
+          "name": "Crystal Maul",
+          "crystal": "Amulet Crystal x2 + Perfect Fire Crystal x2",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Perfect Fire Crystal",
+            "Perfect Fire Crystal"
+          ]
+        },
+        "weapon2": {
+          "name": "Crystal Maul",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "misc1": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "misc2": {
+          "name": "Droid Drone",
+          "crystal": "Perfect Orange Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal",
+            "Perfect Orange Crystal"
+          ]
+        },
+        "attackType": "normal"
+      },
+      "hash": "7ab247af"
+    },
+    {
+      "name": "DL Core/Rift Dodge",
+      "build": {
+        "stats": {
+          "level": 105,
+          "hp": 650,
+          "speed": 60,
+          "dodge": 57,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "Dark Legion Armor",
+          "crystal": "Abyss Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal"
+          ]
+        },
+        "weapon1": {
+          "name": "Rift Gun",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "weapon2": {
+          "name": "Core Staff",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "misc1": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "misc2": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "attackType": "normal"
+      },
+      "hash": "fb2ec848"
+    },
+    {
+      "name": "DL Gun Sniper Mix",
+      "build": {
+        "stats": {
+          "level": 98,
+          "hp": 865,
+          "speed": 60,
+          "dodge": 14,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "Dark Legion Armor",
+          "crystal": "Abyss Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal"
+          ]
+        },
+        "weapon1": {
+          "name": "Rift Gun",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "weapon2": {
+          "name": "Double Barrel Sniper Rifle",
+          "crystal": "Perfect Fire Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Fire Crystal",
+            "Perfect Fire Crystal",
+            "Perfect Fire Crystal",
+            "Perfect Fire Crystal"
+          ]
+        },
+        "misc1": {
+          "name": "Scout Drones",
+          "crystal": "Amulet Crystal x3 + Perfect Pink Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Perfect Pink Crystal"
+          ]
+        },
+        "misc2": {
+          "name": "Bio Spinal Enhancer",
+          "crystal": "Perfect Pink Crystal x2 + Perfect Green Crystal x2",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Green Crystal",
+            "Perfect Green Crystal"
+          ]
+        },
+        "attackType": "normal"
+      },
+      "hash": "fdb50276"
+    },
+    {
+      "name": "DL Dual Rift Bio",
+      "build": {
+        "stats": {
+          "level": 91,
+          "hp": 865,
+          "speed": 60,
+          "dodge": 14,
+          "accuracy": 14
+        },
+        "armor": {
+          "name": "Dark Legion Armor",
+          "crystal": "Abyss Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal",
+            "Abyss Crystal"
+          ]
+        },
+        "weapon1": {
+          "name": "Rift Gun",
+          "crystal": "Amulet Crystal x3 + Perfect Fire Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Perfect Fire Crystal"
+          ]
+        },
+        "weapon2": {
+          "name": "Rift Gun",
+          "crystal": "Amulet Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal",
+            "Amulet Crystal"
+          ]
+        },
+        "misc1": {
+          "name": "Bio Spinal Enhancer",
+          "crystal": "Perfect Pink Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal"
+          ]
+        },
+        "misc2": {
+          "name": "Bio Spinal Enhancer",
+          "crystal": "Perfect Pink Crystal",
+          "upgrades": [],
+          "crystals": [
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal",
+            "Perfect Pink Crystal"
+          ]
+        },
+        "attackType": "normal"
+      },
+      "hash": "be225e2f"
+    }
+  ]
+}

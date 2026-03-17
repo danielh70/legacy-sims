@@ -60,7 +60,7 @@ const USER_CONFIG = {
   },
 
   defenders: {
-    file: 'data/legacy-defenders.js',
+    file: 'data/legacy-defenders-meta-v4-curated.js',
   },
 
   // Normal default: edit this block for routine runs.
@@ -122,7 +122,7 @@ const __DEFAULT_ENV__ = {
 
   LEGACY_DMG_ROLL: 'int',
 
-  LEGACY_ARMOR_K: '8',
+  LEGACY_ARMOR_K: '7',
   LEGACY_ARMOR_APPLY: 'per_weapon',
   LEGACY_ARMOR_ROUND: 'ceil',
 
@@ -137,11 +137,11 @@ const __DEFAULT_ENV__ = {
 
   LEGACY_CRYSTAL_STACK_MODE: 'sum4',
   LEGACY_CRYSTAL_STACK_STATS: 'iter4',
-  LEGACY_CRYSTAL_STACK_DMG: 'sum4',
+  LEGACY_CRYSTAL_STACK_DMG: 'iter4',
   LEGACY_CRYSTAL_SLOTS: '4',
 
-  LEGACY_ARMORSTAT_STACK: 'inherit',
-  LEGACY_ARMORSTAT_ROUND: 'inherit',
+  LEGACY_ARMORSTAT_STACK: 'iter4',
+  LEGACY_ARMORSTAT_ROUND: 'ceil',
   LEGACY_ARMORSTAT_SLOTS: 'inherit',
 
   LEGACY_MISC_NO_CRYSTAL_SKILL: '',
@@ -1384,8 +1384,8 @@ function resolveFirstActor(
 }
 
 function armorFactorForArmorValue(level, armor, armorK) {
-  const k = armorK == null ? 8 : armorK;
-  const mod = (level * k) / 2;
+  const k = armorK == null ? 7 : armorK;
+  const mod = (Math.min(level, 80) * k) / 2;
   return mod / (mod + armor);
 }
 
@@ -2112,8 +2112,10 @@ function buildVariantDebugMath({
   const weaponRound = cfg.weaponDmgRound;
   const stackModeStats = cfg.crystalStackStats || 'sum4';
   const stackModeDmg = cfg.crystalStackDmg || 'sum4';
-  const armorStatRound = cfg.armorStatRound || statRound;
-  const armorStatStack = cfg.armorStatStack || stackModeStats;
+  const armorStatRound =
+    !cfg.armorStatRound || cfg.armorStatRound === 'inherit' ? statRound : cfg.armorStatRound;
+  const armorStatStack =
+    !cfg.armorStatStack || cfg.armorStatStack === 'inherit' ? stackModeStats : cfg.armorStatStack;
   const armorStatSlots = Number.isFinite(Number(cfg.armorStatSlots))
     ? Math.max(0, Number(cfg.armorStatSlots) | 0)
     : totalSlots;
@@ -2315,8 +2317,27 @@ function computeVariant(itemName, crystalName, upgrades = [], cfg, slotTag = 0) 
   const stackModeStats = cfg.crystalStackStats || 'sum4';
 
   function applyStat(base, crystalKey, upgradeKey) {
-    const rMode = crystalKey === 'armor' ? cfg.armorStatRound || statRound : statRound;
-    const sMode = crystalKey === 'armor' ? cfg.armorStatStack || stackModeStats : stackModeStats;
+    const rMode =
+      crystalKey === 'armor'
+        ? !cfg.armorStatRound || cfg.armorStatRound === 'inherit'
+          ? statRound
+          : cfg.armorStatRound
+        : statRound;
+    const sMode =
+      crystalKey === 'armor'
+        ? !cfg.armorStatStack || cfg.armorStatStack === 'inherit'
+          ? stackModeStats
+          : cfg.armorStatStack
+        : stackModeStats;
+    if (crystalKey === 'armor' && base > 100)
+      console.log(
+        'DEBUG_ARMOR_COMPILE:',
+        'base=' + base,
+        'sMode=' + sMode,
+        'rMode=' + rMode,
+        'cfgArmorStatStack=' + cfg.armorStatStack,
+        'stackModeStats=' + stackModeStats,
+      );
     const nLocal =
       crystalKey === 'armor'
         ? Number.isFinite(Number(cfg.armorStatSlots))
@@ -2488,9 +2509,18 @@ function computeVariantFromCrystalSpec(itemName, crystalSpec, upgrades = [], cfg
   const stackModeDmg = cfg.crystalStackDmg || 'sum4';
 
   function applyStat(base, crystalKey, upgradeKey) {
-    const roundMode = crystalKey === 'armor' ? cfg.armorStatRound || statRound : statRound;
+    const roundMode =
+      crystalKey === 'armor'
+        ? !cfg.armorStatRound || cfg.armorStatRound === 'inherit'
+          ? statRound
+          : cfg.armorStatRound
+        : statRound;
     const stackMode =
-      crystalKey === 'armor' ? cfg.armorStatStack || stackModeStats : stackModeStats;
+      crystalKey === 'armor'
+        ? !cfg.armorStatStack || cfg.armorStatStack === 'inherit'
+          ? stackModeStats
+          : cfg.armorStatStack
+        : stackModeStats;
     const slotCount =
       crystalKey === 'armor'
         ? Number.isFinite(Number(cfg.armorStatSlots))
@@ -2625,10 +2655,7 @@ function scaleVariantCrystalDelta(v, scale) {
 }
 
 function applyValidatedDuplicateBioPinkScaling(m1V, m2V) {
-  if (!isValidatedDuplicateBioPinkVariant(m1V) || !isValidatedDuplicateBioPinkVariant(m2V))
-    return [m1V, m2V];
-  // Validated duplicate-Bio patch: boost only the second exact Bio[P4] crystal delta.
-  return [m1V, scaleVariantCrystalDelta(m2V, 1.5)];
+  return [m1V, m2V];
 }
 
 function compileCombatantFromParts({
@@ -2676,6 +2703,13 @@ function compileCombatantFromParts({
     BASE.defSkill + armorV.addDef + w1V.addDef + w2V.addDef + m1Eff.addDef + m2Eff.addDef;
 
   const armor = BASE.armor + armorV.addArmStat;
+  if (armorV.itemName === 'Hellforged Armor')
+    console.log(
+      'DEBUG_HF:',
+      'addArmStat=' + armorV.addArmStat,
+      'totalArmor=' + armor,
+      'crystal=' + armorV.crystalName,
+    );
   const armorFactor = armorFactorForArmorValue(level, armor, cfg.armorK);
 
   const tacticsVal = cfg.tacticsVal;
