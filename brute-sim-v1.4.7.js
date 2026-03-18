@@ -67,7 +67,7 @@
 // =====================
 const fs = require('fs');
 const os = require('os');
-const VERSION = 'v1.4.6';
+const VERSION = 'v1.4.7';
 const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
 
 // =====================
@@ -78,8 +78,8 @@ const SETTINGS = {
   HP_MAX: 865,
   MAX_TURNS: 200,
 
-  TRIALS_CONFIRM_DEFAULT: 15000,
-  TRIALS_SCREEN_DEFAULT: 1000,
+  TRIALS_CONFIRM_DEFAULT: 20000,
+  TRIALS_SCREEN_DEFAULT: 1200,
   TRIALS_GATE_DEFAULT: 300,
   GATEKEEPERS_DEFAULT: 4,
 
@@ -101,12 +101,12 @@ const SETTINGS = {
 const PLAN_SWEEP_CONFIG = {
   // 'single' = only use singleHp below
   // 'sweep'  = use hpSweep.min..max in hpSweep.step increments
-  hpMode: 'single',
+  hpMode: 'sweep',
   singleHp: SETTINGS.LOCKED_HP,
 
   hpSweep: {
-    min: 500,
-    max: 700,
+    min: 600,
+    max: 650,
     step: 50,
     includeSingleHp: false,
   },
@@ -151,20 +151,20 @@ const POOLS = {
   weapons: [
     'Crystal Maul',
     'Core Staff',
-    'Void Axe',
-    'Scythe T2',
+    // 'Void Axe',
+    // 'Scythe T2',
     // 'Void Sword',
     // "Ritual Dagger IV",
     // "Warlords Katana",
-    'Fortified Void Bow',
+    // 'Fortified Void Bow',
     'Split Crystal Bombs T2',
     'Rift Gun',
-    'Double Barrel Sniper Rifle',
-    'Q15 Gun',
+    // 'Double Barrel Sniper Rifle',
+    // 'Q15 Gun',
     'Bio Gun Mk4',
     // "Gun Blade Mk4",
     'Reaper Axe',
-    'Alien Staff',
+    // 'Alien Staff',
   ],
   miscs: [
     'Bio Spinal Enhancer',
@@ -688,8 +688,8 @@ function shortCrystal(c) {
       return 'B';
     case 'Cabrusion Crystal':
       return 'C';
-    // case "Berserker Crystal":
-    //   return "Z";
+    case 'Berserker Crystal':
+      return 'Z';
     default:
       return '?';
   }
@@ -1134,16 +1134,10 @@ const SHARED_HIT = _envBool('LEGACY_SHARED_HIT', false);
 // main-calib compatibility: shared skill roll caching
 //   none | same_type | gun_same_type
 const SHARED_SKILL_MODE = _envStr('LEGACY_SHARED_SKILL', 'none').trim().toLowerCase();
-const SHARED_SKILL_ATTACKER_OVERRIDE = _envStr(
-  'LEGACY_SHARED_SKILL_ATTACKER_OVERRIDE',
-  'auto',
-)
+const SHARED_SKILL_ATTACKER_OVERRIDE = _envStr('LEGACY_SHARED_SKILL_ATTACKER_OVERRIDE', 'auto')
   .trim()
   .toLowerCase();
-const SHARED_SKILL_DEFENDER_OVERRIDE = _envStr(
-  'LEGACY_SHARED_SKILL_DEFENDER_OVERRIDE',
-  'auto',
-)
+const SHARED_SKILL_DEFENDER_OVERRIDE = _envStr('LEGACY_SHARED_SKILL_DEFENDER_OVERRIDE', 'auto')
   .trim()
   .toLowerCase();
 
@@ -1263,11 +1257,7 @@ function normalizeDiagQueuedSecondAction(v) {
     : 'auto';
 }
 function normalizeDiagFirstActorOverride(v) {
-  return v === 'off' ||
-    v === 'attacker' ||
-    v === 'defender' ||
-    v === 'alternate' ||
-    v === 'auto'
+  return v === 'off' || v === 'attacker' || v === 'defender' || v === 'alternate' || v === 'auto'
     ? v
     : 'auto';
 }
@@ -1419,13 +1409,7 @@ function attemptWeaponFast(att, def, w, pre, out) {
 
   // ARMOR application
   const val =
-    ARMOR_APPLY === 'per_weapon'
-      ? applyArmorAndRound(
-          raw,
-          armorFactorForArmorValue(BASE.level, def.armor, ARMOR_K),
-          ARMOR_ROUND,
-        )
-      : raw;
+    ARMOR_APPLY === 'per_weapon' ? applyArmorAndRound(raw, def.armorFactor, ARMOR_ROUND) : raw;
 
   out[0] = val > 0 ? val : 0;
   out[1] = 1; // raw>0 (hit+skill succeeded)
@@ -1434,33 +1418,16 @@ function attemptWeaponFast(att, def, w, pre, out) {
 function doActionFast(att, def, targetHp0) {
   if (targetHp0 <= 0) return 0;
 
-  function preparePreAction() {
-    _PRE_ACTION.forceHit = SHARED_HIT
-      ? rollVs(att.acc, def.dodge, HIT_ROLL_MODE, HIT_GE, HIT_QROUND)
-      : null;
+  const splitMultiweaponActionEnabled = targetHp0 > 0 && att._splitMultiweapon;
 
-    _PRE_ACTION.sharedSkillOn = false;
-    _PRE_ACTION.sharedSkillSkillCode = null;
-    _PRE_ACTION.sharedSkillCached = false;
-    _PRE_ACTION.sharedSkillCachedVal = false;
-
-    const sharedSkillDecision = resolveSharedSkillEligibility(att);
-    if (sharedSkillDecision.enabled) {
-      _PRE_ACTION.sharedSkillOn = true;
-      _PRE_ACTION.sharedSkillSkillCode = sharedSkillDecision.skillCode;
-    }
-  }
-
-  const splitMultiweaponActionEnabled =
-    targetHp0 > 0 &&
-    ARMOR_APPLY === 'per_weapon' &&
-    TACTICS_BASE_VAL === 0 &&
-    !!att &&
-    !!att.w1 &&
-    !!att.w2 &&
-    diagSplitMultiweaponActionEnabledForActor(DIAG_SPLIT_MULTIWEAPON_ACTION, att);
-
-  preparePreAction();
+  // Inlined preparePreAction (Optimization 3)
+  _PRE_ACTION.forceHit = SHARED_HIT
+    ? rollVs(att.acc, def.dodge, HIT_ROLL_MODE, HIT_GE, HIT_QROUND)
+    : null;
+  _PRE_ACTION.sharedSkillOn = att._sharedSkillOn;
+  _PRE_ACTION.sharedSkillSkillCode = att._sharedSkillSkillCode;
+  _PRE_ACTION.sharedSkillCached = false;
+  _PRE_ACTION.sharedSkillCachedVal = false;
 
   // weapon 1
   attemptWeaponFast(att, def, att.w1, _PRE_ACTION, _TW1);
@@ -1471,14 +1438,17 @@ function doActionFast(att, def, targetHp0) {
     if (postW1Hp <= 0) {
       skipW2 = true;
     } else {
-      preparePreAction();
+      // Inlined preparePreAction (Optimization 3)
+      _PRE_ACTION.forceHit = SHARED_HIT
+        ? rollVs(att.acc, def.dodge, HIT_ROLL_MODE, HIT_GE, HIT_QROUND)
+        : null;
+      _PRE_ACTION.sharedSkillOn = att._sharedSkillOn;
+      _PRE_ACTION.sharedSkillSkillCode = att._sharedSkillSkillCode;
+      _PRE_ACTION.sharedSkillCached = false;
+      _PRE_ACTION.sharedSkillCachedVal = false;
     }
   } else {
-    const diagW2AfterAppliedW1Enabled =
-      targetHp0 > 0 &&
-      ARMOR_APPLY === 'per_weapon' &&
-      TACTICS_BASE_VAL === 0 &&
-      diagW2AfterAppliedW1EnabledForActor(DIAG_W2_AFTER_APPLIED_W1, att);
+    const diagW2AfterAppliedW1Enabled = targetHp0 > 0 && att._w2AfterApplied;
     const w1AppliedPreW2Gate =
       diagW2AfterAppliedW1Enabled && _TW1[0] > 0 ? Math.min(_TW1[0], targetHp0) : 0;
 
@@ -1539,13 +1509,7 @@ function fightOnceCalibFast(p1, p2, MAX_TURNS, fightIndex = 0) {
   let p1hp = p1.hp;
   let p2hp = p2.hp;
 
-  const p1First = resolveFirstActor(
-    p1,
-    p2,
-    SPEED_TIE_MODE,
-    DIAG_FIRST_ACTOR_OVERRIDE,
-    fightIndex,
-  );
+  const p1First = resolveFirstActor(p1, p2, SPEED_TIE_MODE, DIAG_FIRST_ACTOR_OVERRIDE, fightIndex);
 
   const first = p1First ? p1 : p2;
   const second = p1First ? p2 : p1;
@@ -1563,16 +1527,12 @@ function fightOnceCalibFast(p1, p2, MAX_TURNS, fightIndex = 0) {
 
     const secondKilled = second === p1 ? p1hp <= 0 : p2hp <= 0;
     const firstAlive = first === p1 ? p1hp > 0 : p2hp > 0;
-    const queuedSecondActionEnabled =
-      secondKilled &&
-      firstAlive &&
-      diagQueuedSecondActionEnabledForActor(DIAG_QUEUED_SECOND_ACTION, second);
+    const queuedSecondActionEnabled = secondKilled && firstAlive && second._queuedSecondAction;
 
     if (secondKilled && !queuedSecondActionEnabled) break;
 
     // second acts
-    if (first === p1)
-      p1hp -= doActionFast(second, first, queuedSecondActionEnabled ? p1hp0 : p1hp);
+    if (first === p1) p1hp -= doActionFast(second, first, queuedSecondActionEnabled ? p1hp0 : p1hp);
     else p2hp -= doActionFast(second, first, queuedSecondActionEnabled ? p2hp0 : p2hp);
   }
 
@@ -1841,7 +1801,7 @@ function allowedCrystalsForArmor(itemName) {
 }
 function allowedCrystalsForWeapon(itemName) {
   if (LOCK_ONLY_AMULET.has(itemName)) return ['Amulet Crystal'];
-  return ['Amulet Crystal', 'Perfect Fire Crystal'];
+  return ['Amulet Crystal', 'Perfect Fire Crystal', 'Berserker Crystal'];
 }
 function upgradeSlotsForWeapon(itemName) {
   const idef = ItemDefs[itemName];
@@ -3370,7 +3330,9 @@ function compileDefender(def, variantCacheLocal) {
   const [w1u1, w1u2] = partWeaponUpgrades(p.weapon1);
   const [w2u1, w2u2] = partWeaponUpgrades(p.weapon2);
 
-  const armorV = variantCacheLocal.get(defenderVariantKeyFromCrystalSpec(armorName, armorCr, '', ''));
+  const armorV = variantCacheLocal.get(
+    defenderVariantKeyFromCrystalSpec(armorName, armorCr, '', ''),
+  );
   const w1V = variantCacheLocal.get(defenderVariantKeyFromCrystalSpec(w1Name, w1Cr, w1u1, w1u2));
   const w2V = variantCacheLocal.get(defenderVariantKeyFromCrystalSpec(w2Name, w2Cr, w2u1, w2u2));
   const m1V = variantCacheLocal.get(defenderVariantKeyFromCrystalSpec(m1Name, m1Cr, '', '', 1));
@@ -3432,6 +3394,23 @@ function compileDefender(def, variantCacheLocal) {
   };
   applyHiddenRoleBonuses(c, 'D');
   applyAttackStyle(c, DEFENDER_ATTACK_TYPE);
+
+  // Precomputed combat flags (Optimization 2)
+  const _ssD = resolveSharedSkillEligibility(c);
+  c._sharedSkillOn = _ssD.enabled;
+  c._sharedSkillSkillCode = _ssD.skillCode;
+  c._splitMultiweapon =
+    ARMOR_APPLY === 'per_weapon' &&
+    TACTICS_BASE_VAL === 0 &&
+    !!c.w1 &&
+    !!c.w2 &&
+    diagSplitMultiweaponActionEnabledForActor(DIAG_SPLIT_MULTIWEAPON_ACTION, c);
+  c._w2AfterApplied =
+    ARMOR_APPLY === 'per_weapon' &&
+    TACTICS_BASE_VAL === 0 &&
+    diagW2AfterAppliedW1EnabledForActor(DIAG_W2_AFTER_APPLIED_W1, c);
+  c._queuedSecondAction = diagQueuedSecondActionEnabledForActor(DIAG_QUEUED_SECOND_ACTION, c);
+
   return c;
 }
 
@@ -3505,6 +3484,23 @@ function compileAttacker(plan, av, w1v, w2v, m1v, m2v, attackTypeRaw = ATTACKER_
   };
   applyHiddenRoleBonuses(c, 'A');
   applyAttackStyle(c, attackTypeRaw);
+
+  // Precomputed combat flags (Optimization 2)
+  const _ssA = resolveSharedSkillEligibility(c);
+  c._sharedSkillOn = _ssA.enabled;
+  c._sharedSkillSkillCode = _ssA.skillCode;
+  c._splitMultiweapon =
+    ARMOR_APPLY === 'per_weapon' &&
+    TACTICS_BASE_VAL === 0 &&
+    !!c.w1 &&
+    !!c.w2 &&
+    diagSplitMultiweaponActionEnabledForActor(DIAG_SPLIT_MULTIWEAPON_ACTION, c);
+  c._w2AfterApplied =
+    ARMOR_APPLY === 'per_weapon' &&
+    TACTICS_BASE_VAL === 0 &&
+    diagW2AfterAppliedW1EnabledForActor(DIAG_W2_AFTER_APPLIED_W1, c);
+  c._queuedSecondAction = diagQueuedSecondActionEnabledForActor(DIAG_QUEUED_SECOND_ACTION, c);
+
   return c;
 }
 
@@ -3512,9 +3508,19 @@ function compileAttacker(plan, av, w1v, w2v, m1v, m2v, attackTypeRaw = ATTACKER_
 // LEADERBOARD
 // =====================
 function pushLeaderboard(lb, entry, keepN) {
-  lb.push(entry);
-  lb.sort((a, b) => b.worstWin - a.worstWin || b.avgWin - a.avgWin);
-  if (lb.length > keepN) lb.length = keepN;
+  // Linear insert (sorted desc by worstWin, then avgWin tiebreak)
+  let idx = lb.length;
+  for (let i = 0; i < lb.length; i++) {
+    if (
+      entry.worstWin > lb[i].worstWin ||
+      (entry.worstWin === lb[i].worstWin && entry.avgWin > lb[i].avgWin)
+    ) {
+      idx = i;
+      break;
+    }
+  }
+  lb.splice(idx, 0, entry);
+  if (lb.length > keepN) lb.pop();
 }
 
 function formatWeaponShort(wv) {
@@ -4101,7 +4107,13 @@ function workerMain() {
   }
 
   function getDefenderV(itemName, crystalSpec, upgrade1 = '', upgrade2 = '', slotTag = 0) {
-    const key = defenderVariantKeyFromCrystalSpec(itemName, crystalSpec, upgrade1, upgrade2, slotTag);
+    const key = defenderVariantKeyFromCrystalSpec(
+      itemName,
+      crystalSpec,
+      upgrade1,
+      upgrade2,
+      slotTag,
+    );
     let v = localCache.get(key);
     if (!v) {
       v = computeVariantFromCrystalSpec(itemName, crystalSpec, upgrade1, upgrade2, slotTag);
@@ -4549,7 +4561,13 @@ function runWarmStartAndGetWorstPct({
   }
 
   function getDefenderV(itemName, crystalSpec, upgrade1 = '', upgrade2 = '', slotTag = 0) {
-    const key = defenderVariantKeyFromCrystalSpec(itemName, crystalSpec, upgrade1, upgrade2, slotTag);
+    const key = defenderVariantKeyFromCrystalSpec(
+      itemName,
+      crystalSpec,
+      upgrade1,
+      upgrade2,
+      slotTag,
+    );
     let v = localCache.get(key);
     if (!v) {
       v = computeVariantFromCrystalSpec(itemName, crystalSpec, upgrade1, upgrade2, slotTag);
