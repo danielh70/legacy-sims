@@ -1,0 +1,69 @@
+﻿--- a/brute-sim-v1.4.7.js
++++ b/brute-sim-v1.4.7.js
+@@ -53,6 +53,7 @@
+  * Optional debugging:
+  *   LEGACY_WATCH_BUILD=1                 # log one watched build when encountered
+  *   LEGACY_FORCE_WEAPON_PAIR="Crystal Maul,Reaper Axe"  # temporary exact weapon item-pair lock
++ *   LEGACY_FORCE_WEAPON_INCLUDE="Reaper Axe"  # require at least one listed weapon item in the final build; crystal/upgrade variants still flow through
+  *   LEGACY_FORCE_MISC_INCLUDE="Orphic Amulet"  # require at least one listed misc item in the final build; crystal variants still flow through
+  *
+  * Output/UI knobs:
+@@ -1764,6 +1765,33 @@
+ }
+ const FORCED_WEAPON_PAIR = parseForcedWeaponPairFromEnv();
+ 
++function parseForcedWeaponIncludeFromEnv() {
++  const raw = String(process.env.LEGACY_FORCE_WEAPON_INCLUDE || '').trim();
++  if (!raw) return null;
++
++  const names = String(process.env.LEGACY_FORCE_WEAPON_INCLUDE || '')
++    .split(',')
++    .map((x) => x.trim());
++  if (!names.length || names.some((name) => !name)) {
++    throw new Error(
++      'LEGACY_FORCE_WEAPON_INCLUDE must be a CSV list of weapon item names with no empty entries',
++    );
++  }
++
++  for (const name of names) {
++    const idef = ItemDefs[name];
++    if (!idef) {
++      throw new Error(`LEGACY_FORCE_WEAPON_INCLUDE contains unknown item "${name}"`);
++    }
++    if (idef.type !== 'Weapon') {
++      throw new Error(`LEGACY_FORCE_WEAPON_INCLUDE item "${name}" is not a Weapon item`);
++    }
++  }
++
++  return new Set(names);
++}
++const FORCED_WEAPON_INCLUDE = parseForcedWeaponIncludeFromEnv();
++
+ function parseForcedMiscIncludeFromEnv() {
+   const raw = String(process.env.LEGACY_FORCE_MISC_INCLUDE || '').trim();
+   if (!raw) return null;
+@@ -2812,18 +2840,22 @@
+ function buildWeaponPairs(weaponVariants) {
+   const pairsA = [];
+   const forcedPair = FORCED_WEAPON_PAIR;
++  const forcedInclude = FORCED_WEAPON_INCLUDE;
+   // Temporary env-controlled exact weapon item-pair lock; crystal/upgrade variants still flow through.
+   const forcedA = forcedPair ? forcedPair[0] : null;
+   const forcedB = forcedPair ? forcedPair[1] : null;
+   for (let i = 0; i < weaponVariants.length; i++) {
+     for (let j = i; j < weaponVariants.length; j++) {
++      const left = weaponVariants[i].itemName;
++      const right = weaponVariants[j].itemName;
+       if (forcedPair) {
+-        const left = weaponVariants[i].itemName;
+-        const right = weaponVariants[j].itemName;
+         if (left === right) continue;
+         const matchesForcedPair =
+           (left === forcedA && right === forcedB) || (left === forcedB && right === forcedA);
+         if (!matchesForcedPair) continue;
++      }
++      if (forcedInclude) {
++        if (!forcedInclude.has(left) && !forcedInclude.has(right)) continue;
+       }
+       pairsA.push(i, j);
+     }

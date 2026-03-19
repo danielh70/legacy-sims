@@ -1,0 +1,5491 @@
+{
+  "meta": {
+    "version": "v1.4.7",
+    "totalCandidates": 3984,
+    "elapsedSec": 3.179,
+    "attackStyleMode": "lock",
+    "attackerAttackType": "normal",
+    "attackStyleSet": [
+      "normal"
+    ],
+    "attackStyleModeLabel": "lock(normal)",
+    "rngMode": "fast",
+    "rngSeed": 123456789,
+    "catalogConfirmTrials": 300,
+    "mixedCrystalRefine": true,
+    "mixedCrystalSearchTrials": 120,
+    "mixedCrystalPasses": 2,
+    "outputMode": "plain",
+    "outputDetail": "quiet",
+    "outputProgress": "off",
+    "colors": true
+  },
+  "hp": [
+    {
+      "hp": 500,
+      "kept": [],
+      "keptByType": {},
+      "catalogTop": [],
+      "catalogByType": [],
+      "mixedCatalogTop": [],
+      "mixedCatalogByType": []
+    },
+    {
+      "hp": 550,
+      "kept": [
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP550 A0 D63 Snormal | SG1[P] RA[Z]+RA[Z] Scout[A]+Scout[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 550,
+              "extraAcc": 0,
+              "extraDodge": 63,
+              "freePoints": 63
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "avgWin": 57.33333333333332,
+          "avgEx": 8.524666666666667,
+          "worstWin": 47,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 59.88888888888889,
+          "screenAvgEx": 8.592222222222224,
+          "screenWorstWin": 41.66666666666667,
+          "screenWorstName": "SG1 Split Bombs T2",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 550,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 63,
+            "speed": 319,
+            "armor": 75,
+            "acc": 196,
+            "dodge": 162,
+            "mel": 718,
+            "defSk": 758,
+            "gun": 542,
+            "prj": 600
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP550 A0 D63 Snormal | SG1[P] RA[A]+RA[Z] Scout[A]+Scout[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 550,
+              "extraAcc": 0,
+              "extraDodge": 63,
+              "freePoints": 63
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "avgWin": 55,
+          "avgEx": 8.570666666666666,
+          "worstWin": 42.66666666666667,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 54.222222222222214,
+          "screenAvgEx": 8.53777777777778,
+          "screenWorstWin": 36.666666666666664,
+          "screenWorstName": "SG1 Split Bombs T2",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 550,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 63,
+            "speed": 287,
+            "armor": 75,
+            "acc": 211,
+            "dodge": 162,
+            "mel": 748,
+            "defSk": 761,
+            "gun": 542,
+            "prj": 600
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP550 A0 D63 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Scout[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 550,
+              "extraAcc": 0,
+              "extraDodge": 63,
+              "freePoints": 63
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "avgWin": 56.44444444444445,
+          "avgEx": 8.53311111111111,
+          "worstWin": 42,
+          "worstName": "DL Gun Build 8",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 54.16666666666668,
+          "screenAvgEx": 8.535555555555556,
+          "screenWorstWin": 38.333333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 550,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 63,
+            "speed": 319,
+            "armor": 92,
+            "acc": 211,
+            "dodge": 177,
+            "mel": 748,
+            "defSk": 684,
+            "gun": 542,
+            "prj": 600
+          }
+        }
+      ],
+      "keptByType": {
+        "Melee+Melee": {
+          "wpTag": "Melee+Melee",
+          "label": "HP550 A0 D63 Snormal | SG1[P] RA[Z]+RA[Z] Scout[A]+Scout[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 550,
+              "extraAcc": 0,
+              "extraDodge": 63,
+              "freePoints": 63
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "avgWin": 57.33333333333332,
+          "avgEx": 8.524666666666667,
+          "worstWin": 47,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 59.88888888888889,
+          "screenAvgEx": 8.592222222222224,
+          "screenWorstWin": 41.66666666666667,
+          "screenWorstName": "SG1 Split Bombs T2",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 550,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 63,
+            "speed": 319,
+            "armor": 75,
+            "acc": 196,
+            "dodge": 162,
+            "mel": 718,
+            "defSk": 758,
+            "gun": 542,
+            "prj": 600
+          }
+        }
+      },
+      "catalogTop": [
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP550 A0 D63 Snormal | SG1[P] RA[Z]+RA[Z] Scout[A]+Scout[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 550,
+              "extraAcc": 0,
+              "extraDodge": 63,
+              "freePoints": 63
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "screenWorstWin": 41.66666666666667,
+          "screenWorstName": "SG1 Split Bombs T2",
+          "screenAvgWin": 59.88888888888889,
+          "worstWin": 47,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 58.77777777777778,
+          "avgEx": 8.532222222222224,
+          "stats": {
+            "hp": 550,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 63,
+            "speed": 319,
+            "armor": 75,
+            "acc": 196,
+            "dodge": 162,
+            "gun": 542,
+            "prj": 600,
+            "mel": 718,
+            "defSk": 758
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP550 A0 D63 Snormal | SG1[P] RA[A]+RA[Z] Scout[A]+Scout[P]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 550,
+              "extraAcc": 0,
+              "extraDodge": 63,
+              "freePoints": 63
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Pink Crystal"
+            }
+          },
+          "screenWorstWin": 40,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 55.33333333333334,
+          "worstWin": 40.666666666666664,
+          "worstName": "SG1 Split Bombs T2",
+          "avgWin": 53.8,
+          "avgEx": 8.99311111111111,
+          "stats": {
+            "hp": 550,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 63,
+            "speed": 287,
+            "armor": 75,
+            "acc": 200,
+            "dodge": 162,
+            "gun": 526,
+            "prj": 575,
+            "mel": 732,
+            "defSk": 779
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP550 A0 D63 Snormal | SG1[P] RA[Z]+RA[Z] Scout[A]+Scout[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 550,
+              "extraAcc": 0,
+              "extraDodge": 63,
+              "freePoints": 63
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 43.333333333333336,
+          "screenWorstName": "DL Gun Build 4",
+          "screenAvgWin": 54.611111111111114,
+          "worstWin": 39.666666666666664,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 55.044444444444444,
+          "avgEx": 8.435333333333334,
+          "stats": {
+            "hp": 550,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 63,
+            "speed": 319,
+            "armor": 75,
+            "acc": 185,
+            "dodge": 162,
+            "gun": 526,
+            "prj": 575,
+            "mel": 736,
+            "defSk": 742
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP550 A0 D63 Snormal | SG1[B] RA[A]+RA[Z] Scout[O]+Orphic[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 550,
+              "extraAcc": 0,
+              "extraDodge": 63,
+              "freePoints": 63
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 40.833333333333336,
+          "screenWorstName": "DL Gun Build",
+          "screenAvgWin": 53.111111111111114,
+          "worstWin": 39.666666666666664,
+          "worstName": "Core/Void Build 1",
+          "avgWin": 53.22222222222222,
+          "avgEx": 7.752888888888888,
+          "stats": {
+            "hp": 550,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 63,
+            "speed": 339,
+            "armor": 92,
+            "acc": 177,
+            "dodge": 172,
+            "gun": 550,
+            "prj": 570,
+            "mel": 867,
+            "defSk": 622
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP550 A0 D63 Snormal | SG1[P] RA[Z]+RA[Z] Scout[A]+Orphic[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 550,
+              "extraAcc": 0,
+              "extraDodge": 63,
+              "freePoints": 63
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "screenWorstWin": 43.333333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 55.66666666666667,
+          "worstWin": 32.666666666666664,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 55.13333333333333,
+          "avgEx": 7.876,
+          "stats": {
+            "hp": 550,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 63,
+            "speed": 339,
+            "armor": 75,
+            "acc": 181,
+            "dodge": 157,
+            "gun": 600,
+            "prj": 629,
+            "mel": 776,
+            "defSk": 712
+          }
+        }
+      ],
+      "catalogByType": [
+        {
+          "type": "Melee+Melee",
+          "wpTag": "Melee+Melee",
+          "label": "HP550 A0 D63 Snormal | SG1[P] RA[Z]+RA[Z] Scout[A]+Scout[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 550,
+              "extraAcc": 0,
+              "extraDodge": 63,
+              "freePoints": 63
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "screenWorstWin": 41.66666666666667,
+          "screenWorstName": "SG1 Split Bombs T2",
+          "screenAvgWin": 59.88888888888889,
+          "worstWin": 47,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 58.77777777777778,
+          "avgEx": 8.532222222222224,
+          "stats": {
+            "hp": 550,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 63,
+            "speed": 319,
+            "armor": 75,
+            "acc": 196,
+            "dodge": 162,
+            "gun": 542,
+            "prj": 600,
+            "mel": 718,
+            "defSk": 758
+          }
+        }
+      ],
+      "mixedCatalogTop": [
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP550 A0 D63 Snormal | SG1[B4] RA[Z4]+RA[Z4] Scout[A4]+Scout[A4]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 550,
+              "extraAcc": 0,
+              "extraDodge": 63,
+              "freePoints": 63
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystalMix": {
+                "Abyss Crystal": 4
+              }
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "screenWorstWin": 41.66666666666667,
+          "screenWorstName": "SG1 Split Bombs T2",
+          "screenAvgWin": 59.88888888888889,
+          "worstWin": 43,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 57.93333333333333,
+          "avgEx": 8.517555555555555,
+          "stats": {
+            "hp": 550,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 63,
+            "speed": 351,
+            "armor": 92,
+            "acc": 196,
+            "dodge": 177,
+            "gun": 542,
+            "prj": 600,
+            "mel": 718,
+            "defSk": 681
+          },
+          "baseWorstWin": 47,
+          "baseAvgWin": 58.77777777777778,
+          "baseLabel": "HP550 A0 D63 Snormal | SG1[P] RA[Z]+RA[Z] Scout[A]+Scout[A]",
+          "searchWorstWin": 49.166666666666664,
+          "searchAvgWin": 58.833333333333336,
+          "improvedMoves": 1,
+          "passesRan": 2,
+          "mergedCount": 1
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP550 A0 D63 Snormal | SG1[P3+B] RA[A2+Z2]+RA[Z4] Scout[A2+O2]+Orphic[A4]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 550,
+              "extraAcc": 0,
+              "extraDodge": 63,
+              "freePoints": 63
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystalMix": {
+                "Perfect Pink Crystal": 3,
+                "Abyss Crystal": 1
+              }
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "u1": "",
+              "u2": "",
+              "crystalMix": {
+                "Amulet Crystal": 2,
+                "Berserker Crystal": 2
+              }
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystalMix": {
+                "Amulet Crystal": 2,
+                "Perfect Orange Crystal": 2
+              }
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "screenWorstWin": 43.333333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 55.66666666666667,
+          "worstWin": 39,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 52.28888888888889,
+          "avgEx": 7.777111111111111,
+          "stats": {
+            "hp": 550,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 63,
+            "speed": 329,
+            "armor": 79,
+            "acc": 182,
+            "dodge": 160,
+            "gun": 591,
+            "prj": 615,
+            "mel": 797,
+            "defSk": 680
+          },
+          "baseWorstWin": 32.666666666666664,
+          "baseAvgWin": 55.13333333333333,
+          "baseLabel": "HP550 A0 D63 Snormal | SG1[P] RA[Z]+RA[Z] Scout[A]+Orphic[A]",
+          "searchWorstWin": 42.5,
+          "searchAvgWin": 53.50000000000001,
+          "improvedMoves": 3,
+          "passesRan": 2,
+          "mergedCount": 1
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP550 A0 D63 Snormal | SG1[P+B3] RA[A4]+RA[Z4] Scout[A4]+Scout[P4]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 550,
+              "extraAcc": 0,
+              "extraDodge": 63,
+              "freePoints": 63
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystalMix": {
+                "Perfect Pink Crystal": 1,
+                "Abyss Crystal": 3
+              }
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Pink Crystal"
+            }
+          },
+          "screenWorstWin": 40,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 55.33333333333334,
+          "worstWin": 38,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 52.55555555555555,
+          "avgEx": 8.854000000000001,
+          "stats": {
+            "hp": 550,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 63,
+            "speed": 310,
+            "armor": 87,
+            "acc": 200,
+            "dodge": 173,
+            "gun": 526,
+            "prj": 575,
+            "mel": 732,
+            "defSk": 717
+          },
+          "baseWorstWin": 40.666666666666664,
+          "baseAvgWin": 53.8,
+          "baseLabel": "HP550 A0 D63 Snormal | SG1[P] RA[A]+RA[Z] Scout[A]+Scout[P]",
+          "searchWorstWin": 43.333333333333336,
+          "searchAvgWin": 54.22222222222222,
+          "improvedMoves": 1,
+          "passesRan": 2,
+          "mergedCount": 1
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP550 A0 D63 Snormal | SG1[P+B3] RA[Z4]+RA[Z4] Scout[A4]+Scout[O4]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 550,
+              "extraAcc": 0,
+              "extraDodge": 63,
+              "freePoints": 63
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystalMix": {
+                "Perfect Pink Crystal": 1,
+                "Abyss Crystal": 3
+              }
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 43.333333333333336,
+          "screenWorstName": "DL Gun Build 4",
+          "screenAvgWin": 54.611111111111114,
+          "worstWin": 36.666666666666664,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 53.1111111111111,
+          "avgEx": 8.374444444444444,
+          "stats": {
+            "hp": 550,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 63,
+            "speed": 342,
+            "armor": 87,
+            "acc": 185,
+            "dodge": 173,
+            "gun": 526,
+            "prj": 575,
+            "mel": 736,
+            "defSk": 680
+          },
+          "baseWorstWin": 39.666666666666664,
+          "baseAvgWin": 55.044444444444444,
+          "baseLabel": "HP550 A0 D63 Snormal | SG1[P] RA[Z]+RA[Z] Scout[A]+Scout[O]",
+          "searchWorstWin": 45.83333333333333,
+          "searchAvgWin": 56.16666666666666,
+          "improvedMoves": 1,
+          "passesRan": 2,
+          "mergedCount": 1
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP550 A0 D63 Snormal | SG1[P2+B2] RA[A3+Z]+RA[A3+F] Scout[A2+P2]+Orphic[O4]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 550,
+              "extraAcc": 0,
+              "extraDodge": 63,
+              "freePoints": 63
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystalMix": {
+                "Perfect Pink Crystal": 2,
+                "Abyss Crystal": 2
+              }
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "u1": "",
+              "u2": "",
+              "crystalMix": {
+                "Amulet Crystal": 3,
+                "Berserker Crystal": 1
+              }
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "u1": "",
+              "u2": "",
+              "crystalMix": {
+                "Amulet Crystal": 3,
+                "Perfect Fire Crystal": 1
+              }
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystalMix": {
+                "Amulet Crystal": 2,
+                "Perfect Pink Crystal": 2
+              }
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 40.833333333333336,
+          "screenWorstName": "DL Gun Build",
+          "screenAvgWin": 53.111111111111114,
+          "worstWin": 32.666666666666664,
+          "worstName": "DL Gun Build 2",
+          "avgWin": 48.888888888888886,
+          "avgEx": 7.979111111111112,
+          "stats": {
+            "hp": 550,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 63,
+            "speed": 297,
+            "armor": 83,
+            "acc": 189,
+            "dodge": 164,
+            "gun": 557,
+            "prj": 581,
+            "mel": 851,
+            "defSk": 680
+          },
+          "baseWorstWin": 39.666666666666664,
+          "baseAvgWin": 53.22222222222222,
+          "baseLabel": "HP550 A0 D63 Snormal | SG1[B] RA[A]+RA[Z] Scout[O]+Orphic[O]",
+          "searchWorstWin": 38.333333333333336,
+          "searchAvgWin": 49.666666666666664,
+          "improvedMoves": 4,
+          "passesRan": 2,
+          "mergedCount": 1
+        }
+      ],
+      "mixedCatalogByType": [
+        {
+          "type": "Melee+Melee",
+          "wpTag": "Melee+Melee",
+          "label": "HP550 A0 D63 Snormal | SG1[B4] RA[Z4]+RA[Z4] Scout[A4]+Scout[A4]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 550,
+              "extraAcc": 0,
+              "extraDodge": 63,
+              "freePoints": 63
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystalMix": {
+                "Abyss Crystal": 4
+              }
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "screenWorstWin": 41.66666666666667,
+          "screenWorstName": "SG1 Split Bombs T2",
+          "screenAvgWin": 59.88888888888889,
+          "worstWin": 43,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 57.93333333333333,
+          "avgEx": 8.517555555555555,
+          "stats": {
+            "hp": 550,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 63,
+            "speed": 351,
+            "armor": 92,
+            "acc": 196,
+            "dodge": 177,
+            "gun": 542,
+            "prj": 600,
+            "mel": 718,
+            "defSk": 681
+          },
+          "baseWorstWin": 47,
+          "baseAvgWin": 58.77777777777778,
+          "baseLabel": "HP550 A0 D63 Snormal | SG1[P] RA[Z]+RA[Z] Scout[A]+Scout[A]",
+          "searchWorstWin": 49.166666666666664,
+          "searchAvgWin": 58.833333333333336,
+          "improvedMoves": 1,
+          "passesRan": 2
+        }
+      ]
+    },
+    {
+      "hp": 600,
+      "kept": [
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B] RA[Z]+RA[Z] Scout[A]+Scout[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "avgWin": 60.86666666666667,
+          "avgEx": 8.645777777777777,
+          "worstWin": 49,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 59.722222222222214,
+          "screenAvgEx": 8.537222222222223,
+          "screenWorstWin": 40,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 351,
+            "armor": 92,
+            "acc": 196,
+            "dodge": 167,
+            "mel": 718,
+            "defSk": 681,
+            "gun": 542,
+            "prj": 600
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Scout[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "avgWin": 59.888888888888886,
+          "avgEx": 8.626444444444443,
+          "worstWin": 48,
+          "worstName": "DL Gun Build 8",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 56.888888888888886,
+          "screenAvgEx": 8.703888888888889,
+          "screenWorstWin": 35.833333333333336,
+          "screenWorstName": "DL Gun Build 8",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 319,
+            "armor": 92,
+            "acc": 211,
+            "dodge": 167,
+            "mel": 748,
+            "defSk": 684,
+            "gun": 542,
+            "prj": 600
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B] RA[F]+RA[Z] Scout[A]+Orphic[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Perfect Fire Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "avgWin": 56.31111111111111,
+          "avgEx": 8.066,
+          "worstWin": 47,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 56.611111111111114,
+          "screenAvgEx": 8.005555555555556,
+          "screenWorstWin": 39.166666666666664,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 339,
+            "armor": 92,
+            "acc": 173,
+            "dodge": 162,
+            "mel": 811,
+            "defSk": 631,
+            "gun": 566,
+            "prj": 595
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B] RA[Z]+RA[Z] Scout[A]+Scout[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "avgWin": 58.62222222222222,
+          "avgEx": 8.542666666666666,
+          "worstWin": 46.666666666666664,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 59.1111111111111,
+          "screenAvgEx": 8.592222222222222,
+          "screenWorstWin": 38.333333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 351,
+            "armor": 92,
+            "acc": 185,
+            "dodge": 167,
+            "mel": 736,
+            "defSk": 665,
+            "gun": 526,
+            "prj": 575
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[P] RA[Z]+RA[Z] Scout[A]+Orphic[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "avgWin": 61.2,
+          "avgEx": 7.925999999999999,
+          "worstWin": 46.33333333333333,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 61.22222222222222,
+          "screenAvgEx": 7.809444444444444,
+          "screenWorstWin": 40,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 339,
+            "armor": 75,
+            "acc": 173,
+            "dodge": 147,
+            "mel": 819,
+            "defSk": 712,
+            "gun": 566,
+            "prj": 595
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Orphic[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "avgWin": 61.84444444444445,
+          "avgEx": 7.907777777777779,
+          "worstWin": 45.666666666666664,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 60.61111111111111,
+          "screenAvgEx": 7.935555555555554,
+          "screenWorstWin": 40.833333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 339,
+            "armor": 92,
+            "acc": 188,
+            "dodge": 162,
+            "mel": 849,
+            "defSk": 638,
+            "gun": 566,
+            "prj": 595
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B] RA[Z]+RA[Z] Scout[A]+Orphic[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "avgWin": 57.53333333333333,
+          "avgEx": 8.033555555555555,
+          "worstWin": 45.666666666666664,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 56.55555555555556,
+          "screenAvgEx": 8.053333333333333,
+          "screenWorstWin": 39.166666666666664,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 371,
+            "armor": 92,
+            "acc": 181,
+            "dodge": 162,
+            "mel": 776,
+            "defSk": 635,
+            "gun": 600,
+            "prj": 629
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Orphic[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "avgWin": 58.68888888888888,
+          "avgEx": 8.039777777777777,
+          "worstWin": 45,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 60.66666666666667,
+          "screenAvgEx": 8.087222222222222,
+          "screenWorstWin": 39.166666666666664,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 339,
+            "armor": 92,
+            "acc": 196,
+            "dodge": 162,
+            "mel": 806,
+            "defSk": 638,
+            "gun": 600,
+            "prj": 629
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Scout[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "avgWin": 57.06666666666668,
+          "avgEx": 8.568222222222223,
+          "worstWin": 44.666666666666664,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 56.94444444444444,
+          "screenAvgEx": 8.610555555555555,
+          "screenWorstWin": 45,
+          "screenWorstName": "DL Gun Build 2",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 319,
+            "armor": 92,
+            "acc": 200,
+            "dodge": 167,
+            "mel": 766,
+            "defSk": 668,
+            "gun": 526,
+            "prj": 575
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[P] RA[A]+RA[Z] Scout[A]+Orphic[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "avgWin": 59.62222222222221,
+          "avgEx": 7.893777777777777,
+          "worstWin": 44,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 58.833333333333336,
+          "screenAvgEx": 7.963888888888888,
+          "screenWorstWin": 42.5,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 307,
+            "armor": 75,
+            "acc": 188,
+            "dodge": 147,
+            "mel": 849,
+            "defSk": 715,
+            "gun": 566,
+            "prj": 595
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[P] RA[Z]+RA[Z] Scout[O]+Orphic[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "avgWin": 57.06666666666667,
+          "avgEx": 7.899777777777778,
+          "worstWin": 43.666666666666664,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 58.666666666666664,
+          "screenAvgEx": 7.881666666666665,
+          "screenWorstWin": 38.333333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 339,
+            "armor": 75,
+            "acc": 162,
+            "dodge": 147,
+            "mel": 837,
+            "defSk": 696,
+            "gun": 550,
+            "prj": 570
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Scout[P]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Pink Crystal"
+            }
+          },
+          "avgWin": 56.84444444444444,
+          "avgEx": 9.092888888888888,
+          "worstWin": 43.333333333333336,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 58.33333333333334,
+          "screenAvgEx": 8.973888888888888,
+          "screenWorstWin": 35.833333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 319,
+            "armor": 92,
+            "acc": 200,
+            "dodge": 167,
+            "mel": 732,
+            "defSk": 702,
+            "gun": 526,
+            "prj": 575
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B] RA[A]+RA[A] Scout[A]+Scout[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "avgWin": 53.15555555555556,
+          "avgEx": 8.883555555555555,
+          "worstWin": 43,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 54.49999999999999,
+          "screenAvgEx": 8.898888888888889,
+          "screenWorstWin": 40,
+          "screenWorstName": "DL Gun Build 8",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 287,
+            "armor": 92,
+            "acc": 226,
+            "dodge": 167,
+            "mel": 778,
+            "defSk": 687,
+            "gun": 542,
+            "prj": 600
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[P] RA[A]+RA[Z] Scout[A]+Scout[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "avgWin": 58,
+          "avgEx": 8.69177777777778,
+          "worstWin": 42,
+          "worstName": "SG1 Split Bombs T2",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 59.11111111111111,
+          "screenAvgEx": 8.744444444444444,
+          "screenWorstWin": 40.833333333333336,
+          "screenWorstName": "Core/Void Build 1",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 287,
+            "armor": 75,
+            "acc": 211,
+            "dodge": 152,
+            "mel": 748,
+            "defSk": 761,
+            "gun": 542,
+            "prj": 600
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[P] RA[Z]+RA[Z] Scout[A]+Scout[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "avgWin": 56.55555555555555,
+          "avgEx": 8.515111111111112,
+          "worstWin": 41.66666666666667,
+          "worstName": "DL Gun Build 4",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 57.00000000000001,
+          "screenAvgEx": 8.542777777777777,
+          "screenWorstWin": 39.166666666666664,
+          "screenWorstName": "DL Gun Build 4",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 319,
+            "armor": 75,
+            "acc": 185,
+            "dodge": 152,
+            "mel": 736,
+            "defSk": 742,
+            "gun": 526,
+            "prj": 575
+          }
+        }
+      ],
+      "keptByType": {
+        "Melee+Melee": {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B] RA[Z]+RA[Z] Scout[A]+Scout[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "avgWin": 60.86666666666667,
+          "avgEx": 8.645777777777777,
+          "worstWin": 49,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 59.722222222222214,
+          "screenAvgEx": 8.537222222222223,
+          "screenWorstWin": 40,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 351,
+            "armor": 92,
+            "acc": 196,
+            "dodge": 167,
+            "mel": 718,
+            "defSk": 681,
+            "gun": 542,
+            "prj": 600
+          }
+        }
+      },
+      "catalogTop": [
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B] RA[Z]+RA[Z] Scout[A]+Orphic[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 44.166666666666664,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 60.055555555555564,
+          "worstWin": 42.66666666666667,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 59.33333333333334,
+          "avgEx": 7.903333333333332,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 371,
+            "armor": 92,
+            "acc": 173,
+            "dodge": 162,
+            "gun": 566,
+            "prj": 595,
+            "mel": 819,
+            "defSk": 635
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[P] RA[A]+RA[Z] Scout[O]+Scout[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 44.166666666666664,
+          "screenWorstName": "DL Gun Build 8",
+          "screenAvgWin": 52.94444444444444,
+          "worstWin": 40.33333333333333,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 51.266666666666666,
+          "avgEx": 8.48,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 287,
+            "armor": 75,
+            "acc": 189,
+            "dodge": 152,
+            "gun": 510,
+            "prj": 550,
+            "mel": 784,
+            "defSk": 729
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B] RA[A]+RA[Z] Scout[P]+Scout[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 45,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 54.94444444444444,
+          "worstWin": 40,
+          "worstName": "DL Gun Build 2",
+          "avgWin": 53.133333333333326,
+          "avgEx": 8.927777777777777,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 319,
+            "armor": 92,
+            "acc": 189,
+            "dodge": 167,
+            "gun": 510,
+            "prj": 550,
+            "mel": 750,
+            "defSk": 686
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Scout[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 45,
+          "screenWorstName": "DL Gun Build 2",
+          "screenAvgWin": 56.94444444444444,
+          "worstWin": 39,
+          "worstName": "DL Gun Build 2",
+          "avgWin": 57.13333333333333,
+          "avgEx": 8.55222222222222,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 319,
+            "armor": 92,
+            "acc": 200,
+            "dodge": 167,
+            "gun": 526,
+            "prj": 575,
+            "mel": 766,
+            "defSk": 668
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B] RA[A]+RA[Z] Scout[O]+Orphic[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "screenWorstWin": 44.166666666666664,
+          "screenWorstName": "DL Gun Build",
+          "screenAvgWin": 55.777777777777786,
+          "worstWin": 35.66666666666667,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 54.04444444444445,
+          "avgEx": 7.973333333333334,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 339,
+            "armor": 92,
+            "acc": 185,
+            "dodge": 162,
+            "gun": 584,
+            "prj": 604,
+            "mel": 824,
+            "defSk": 622
+          }
+        }
+      ],
+      "catalogByType": [
+        {
+          "type": "Melee+Melee",
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B] RA[Z]+RA[Z] Scout[A]+Orphic[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 44.166666666666664,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 60.055555555555564,
+          "worstWin": 42.66666666666667,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 59.33333333333334,
+          "avgEx": 7.903333333333332,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 371,
+            "armor": 92,
+            "acc": 173,
+            "dodge": 162,
+            "gun": 566,
+            "prj": 595,
+            "mel": 819,
+            "defSk": 635
+          }
+        }
+      ],
+      "mixedCatalogTop": [
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B4] RA[A+Z3]+RA[Z4] Scout[A4]+Scout[A4]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "u1": "",
+              "u2": "",
+              "crystalMix": {
+                "Amulet Crystal": 1,
+                "Berserker Crystal": 3
+              }
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystalMix": {
+                "Amulet Crystal": 4
+              }
+            }
+          },
+          "screenWorstWin": 45,
+          "screenWorstName": "DL Gun Build 2",
+          "screenAvgWin": 56.94444444444444,
+          "worstWin": 50,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 60.71111111111111,
+          "avgEx": 8.652,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 342,
+            "armor": 92,
+            "acc": 199,
+            "dodge": 167,
+            "gun": 542,
+            "prj": 600,
+            "mel": 724,
+            "defSk": 681
+          },
+          "baseWorstWin": 39,
+          "baseAvgWin": 57.13333333333333,
+          "baseLabel": "HP600 A0 D53 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Scout[O]",
+          "searchWorstWin": 51.66666666666667,
+          "searchAvgWin": 61.166666666666664,
+          "improvedMoves": 2,
+          "passesRan": 2,
+          "mergedCount": 1
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[P+B3] RA[A2+Z2]+RA[Z4] Scout[A4]+Orphic[O4]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystalMix": {
+                "Perfect Pink Crystal": 1,
+                "Abyss Crystal": 3
+              }
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "u1": "",
+              "u2": "",
+              "crystalMix": {
+                "Amulet Crystal": 2,
+                "Berserker Crystal": 2
+              }
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 44.166666666666664,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 60.055555555555564,
+          "worstWin": 43,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 61.5111111111111,
+          "avgEx": 7.836666666666667,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 345,
+            "armor": 87,
+            "acc": 180,
+            "dodge": 158,
+            "gun": 566,
+            "prj": 595,
+            "mel": 832,
+            "defSk": 651
+          },
+          "baseWorstWin": 42.66666666666667,
+          "baseAvgWin": 59.33333333333334,
+          "baseLabel": "HP600 A0 D53 Snormal | SG1[B] RA[Z]+RA[Z] Scout[A]+Orphic[O]",
+          "searchWorstWin": 51.66666666666667,
+          "searchAvgWin": 60.666666666666664,
+          "improvedMoves": 2,
+          "passesRan": 2,
+          "mergedCount": 1
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B4] RA[A2+F+Z]+RA[Z4] Scout[P4]+Scout[O4]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "u1": "",
+              "u2": "",
+              "crystalMix": {
+                "Amulet Crystal": 2,
+                "Perfect Fire Crystal": 1,
+                "Berserker Crystal": 1
+              }
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 45,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 54.94444444444444,
+          "worstWin": 38.666666666666664,
+          "worstName": "DL Gun Build 4",
+          "avgWin": 51.68888888888888,
+          "avgEx": 8.95511111111111,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 326,
+            "armor": 92,
+            "acc": 181,
+            "dodge": 167,
+            "gun": 510,
+            "prj": 550,
+            "mel": 731,
+            "defSk": 683
+          },
+          "baseWorstWin": 40,
+          "baseAvgWin": 53.133333333333326,
+          "baseLabel": "HP600 A0 D53 Snormal | SG1[B] RA[A]+RA[Z] Scout[P]+Scout[O]",
+          "searchWorstWin": 45,
+          "searchAvgWin": 54.5,
+          "improvedMoves": 1,
+          "passesRan": 2,
+          "mergedCount": 1
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[P3+B] RA[A4]+RA[Z4] Scout[O4]+Scout[O4]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystalMix": {
+                "Perfect Pink Crystal": 3,
+                "Abyss Crystal": 1
+              }
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 44.166666666666664,
+          "screenWorstName": "DL Gun Build 8",
+          "screenAvgWin": 52.94444444444444,
+          "worstWin": 38.333333333333336,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 52.488888888888894,
+          "avgEx": 8.390444444444444,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 294,
+            "armor": 79,
+            "acc": 189,
+            "dodge": 155,
+            "gun": 510,
+            "prj": 550,
+            "mel": 784,
+            "defSk": 705
+          },
+          "baseWorstWin": 40.33333333333333,
+          "baseAvgWin": 51.266666666666666,
+          "baseLabel": "HP600 A0 D53 Snormal | SG1[P] RA[A]+RA[Z] Scout[O]+Scout[O]",
+          "searchWorstWin": 44.166666666666664,
+          "searchAvgWin": 54.22222222222222,
+          "improvedMoves": 1,
+          "passesRan": 2,
+          "mergedCount": 1
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[B4] RA[A4]+RA[A+Z3] Scout[A2+P2]+Orphic[O4]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "u1": "",
+              "u2": "",
+              "crystalMix": {
+                "Amulet Crystal": 4
+              }
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "u1": "",
+              "u2": "",
+              "crystalMix": {
+                "Amulet Crystal": 1,
+                "Berserker Crystal": 3
+              }
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystalMix": {
+                "Amulet Crystal": 2,
+                "Perfect Pink Crystal": 2
+              }
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystalMix": {
+                "Perfect Orange Crystal": 4
+              }
+            }
+          },
+          "screenWorstWin": 44.166666666666664,
+          "screenWorstName": "DL Gun Build",
+          "screenAvgWin": 55.777777777777786,
+          "worstWin": 37.666666666666664,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 57.93333333333333,
+          "avgEx": 8.149333333333333,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 330,
+            "armor": 92,
+            "acc": 185,
+            "dodge": 162,
+            "gun": 557,
+            "prj": 581,
+            "mel": 846,
+            "defSk": 646
+          },
+          "baseWorstWin": 35.66666666666667,
+          "baseAvgWin": 54.04444444444445,
+          "baseLabel": "HP600 A0 D53 Snormal | SG1[B] RA[A]+RA[Z] Scout[O]+Orphic[A]",
+          "searchWorstWin": 50.83333333333333,
+          "searchAvgWin": 60.222222222222236,
+          "improvedMoves": 6,
+          "passesRan": 2,
+          "mergedCount": 1
+        }
+      ],
+      "mixedCatalogByType": [
+        {
+          "type": "Melee+Melee",
+          "wpTag": "Melee+Melee",
+          "label": "HP600 A0 D53 Snormal | SG1[P+B3] RA[A2+Z2]+RA[Z4] Scout[A4]+Orphic[O4]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 600,
+              "extraAcc": 0,
+              "extraDodge": 53,
+              "freePoints": 53
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystalMix": {
+                "Perfect Pink Crystal": 1,
+                "Abyss Crystal": 3
+              }
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "u1": "",
+              "u2": "",
+              "crystalMix": {
+                "Amulet Crystal": 2,
+                "Berserker Crystal": 2
+              }
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 44.166666666666664,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 60.055555555555564,
+          "worstWin": 43,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 61.5111111111111,
+          "avgEx": 7.836666666666667,
+          "stats": {
+            "hp": 600,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "speed": 345,
+            "armor": 87,
+            "acc": 180,
+            "dodge": 158,
+            "gun": 566,
+            "prj": 595,
+            "mel": 832,
+            "defSk": 651
+          },
+          "baseWorstWin": 42.66666666666667,
+          "baseAvgWin": 59.33333333333334,
+          "baseLabel": "HP600 A0 D53 Snormal | SG1[B] RA[Z]+RA[Z] Scout[A]+Orphic[O]",
+          "searchWorstWin": 51.66666666666667,
+          "searchAvgWin": 60.666666666666664,
+          "improvedMoves": 2,
+          "passesRan": 2
+        }
+      ]
+    },
+    {
+      "hp": 650,
+      "kept": [
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[P]+Orphic[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "avgWin": 62.51111111111111,
+          "avgEx": 8.381999999999998,
+          "worstWin": 53,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 60,
+          "screenAvgEx": 8.387222222222222,
+          "screenWorstWin": 45,
+          "screenWorstName": "Core/Void Build 1",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 339,
+            "armor": 92,
+            "acc": 177,
+            "dodge": 152,
+            "mel": 833,
+            "defSk": 656,
+            "gun": 550,
+            "prj": 570
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[Z]+RA[Z] Scout[A]+Orphic[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "avgWin": 64.33333333333333,
+          "avgEx": 8.023555555555557,
+          "worstWin": 51.33333333333333,
+          "worstName": "Core/Void Build 1",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 63.61111111111111,
+          "screenAvgEx": 8.018888888888888,
+          "screenWorstWin": 40.833333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 371,
+            "armor": 92,
+            "acc": 173,
+            "dodge": 152,
+            "mel": 819,
+            "defSk": 635,
+            "gun": 566,
+            "prj": 595
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Scout[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "avgWin": 63.577777777777776,
+          "avgEx": 8.851777777777778,
+          "worstWin": 48.66666666666667,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 61.88888888888889,
+          "screenAvgEx": 8.797777777777778,
+          "screenWorstWin": 41.66666666666667,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 319,
+            "armor": 92,
+            "acc": 211,
+            "dodge": 157,
+            "mel": 748,
+            "defSk": 684,
+            "gun": 542,
+            "prj": 600
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Orphic[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "avgWin": 61.955555555555556,
+          "avgEx": 8.20311111111111,
+          "worstWin": 48,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 62.88888888888889,
+          "screenAvgEx": 8.18388888888889,
+          "screenWorstWin": 48.333333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 339,
+            "armor": 92,
+            "acc": 196,
+            "dodge": 152,
+            "mel": 806,
+            "defSk": 638,
+            "gun": 600,
+            "prj": 629
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[Z]+RA[Z] Scout[P]+Orphic[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "avgWin": 59.177777777777784,
+          "avgEx": 8.364444444444443,
+          "worstWin": 46.666666666666664,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 59.61111111111111,
+          "screenAvgEx": 8.347777777777777,
+          "screenWorstWin": 43.333333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 371,
+            "armor": 92,
+            "acc": 162,
+            "dodge": 152,
+            "mel": 803,
+            "defSk": 653,
+            "gun": 550,
+            "prj": 570
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[P] RA[Z]+RA[Z] Scout[A]+Scout[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "avgWin": 62.866666666666674,
+          "avgEx": 8.798222222222224,
+          "worstWin": 46,
+          "worstName": "DL Gun Build 4",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 62.611111111111114,
+          "screenAvgEx": 8.782222222222224,
+          "screenWorstWin": 40,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 319,
+            "armor": 75,
+            "acc": 196,
+            "dodge": 142,
+            "mel": 718,
+            "defSk": 758,
+            "gun": 542,
+            "prj": 600
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[Z]+RA[Z] Scout[A]+Scout[P]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Pink Crystal"
+            }
+          },
+          "avgWin": 58.84444444444445,
+          "avgEx": 9.193333333333333,
+          "worstWin": 46,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 60.94444444444445,
+          "screenAvgEx": 9.197222222222221,
+          "screenWorstWin": 45,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 351,
+            "armor": 92,
+            "acc": 185,
+            "dodge": 157,
+            "mel": 702,
+            "defSk": 699,
+            "gun": 526,
+            "prj": 575
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[P]+Orphic[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "avgWin": 57.66666666666667,
+          "avgEx": 8.555555555555555,
+          "worstWin": 46,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 58.388888888888886,
+          "screenAvgEx": 8.553888888888888,
+          "screenWorstWin": 48.333333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 339,
+            "armor": 92,
+            "acc": 185,
+            "dodge": 152,
+            "mel": 790,
+            "defSk": 656,
+            "gun": 584,
+            "prj": 604
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[P] RA[Z]+RA[Z] Scout[A]+Orphic[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "avgWin": 64.22222222222223,
+          "avgEx": 7.976444444444443,
+          "worstWin": 45.666666666666664,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 63.55555555555556,
+          "screenAvgEx": 8.019444444444444,
+          "screenWorstWin": 44.166666666666664,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 339,
+            "armor": 75,
+            "acc": 173,
+            "dodge": 137,
+            "mel": 819,
+            "defSk": 712,
+            "gun": 566,
+            "prj": 595
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[O]+Orphic[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "avgWin": 60.57777777777778,
+          "avgEx": 8.026444444444444,
+          "worstWin": 45.666666666666664,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 61.6111111111111,
+          "screenAvgEx": 8.046111111111111,
+          "screenWorstWin": 50.83333333333333,
+          "screenWorstName": "Core/Void Build 1",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 339,
+            "armor": 92,
+            "acc": 177,
+            "dodge": 152,
+            "mel": 867,
+            "defSk": 622,
+            "gun": 550,
+            "prj": 570
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Scout[P]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Pink Crystal"
+            }
+          },
+          "avgWin": 60.44444444444444,
+          "avgEx": 9.183111111111113,
+          "worstWin": 45.666666666666664,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 58.611111111111114,
+          "screenAvgEx": 9.258333333333333,
+          "screenWorstWin": 40,
+          "screenWorstName": "DL Gun Build 8",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 319,
+            "armor": 92,
+            "acc": 200,
+            "dodge": 157,
+            "mel": 732,
+            "defSk": 702,
+            "gun": 526,
+            "prj": 575
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Scout[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "avgWin": 60.24444444444444,
+          "avgEx": 8.657555555555554,
+          "worstWin": 44.333333333333336,
+          "worstName": "DL Gun Build 4",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 57.38888888888889,
+          "screenAvgEx": 8.767222222222221,
+          "screenWorstWin": 40.833333333333336,
+          "screenWorstName": "DL Gun Build 4",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 319,
+            "armor": 92,
+            "acc": 200,
+            "dodge": 157,
+            "mel": 766,
+            "defSk": 668,
+            "gun": 526,
+            "prj": 575
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[Z]+RA[Z] Scout[O]+Scout[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "avgWin": 57.46666666666666,
+          "avgEx": 8.571333333333333,
+          "worstWin": 44.333333333333336,
+          "worstName": "Core/Void Build 1",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 58.44444444444444,
+          "screenAvgEx": 8.580555555555556,
+          "screenWorstWin": 40.833333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 351,
+            "armor": 92,
+            "acc": 174,
+            "dodge": 157,
+            "mel": 754,
+            "defSk": 649,
+            "gun": 510,
+            "prj": 550
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[Z]+RA[Z] Scout[P]+Scout[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "misc2": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "avgWin": 57.666666666666664,
+          "avgEx": 9.054,
+          "worstWin": 44,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 57.50000000000001,
+          "screenAvgEx": 9.048333333333334,
+          "screenWorstWin": 42.5,
+          "screenWorstName": "DL Gun Build 3",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 351,
+            "armor": 92,
+            "acc": 174,
+            "dodge": 157,
+            "mel": 720,
+            "defSk": 683,
+            "gun": 510,
+            "prj": 550
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[P] RA[Z]+RA[Z] Scout[A]+Orphic[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "avgWin": 61.42222222222222,
+          "avgEx": 8.09911111111111,
+          "worstWin": 43.666666666666664,
+          "worstName": "SG1 Split Bombs T2",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 61.055555555555564,
+          "screenAvgEx": 8.174999999999999,
+          "screenWorstWin": 37.5,
+          "screenWorstName": "SG1 Split Bombs T2",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 339,
+            "armor": 75,
+            "acc": 181,
+            "dodge": 137,
+            "mel": 776,
+            "defSk": 712,
+            "gun": 600,
+            "prj": 629
+          }
+        }
+      ],
+      "keptByType": {
+        "Melee+Melee": {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[P]+Orphic[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "avgWin": 62.51111111111111,
+          "avgEx": 8.381999999999998,
+          "worstWin": 53,
+          "worstName": "DL Gun Build 3",
+          "bailed": false,
+          "stage": "B",
+          "screenAvgWin": 60,
+          "screenAvgEx": 8.387222222222222,
+          "screenWorstWin": 45,
+          "screenWorstName": "Core/Void Build 1",
+          "screenSampled": 15,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 339,
+            "armor": 92,
+            "acc": 177,
+            "dodge": 152,
+            "mel": 833,
+            "defSk": 656,
+            "gun": 550,
+            "prj": 570
+          }
+        }
+      },
+      "catalogTop": [
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Orphic[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 48.333333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 64.66666666666667,
+          "worstWin": 46.33333333333333,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 64.20000000000002,
+          "avgEx": 8.018666666666666,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 339,
+            "armor": 92,
+            "acc": 188,
+            "dodge": 152,
+            "gun": 566,
+            "prj": 595,
+            "mel": 849,
+            "defSk": 638
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[O]+Orphic[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Orange Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 50.83333333333333,
+          "screenWorstName": "Core/Void Build 1",
+          "screenAvgWin": 61.6111111111111,
+          "worstWin": 45.33333333333333,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 61.02222222222223,
+          "avgEx": 8.014444444444445,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 339,
+            "armor": 92,
+            "acc": 177,
+            "dodge": 152,
+            "gun": 550,
+            "prj": 570,
+            "mel": 867,
+            "defSk": 622
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Orphic[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "screenWorstWin": 48.333333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 62.88888888888889,
+          "worstWin": 44,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 61.33333333333333,
+          "avgEx": 8.166888888888888,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 339,
+            "armor": 92,
+            "acc": 196,
+            "dodge": 152,
+            "gun": 600,
+            "prj": 629,
+            "mel": 806,
+            "defSk": 638
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[A] Scout[A]+Orphic[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 46.666666666666664,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 59.166666666666664,
+          "worstWin": 43,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 57.577777777777776,
+          "avgEx": 8.23488888888889,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 307,
+            "armor": 92,
+            "acc": 203,
+            "dodge": 152,
+            "gun": 566,
+            "prj": 595,
+            "mel": 879,
+            "defSk": 641
+          }
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[P]+Orphic[A]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Perfect Pink Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "screenWorstWin": 48.333333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 58.388888888888886,
+          "worstWin": 36.666666666666664,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 57.02222222222222,
+          "avgEx": 8.532,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 339,
+            "armor": 92,
+            "acc": 185,
+            "dodge": 152,
+            "gun": 584,
+            "prj": 604,
+            "mel": 790,
+            "defSk": 656
+          }
+        }
+      ],
+      "catalogByType": [
+        {
+          "type": "Melee+Melee",
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Orphic[O]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 48.333333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 64.66666666666667,
+          "worstWin": 46.33333333333333,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 64.20000000000002,
+          "avgEx": 8.018666666666666,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 339,
+            "armor": 92,
+            "acc": 188,
+            "dodge": 152,
+            "gun": 566,
+            "prj": 595,
+            "mel": 849,
+            "defSk": 638
+          }
+        }
+      ],
+      "mixedCatalogTop": [
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B4] RA[A2+Z2]+RA[Z4] Scout[A2+P2]+Orphic[O4]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "u1": "",
+              "u2": "",
+              "crystalMix": {
+                "Amulet Crystal": 2,
+                "Berserker Crystal": 2
+              }
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystalMix": {
+                "Amulet Crystal": 2,
+                "Perfect Pink Crystal": 2
+              }
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 50.83333333333333,
+          "screenWorstName": "Core/Void Build 1",
+          "screenAvgWin": 61.6111111111111,
+          "worstWin": 51.66666666666667,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 62.13333333333334,
+          "avgEx": 8.182,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 354,
+            "armor": 92,
+            "acc": 174,
+            "dodge": 152,
+            "gun": 557,
+            "prj": 581,
+            "mel": 823,
+            "defSk": 644
+          },
+          "baseWorstWin": 45.33333333333333,
+          "baseAvgWin": 61.02222222222223,
+          "baseLabel": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[O]+Orphic[O]",
+          "searchWorstWin": 54.166666666666664,
+          "searchAvgWin": 62.77777777777778,
+          "improvedMoves": 2,
+          "passesRan": 2,
+          "mergedCount": 1
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B4] RA[A+Z3]+RA[A2+Z2] Scout[A4]+Orphic[O4]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "u1": "",
+              "u2": "",
+              "crystalMix": {
+                "Amulet Crystal": 1,
+                "Berserker Crystal": 3
+              }
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "u1": "",
+              "u2": "",
+              "crystalMix": {
+                "Amulet Crystal": 2,
+                "Berserker Crystal": 2
+              }
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystalMix": {
+                "Perfect Orange Crystal": 4
+              }
+            }
+          },
+          "screenWorstWin": 48.333333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 62.88888888888889,
+          "worstWin": 47.66666666666667,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 63.91111111111112,
+          "avgEx": 8.038888888888888,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 345,
+            "armor": 92,
+            "acc": 183,
+            "dodge": 152,
+            "gun": 566,
+            "prj": 595,
+            "mel": 838,
+            "defSk": 636
+          },
+          "baseWorstWin": 44,
+          "baseAvgWin": 61.33333333333333,
+          "baseLabel": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Orphic[A]",
+          "searchWorstWin": 54.166666666666664,
+          "searchAvgWin": 64.77777777777779,
+          "improvedMoves": 5,
+          "passesRan": 2,
+          "mergedCount": 1
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[P+B3] RA[A4]+RA[Z4] Scout[A3+O]+Orphic[A4]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystalMix": {
+                "Perfect Pink Crystal": 1,
+                "Abyss Crystal": 3
+              }
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystalMix": {
+                "Amulet Crystal": 3,
+                "Perfect Orange Crystal": 1
+              }
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Amulet Crystal"
+            }
+          },
+          "screenWorstWin": 48.333333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 58.388888888888886,
+          "worstWin": 46,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 59.33333333333334,
+          "avgEx": 8.080444444444446,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 330,
+            "armor": 87,
+            "acc": 193,
+            "dodge": 148,
+            "gun": 595,
+            "prj": 622,
+            "mel": 810,
+            "defSk": 648
+          },
+          "baseWorstWin": 36.666666666666664,
+          "baseAvgWin": 57.02222222222222,
+          "baseLabel": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[P]+Orphic[A]",
+          "searchWorstWin": 47.5,
+          "searchAvgWin": 59.49999999999999,
+          "improvedMoves": 2,
+          "passesRan": 2,
+          "mergedCount": 1
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B4] RA[A+Z3]+RA[Z4] Scout[A4]+Orphic[O4]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "u1": "",
+              "u2": "",
+              "crystalMix": {
+                "Amulet Crystal": 1,
+                "Berserker Crystal": 3
+              }
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 48.333333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 64.66666666666667,
+          "worstWin": 45.666666666666664,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 63.75555555555555,
+          "avgEx": 7.992222222222221,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 362,
+            "armor": 92,
+            "acc": 176,
+            "dodge": 152,
+            "gun": 566,
+            "prj": 595,
+            "mel": 825,
+            "defSk": 635
+          },
+          "baseWorstWin": 46.33333333333333,
+          "baseAvgWin": 64.20000000000002,
+          "baseLabel": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Orphic[O]",
+          "searchWorstWin": 57.49999999999999,
+          "searchAvgWin": 65.1111111111111,
+          "improvedMoves": 1,
+          "passesRan": 2,
+          "mergedCount": 1
+        },
+        {
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[P3+B] RA[A4]+RA[A+F+Z2] Scout[A4]+Orphic[O4]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystalMix": {
+                "Perfect Pink Crystal": 3,
+                "Abyss Crystal": 1
+              }
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "crystal": "Amulet Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "u1": "",
+              "u2": "",
+              "crystalMix": {
+                "Amulet Crystal": 1,
+                "Perfect Fire Crystal": 1,
+                "Berserker Crystal": 2
+              }
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 46.666666666666664,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 59.166666666666664,
+          "worstWin": 38,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 56.977777777777774,
+          "avgEx": 8.061111111111112,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 297,
+            "armor": 79,
+            "acc": 191,
+            "dodge": 140,
+            "gun": 566,
+            "prj": 595,
+            "mel": 853,
+            "defSk": 690
+          },
+          "baseWorstWin": 43,
+          "baseAvgWin": 57.577777777777776,
+          "baseLabel": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[A] Scout[A]+Orphic[O]",
+          "searchWorstWin": 44.166666666666664,
+          "searchAvgWin": 57.05555555555555,
+          "improvedMoves": 2,
+          "passesRan": 2,
+          "mergedCount": 1
+        }
+      ],
+      "mixedCatalogByType": [
+        {
+          "type": "Melee+Melee",
+          "wpTag": "Melee+Melee",
+          "label": "HP650 A0 D43 Snormal | SG1[B4] RA[A+Z3]+RA[Z4] Scout[A4]+Orphic[O4]",
+          "spec": {
+            "attackType": "normal",
+            "plan": {
+              "hp": 650,
+              "extraAcc": 0,
+              "extraDodge": 43,
+              "freePoints": 43
+            },
+            "armor": {
+              "item": "SG1 Armor",
+              "crystal": "Abyss Crystal"
+            },
+            "weapon1": {
+              "item": "Reaper Axe",
+              "u1": "",
+              "u2": "",
+              "crystalMix": {
+                "Amulet Crystal": 1,
+                "Berserker Crystal": 3
+              }
+            },
+            "weapon2": {
+              "item": "Reaper Axe",
+              "crystal": "Berserker Crystal",
+              "u1": "",
+              "u2": ""
+            },
+            "misc1": {
+              "item": "Scout Drones",
+              "crystal": "Amulet Crystal"
+            },
+            "misc2": {
+              "item": "Orphic Amulet",
+              "crystal": "Perfect Orange Crystal"
+            }
+          },
+          "screenWorstWin": 48.333333333333336,
+          "screenWorstName": "DL Gun Build 3",
+          "screenAvgWin": 64.66666666666667,
+          "worstWin": 45.666666666666664,
+          "worstName": "DL Gun Build 3",
+          "avgWin": 63.75555555555555,
+          "avgEx": 7.992222222222221,
+          "stats": {
+            "hp": 650,
+            "attackType": "normal",
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "speed": 362,
+            "armor": 92,
+            "acc": 176,
+            "dodge": 152,
+            "gun": 566,
+            "prj": 595,
+            "mel": 825,
+            "defSk": 635
+          },
+          "baseWorstWin": 46.33333333333333,
+          "baseAvgWin": 64.20000000000002,
+          "baseLabel": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Orphic[O]",
+          "searchWorstWin": 57.49999999999999,
+          "searchAvgWin": 65.1111111111111,
+          "improvedMoves": 1,
+          "passesRan": 2
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "bestOverall": {
+      "hp": 650,
+      "winnerSourceKind": "refined",
+      "winnerSourceLabel": "mixed-crystal refine",
+      "winnerRefine": "better both (ΔMin +6.33 / ΔAvg +1.11)",
+      "wpTag": "Melee+Melee",
+      "label": "HP650 A0 D43 Snormal | SG1[B4] RA[A2+Z2]+RA[Z4] Scout[A2+P2]+Orphic[O4]",
+      "spec": {
+        "attackType": "normal",
+        "plan": {
+          "hp": 650,
+          "extraAcc": 0,
+          "extraDodge": 43,
+          "freePoints": 43
+        },
+        "armor": {
+          "item": "SG1 Armor",
+          "crystal": "Abyss Crystal"
+        },
+        "weapon1": {
+          "item": "Reaper Axe",
+          "u1": "",
+          "u2": "",
+          "crystalMix": {
+            "Amulet Crystal": 2,
+            "Berserker Crystal": 2
+          }
+        },
+        "weapon2": {
+          "item": "Reaper Axe",
+          "crystal": "Berserker Crystal",
+          "u1": "",
+          "u2": ""
+        },
+        "misc1": {
+          "item": "Scout Drones",
+          "crystalMix": {
+            "Amulet Crystal": 2,
+            "Perfect Pink Crystal": 2
+          }
+        },
+        "misc2": {
+          "item": "Orphic Amulet",
+          "crystal": "Perfect Orange Crystal"
+        }
+      },
+      "screenWorstWin": 50.83333333333333,
+      "screenWorstName": "Core/Void Build 1",
+      "screenAvgWin": 61.6111111111111,
+      "worstWin": 51.66666666666667,
+      "worstName": "DL Gun Build 3",
+      "avgWin": 62.13333333333334,
+      "avgEx": 8.182,
+      "stats": {
+        "hp": 650,
+        "attackType": "normal",
+        "extraAcc": 0,
+        "extraDodge": 43,
+        "speed": 354,
+        "armor": 92,
+        "acc": 174,
+        "dodge": 152,
+        "gun": 557,
+        "prj": 581,
+        "mel": 823,
+        "defSk": 644
+      },
+      "baseWorstWin": 45.33333333333333,
+      "baseAvgWin": 61.02222222222223,
+      "baseLabel": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[O]+Orphic[O]",
+      "searchWorstWin": 54.166666666666664,
+      "searchAvgWin": 62.77777777777778,
+      "improvedMoves": 2,
+      "passesRan": 2,
+      "mergedCount": 1
+    },
+    "bestByHp": [
+      {
+        "hp": 650,
+        "winnerSourceKind": "refined",
+        "winnerSourceLabel": "mixed-crystal refine",
+        "winnerRefine": "better both (ΔMin +6.33 / ΔAvg +1.11)",
+        "wpTag": "Melee+Melee",
+        "label": "HP650 A0 D43 Snormal | SG1[B4] RA[A2+Z2]+RA[Z4] Scout[A2+P2]+Orphic[O4]",
+        "spec": {
+          "attackType": "normal",
+          "plan": {
+            "hp": 650,
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "freePoints": 43
+          },
+          "armor": {
+            "item": "SG1 Armor",
+            "crystal": "Abyss Crystal"
+          },
+          "weapon1": {
+            "item": "Reaper Axe",
+            "u1": "",
+            "u2": "",
+            "crystalMix": {
+              "Amulet Crystal": 2,
+              "Berserker Crystal": 2
+            }
+          },
+          "weapon2": {
+            "item": "Reaper Axe",
+            "crystal": "Berserker Crystal",
+            "u1": "",
+            "u2": ""
+          },
+          "misc1": {
+            "item": "Scout Drones",
+            "crystalMix": {
+              "Amulet Crystal": 2,
+              "Perfect Pink Crystal": 2
+            }
+          },
+          "misc2": {
+            "item": "Orphic Amulet",
+            "crystal": "Perfect Orange Crystal"
+          }
+        },
+        "screenWorstWin": 50.83333333333333,
+        "screenWorstName": "Core/Void Build 1",
+        "screenAvgWin": 61.6111111111111,
+        "worstWin": 51.66666666666667,
+        "worstName": "DL Gun Build 3",
+        "avgWin": 62.13333333333334,
+        "avgEx": 8.182,
+        "stats": {
+          "hp": 650,
+          "attackType": "normal",
+          "extraAcc": 0,
+          "extraDodge": 43,
+          "speed": 354,
+          "armor": 92,
+          "acc": 174,
+          "dodge": 152,
+          "gun": 557,
+          "prj": 581,
+          "mel": 823,
+          "defSk": 644
+        },
+        "baseWorstWin": 45.33333333333333,
+        "baseAvgWin": 61.02222222222223,
+        "baseLabel": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[O]+Orphic[O]",
+        "searchWorstWin": 54.166666666666664,
+        "searchAvgWin": 62.77777777777778,
+        "improvedMoves": 2,
+        "passesRan": 2,
+        "mergedCount": 1
+      },
+      {
+        "hp": 600,
+        "winnerSourceKind": "refined",
+        "winnerSourceLabel": "mixed-crystal refine",
+        "winnerRefine": "better both (ΔMin +11.00 / ΔAvg +3.58)",
+        "wpTag": "Melee+Melee",
+        "label": "HP600 A0 D53 Snormal | SG1[B4] RA[A+Z3]+RA[Z4] Scout[A4]+Scout[A4]",
+        "spec": {
+          "attackType": "normal",
+          "plan": {
+            "hp": 600,
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "freePoints": 53
+          },
+          "armor": {
+            "item": "SG1 Armor",
+            "crystal": "Abyss Crystal"
+          },
+          "weapon1": {
+            "item": "Reaper Axe",
+            "u1": "",
+            "u2": "",
+            "crystalMix": {
+              "Amulet Crystal": 1,
+              "Berserker Crystal": 3
+            }
+          },
+          "weapon2": {
+            "item": "Reaper Axe",
+            "crystal": "Berserker Crystal",
+            "u1": "",
+            "u2": ""
+          },
+          "misc1": {
+            "item": "Scout Drones",
+            "crystal": "Amulet Crystal"
+          },
+          "misc2": {
+            "item": "Scout Drones",
+            "crystalMix": {
+              "Amulet Crystal": 4
+            }
+          }
+        },
+        "screenWorstWin": 45,
+        "screenWorstName": "DL Gun Build 2",
+        "screenAvgWin": 56.94444444444444,
+        "worstWin": 50,
+        "worstName": "DL Gun Build 3",
+        "avgWin": 60.71111111111111,
+        "avgEx": 8.652,
+        "stats": {
+          "hp": 600,
+          "attackType": "normal",
+          "extraAcc": 0,
+          "extraDodge": 53,
+          "speed": 342,
+          "armor": 92,
+          "acc": 199,
+          "dodge": 167,
+          "gun": 542,
+          "prj": 600,
+          "mel": 724,
+          "defSk": 681
+        },
+        "baseWorstWin": 39,
+        "baseAvgWin": 57.13333333333333,
+        "baseLabel": "HP600 A0 D53 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Scout[O]",
+        "searchWorstWin": 51.66666666666667,
+        "searchAvgWin": 61.166666666666664,
+        "improvedMoves": 2,
+        "passesRan": 2,
+        "mergedCount": 1
+      },
+      {
+        "hp": 550,
+        "winnerSourceKind": "refined",
+        "winnerSourceLabel": "mixed-crystal refine",
+        "winnerRefine": "worse both (ΔMin -4.00 / ΔAvg -0.84)",
+        "wpTag": "Melee+Melee",
+        "label": "HP550 A0 D63 Snormal | SG1[B4] RA[Z4]+RA[Z4] Scout[A4]+Scout[A4]",
+        "spec": {
+          "attackType": "normal",
+          "plan": {
+            "hp": 550,
+            "extraAcc": 0,
+            "extraDodge": 63,
+            "freePoints": 63
+          },
+          "armor": {
+            "item": "SG1 Armor",
+            "crystalMix": {
+              "Abyss Crystal": 4
+            }
+          },
+          "weapon1": {
+            "item": "Reaper Axe",
+            "crystal": "Berserker Crystal",
+            "u1": "",
+            "u2": ""
+          },
+          "weapon2": {
+            "item": "Reaper Axe",
+            "crystal": "Berserker Crystal",
+            "u1": "",
+            "u2": ""
+          },
+          "misc1": {
+            "item": "Scout Drones",
+            "crystal": "Amulet Crystal"
+          },
+          "misc2": {
+            "item": "Scout Drones",
+            "crystal": "Amulet Crystal"
+          }
+        },
+        "screenWorstWin": 41.66666666666667,
+        "screenWorstName": "SG1 Split Bombs T2",
+        "screenAvgWin": 59.88888888888889,
+        "worstWin": 43,
+        "worstName": "DL Gun Build 3",
+        "avgWin": 57.93333333333333,
+        "avgEx": 8.517555555555555,
+        "stats": {
+          "hp": 550,
+          "attackType": "normal",
+          "extraAcc": 0,
+          "extraDodge": 63,
+          "speed": 351,
+          "armor": 92,
+          "acc": 196,
+          "dodge": 177,
+          "gun": 542,
+          "prj": 600,
+          "mel": 718,
+          "defSk": 681
+        },
+        "baseWorstWin": 47,
+        "baseAvgWin": 58.77777777777778,
+        "baseLabel": "HP550 A0 D63 Snormal | SG1[P] RA[Z]+RA[Z] Scout[A]+Scout[A]",
+        "searchWorstWin": 49.166666666666664,
+        "searchAvgWin": 58.833333333333336,
+        "improvedMoves": 1,
+        "passesRan": 2,
+        "mergedCount": 1
+      }
+    ],
+    "bestByType": {
+      "Melee+Melee": {
+        "hp": 650,
+        "type": "Melee+Melee",
+        "wpTag": "Melee+Melee",
+        "label": "HP650 A0 D43 Snormal | SG1[B4] RA[A+Z3]+RA[Z4] Scout[A4]+Orphic[O4]",
+        "spec": {
+          "attackType": "normal",
+          "plan": {
+            "hp": 650,
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "freePoints": 43
+          },
+          "armor": {
+            "item": "SG1 Armor",
+            "crystal": "Abyss Crystal"
+          },
+          "weapon1": {
+            "item": "Reaper Axe",
+            "u1": "",
+            "u2": "",
+            "crystalMix": {
+              "Amulet Crystal": 1,
+              "Berserker Crystal": 3
+            }
+          },
+          "weapon2": {
+            "item": "Reaper Axe",
+            "crystal": "Berserker Crystal",
+            "u1": "",
+            "u2": ""
+          },
+          "misc1": {
+            "item": "Scout Drones",
+            "crystal": "Amulet Crystal"
+          },
+          "misc2": {
+            "item": "Orphic Amulet",
+            "crystal": "Perfect Orange Crystal"
+          }
+        },
+        "screenWorstWin": 48.333333333333336,
+        "screenWorstName": "DL Gun Build 3",
+        "screenAvgWin": 64.66666666666667,
+        "worstWin": 45.666666666666664,
+        "worstName": "DL Gun Build 3",
+        "avgWin": 63.75555555555555,
+        "avgEx": 7.992222222222221,
+        "stats": {
+          "hp": 650,
+          "attackType": "normal",
+          "extraAcc": 0,
+          "extraDodge": 43,
+          "speed": 362,
+          "armor": 92,
+          "acc": 176,
+          "dodge": 152,
+          "gun": 566,
+          "prj": 595,
+          "mel": 825,
+          "defSk": 635
+        },
+        "baseWorstWin": 46.33333333333333,
+        "baseAvgWin": 64.20000000000002,
+        "baseLabel": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Orphic[O]",
+        "searchWorstWin": 57.49999999999999,
+        "searchAvgWin": 65.1111111111111,
+        "improvedMoves": 1,
+        "passesRan": 2
+      }
+    },
+    "refineSummary": [
+      {
+        "hp": 600,
+        "wpTag": "Melee+Melee",
+        "label": "HP600 A0 D53 Snormal | SG1[B4] RA[A+Z3]+RA[Z4] Scout[A4]+Scout[A4]",
+        "spec": {
+          "attackType": "normal",
+          "plan": {
+            "hp": 600,
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "freePoints": 53
+          },
+          "armor": {
+            "item": "SG1 Armor",
+            "crystal": "Abyss Crystal"
+          },
+          "weapon1": {
+            "item": "Reaper Axe",
+            "u1": "",
+            "u2": "",
+            "crystalMix": {
+              "Amulet Crystal": 1,
+              "Berserker Crystal": 3
+            }
+          },
+          "weapon2": {
+            "item": "Reaper Axe",
+            "crystal": "Berserker Crystal",
+            "u1": "",
+            "u2": ""
+          },
+          "misc1": {
+            "item": "Scout Drones",
+            "crystal": "Amulet Crystal"
+          },
+          "misc2": {
+            "item": "Scout Drones",
+            "crystalMix": {
+              "Amulet Crystal": 4
+            }
+          }
+        },
+        "screenWorstWin": 45,
+        "screenWorstName": "DL Gun Build 2",
+        "screenAvgWin": 56.94444444444444,
+        "worstWin": 50,
+        "worstName": "DL Gun Build 3",
+        "avgWin": 60.71111111111111,
+        "avgEx": 8.652,
+        "stats": {
+          "hp": 600,
+          "attackType": "normal",
+          "extraAcc": 0,
+          "extraDodge": 53,
+          "speed": 342,
+          "armor": 92,
+          "acc": 199,
+          "dodge": 167,
+          "gun": 542,
+          "prj": 600,
+          "mel": 724,
+          "defSk": 681
+        },
+        "baseWorstWin": 39,
+        "baseAvgWin": 57.13333333333333,
+        "baseLabel": "HP600 A0 D53 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Scout[O]",
+        "searchWorstWin": 51.66666666666667,
+        "searchAvgWin": 61.166666666666664,
+        "improvedMoves": 2,
+        "passesRan": 2,
+        "mergedCount": 1,
+        "rank": 1,
+        "deltaWorst": 11,
+        "deltaAvg": 3.5777777777777757,
+        "note": "better both"
+      },
+      {
+        "hp": 650,
+        "wpTag": "Melee+Melee",
+        "label": "HP650 A0 D43 Snormal | SG1[P+B3] RA[A4]+RA[Z4] Scout[A3+O]+Orphic[A4]",
+        "spec": {
+          "attackType": "normal",
+          "plan": {
+            "hp": 650,
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "freePoints": 43
+          },
+          "armor": {
+            "item": "SG1 Armor",
+            "crystalMix": {
+              "Perfect Pink Crystal": 1,
+              "Abyss Crystal": 3
+            }
+          },
+          "weapon1": {
+            "item": "Reaper Axe",
+            "crystal": "Amulet Crystal",
+            "u1": "",
+            "u2": ""
+          },
+          "weapon2": {
+            "item": "Reaper Axe",
+            "crystal": "Berserker Crystal",
+            "u1": "",
+            "u2": ""
+          },
+          "misc1": {
+            "item": "Scout Drones",
+            "crystalMix": {
+              "Amulet Crystal": 3,
+              "Perfect Orange Crystal": 1
+            }
+          },
+          "misc2": {
+            "item": "Orphic Amulet",
+            "crystal": "Amulet Crystal"
+          }
+        },
+        "screenWorstWin": 48.333333333333336,
+        "screenWorstName": "DL Gun Build 3",
+        "screenAvgWin": 58.388888888888886,
+        "worstWin": 46,
+        "worstName": "DL Gun Build 3",
+        "avgWin": 59.33333333333334,
+        "avgEx": 8.080444444444446,
+        "stats": {
+          "hp": 650,
+          "attackType": "normal",
+          "extraAcc": 0,
+          "extraDodge": 43,
+          "speed": 330,
+          "armor": 87,
+          "acc": 193,
+          "dodge": 148,
+          "gun": 595,
+          "prj": 622,
+          "mel": 810,
+          "defSk": 648
+        },
+        "baseWorstWin": 36.666666666666664,
+        "baseAvgWin": 57.02222222222222,
+        "baseLabel": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[P]+Orphic[A]",
+        "searchWorstWin": 47.5,
+        "searchAvgWin": 59.49999999999999,
+        "improvedMoves": 2,
+        "passesRan": 2,
+        "mergedCount": 1,
+        "rank": 3,
+        "deltaWorst": 9.333333333333336,
+        "deltaAvg": 2.311111111111124,
+        "note": "better both"
+      },
+      {
+        "hp": 650,
+        "wpTag": "Melee+Melee",
+        "label": "HP650 A0 D43 Snormal | SG1[B4] RA[A2+Z2]+RA[Z4] Scout[A2+P2]+Orphic[O4]",
+        "spec": {
+          "attackType": "normal",
+          "plan": {
+            "hp": 650,
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "freePoints": 43
+          },
+          "armor": {
+            "item": "SG1 Armor",
+            "crystal": "Abyss Crystal"
+          },
+          "weapon1": {
+            "item": "Reaper Axe",
+            "u1": "",
+            "u2": "",
+            "crystalMix": {
+              "Amulet Crystal": 2,
+              "Berserker Crystal": 2
+            }
+          },
+          "weapon2": {
+            "item": "Reaper Axe",
+            "crystal": "Berserker Crystal",
+            "u1": "",
+            "u2": ""
+          },
+          "misc1": {
+            "item": "Scout Drones",
+            "crystalMix": {
+              "Amulet Crystal": 2,
+              "Perfect Pink Crystal": 2
+            }
+          },
+          "misc2": {
+            "item": "Orphic Amulet",
+            "crystal": "Perfect Orange Crystal"
+          }
+        },
+        "screenWorstWin": 50.83333333333333,
+        "screenWorstName": "Core/Void Build 1",
+        "screenAvgWin": 61.6111111111111,
+        "worstWin": 51.66666666666667,
+        "worstName": "DL Gun Build 3",
+        "avgWin": 62.13333333333334,
+        "avgEx": 8.182,
+        "stats": {
+          "hp": 650,
+          "attackType": "normal",
+          "extraAcc": 0,
+          "extraDodge": 43,
+          "speed": 354,
+          "armor": 92,
+          "acc": 174,
+          "dodge": 152,
+          "gun": 557,
+          "prj": 581,
+          "mel": 823,
+          "defSk": 644
+        },
+        "baseWorstWin": 45.33333333333333,
+        "baseAvgWin": 61.02222222222223,
+        "baseLabel": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[O]+Orphic[O]",
+        "searchWorstWin": 54.166666666666664,
+        "searchAvgWin": 62.77777777777778,
+        "improvedMoves": 2,
+        "passesRan": 2,
+        "mergedCount": 1,
+        "rank": 1,
+        "deltaWorst": 6.333333333333343,
+        "deltaAvg": 1.1111111111111072,
+        "note": "better both"
+      },
+      {
+        "hp": 550,
+        "wpTag": "Melee+Melee",
+        "label": "HP550 A0 D63 Snormal | SG1[P3+B] RA[A2+Z2]+RA[Z4] Scout[A2+O2]+Orphic[A4]",
+        "spec": {
+          "attackType": "normal",
+          "plan": {
+            "hp": 550,
+            "extraAcc": 0,
+            "extraDodge": 63,
+            "freePoints": 63
+          },
+          "armor": {
+            "item": "SG1 Armor",
+            "crystalMix": {
+              "Perfect Pink Crystal": 3,
+              "Abyss Crystal": 1
+            }
+          },
+          "weapon1": {
+            "item": "Reaper Axe",
+            "u1": "",
+            "u2": "",
+            "crystalMix": {
+              "Amulet Crystal": 2,
+              "Berserker Crystal": 2
+            }
+          },
+          "weapon2": {
+            "item": "Reaper Axe",
+            "crystal": "Berserker Crystal",
+            "u1": "",
+            "u2": ""
+          },
+          "misc1": {
+            "item": "Scout Drones",
+            "crystalMix": {
+              "Amulet Crystal": 2,
+              "Perfect Orange Crystal": 2
+            }
+          },
+          "misc2": {
+            "item": "Orphic Amulet",
+            "crystal": "Amulet Crystal"
+          }
+        },
+        "screenWorstWin": 43.333333333333336,
+        "screenWorstName": "DL Gun Build 3",
+        "screenAvgWin": 55.66666666666667,
+        "worstWin": 39,
+        "worstName": "DL Gun Build 3",
+        "avgWin": 52.28888888888889,
+        "avgEx": 7.777111111111111,
+        "stats": {
+          "hp": 550,
+          "attackType": "normal",
+          "extraAcc": 0,
+          "extraDodge": 63,
+          "speed": 329,
+          "armor": 79,
+          "acc": 182,
+          "dodge": 160,
+          "gun": 591,
+          "prj": 615,
+          "mel": 797,
+          "defSk": 680
+        },
+        "baseWorstWin": 32.666666666666664,
+        "baseAvgWin": 55.13333333333333,
+        "baseLabel": "HP550 A0 D63 Snormal | SG1[P] RA[Z]+RA[Z] Scout[A]+Orphic[A]",
+        "searchWorstWin": 42.5,
+        "searchAvgWin": 53.50000000000001,
+        "improvedMoves": 3,
+        "passesRan": 2,
+        "mergedCount": 1,
+        "rank": 2,
+        "deltaWorst": 6.333333333333336,
+        "deltaAvg": -2.8444444444444414,
+        "note": "tradeoff"
+      },
+      {
+        "hp": 650,
+        "wpTag": "Melee+Melee",
+        "label": "HP650 A0 D43 Snormal | SG1[B4] RA[A+Z3]+RA[A2+Z2] Scout[A4]+Orphic[O4]",
+        "spec": {
+          "attackType": "normal",
+          "plan": {
+            "hp": 650,
+            "extraAcc": 0,
+            "extraDodge": 43,
+            "freePoints": 43
+          },
+          "armor": {
+            "item": "SG1 Armor",
+            "crystal": "Abyss Crystal"
+          },
+          "weapon1": {
+            "item": "Reaper Axe",
+            "u1": "",
+            "u2": "",
+            "crystalMix": {
+              "Amulet Crystal": 1,
+              "Berserker Crystal": 3
+            }
+          },
+          "weapon2": {
+            "item": "Reaper Axe",
+            "u1": "",
+            "u2": "",
+            "crystalMix": {
+              "Amulet Crystal": 2,
+              "Berserker Crystal": 2
+            }
+          },
+          "misc1": {
+            "item": "Scout Drones",
+            "crystal": "Amulet Crystal"
+          },
+          "misc2": {
+            "item": "Orphic Amulet",
+            "crystalMix": {
+              "Perfect Orange Crystal": 4
+            }
+          }
+        },
+        "screenWorstWin": 48.333333333333336,
+        "screenWorstName": "DL Gun Build 3",
+        "screenAvgWin": 62.88888888888889,
+        "worstWin": 47.66666666666667,
+        "worstName": "DL Gun Build 3",
+        "avgWin": 63.91111111111112,
+        "avgEx": 8.038888888888888,
+        "stats": {
+          "hp": 650,
+          "attackType": "normal",
+          "extraAcc": 0,
+          "extraDodge": 43,
+          "speed": 345,
+          "armor": 92,
+          "acc": 183,
+          "dodge": 152,
+          "gun": 566,
+          "prj": 595,
+          "mel": 838,
+          "defSk": 636
+        },
+        "baseWorstWin": 44,
+        "baseAvgWin": 61.33333333333333,
+        "baseLabel": "HP650 A0 D43 Snormal | SG1[B] RA[A]+RA[Z] Scout[A]+Orphic[A]",
+        "searchWorstWin": 54.166666666666664,
+        "searchAvgWin": 64.77777777777779,
+        "improvedMoves": 5,
+        "passesRan": 2,
+        "mergedCount": 1,
+        "rank": 2,
+        "deltaWorst": 3.6666666666666714,
+        "deltaAvg": 2.57777777777779,
+        "note": "better both"
+      },
+      {
+        "hp": 600,
+        "wpTag": "Melee+Melee",
+        "label": "HP600 A0 D53 Snormal | SG1[B4] RA[A4]+RA[A+Z3] Scout[A2+P2]+Orphic[O4]",
+        "spec": {
+          "attackType": "normal",
+          "plan": {
+            "hp": 600,
+            "extraAcc": 0,
+            "extraDodge": 53,
+            "freePoints": 53
+          },
+          "armor": {
+            "item": "SG1 Armor",
+            "crystal": "Abyss Crystal"
+          },
+          "weapon1": {
+            "item": "Reaper Axe",
+            "u1": "",
+            "u2": "",
+            "crystalMix": {
+              "Amulet Crystal": 4
+            }
+          },
+          "weapon2": {
+            "item": "Reaper Axe",
+            "u1": "",
+            "u2": "",
+            "crystalMix": {
+              "Amulet Crystal": 1,
+              "Berserker Crystal": 3
+            }
+          },
+          "misc1": {
+            "item": "Scout Drones",
+            "crystalMix": {
+              "Amulet Crystal": 2,
+              "Perfect Pink Crystal": 2
+            }
+          },
+          "misc2": {
+            "item": "Orphic Amulet",
+            "crystalMix": {
+              "Perfect Orange Crystal": 4
+            }
+          }
+        },
+        "screenWorstWin": 44.166666666666664,
+        "screenWorstName": "DL Gun Build",
+        "screenAvgWin": 55.777777777777786,
+        "worstWin": 37.666666666666664,
+        "worstName": "DL Gun Build 3",
+        "avgWin": 57.93333333333333,
+        "avgEx": 8.149333333333333,
+        "stats": {
+          "hp": 600,
+          "attackType": "normal",
+          "extraAcc": 0,
+          "extraDodge": 53,
+          "speed": 330,
+          "armor": 92,
+          "acc": 185,
+          "dodge": 162,
+          "gun": 557,
+          "prj": 581,
+          "mel": 846,
+          "defSk": 646
+        },
+        "baseWorstWin": 35.66666666666667,
+        "baseAvgWin": 54.04444444444445,
+        "baseLabel": "HP600 A0 D53 Snormal | SG1[B] RA[A]+RA[Z] Scout[O]+Orphic[A]",
+        "searchWorstWin": 50.83333333333333,
+        "searchAvgWin": 60.222222222222236,
+        "improvedMoves": 6,
+        "passesRan": 2,
+        "mergedCount": 1,
+        "rank": 5,
+        "deltaWorst": 1.999999999999993,
+        "deltaAvg": 3.8888888888888786,
+        "note": "better both"
+      }
+    ]
+  }
+}

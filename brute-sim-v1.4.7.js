@@ -24,6 +24,7 @@
  * Speed/quality knobs:
  *   LEGACY_WARM_START=1|0                # evaluate a known strong seed build to set the shared floor (default ON)
  *   LEGACY_WARM_START_TRIALS=5000        # trials/def for warm-start (defaults to TRIALS_CONFIRM)
+ *   LEGACY_FINAL_WORKERS=                # mixed-refine finalization workers (defaults to LEGACY_WORKERS)
  *
  * Staged evaluation knobs:
  *   LEGACY_TRIALS=20000                  # confirm trials/def (Stage B)
@@ -78,21 +79,21 @@ const SETTINGS = {
   HP_MAX: 865,
   MAX_TURNS: 200,
 
-  TRIALS_CONFIRM_DEFAULT: 20000,
-  TRIALS_SCREEN_DEFAULT: 1200,
-  TRIALS_GATE_DEFAULT: 300,
+  TRIALS_CONFIRM_DEFAULT: 30000,
+  TRIALS_SCREEN_DEFAULT: 1300,
+  TRIALS_GATE_DEFAULT: 350,
   GATEKEEPERS_DEFAULT: 4,
 
   SCREEN_BAIL_MARGIN_DEFAULT: 6.0,
-  INIT_FLOOR_PCT: 41, // 0 disables manual shared-floor seeding
+  INIT_FLOOR_PCT: 43, // 0 disables manual shared-floor seeding
 
   KEEP_TOP_N_PER_HP: 15,
   PROGRESS_EVERY_MS: 2000,
 
   // Historical single-HP default.
-  LOCKED_HP: 650,
+  LOCKED_HP: 865,
 
-  WORKERS_DEFAULT_CAP: 4,
+  WORKERS_DEFAULT_CAP: 12,
 };
 
 // =====================
@@ -101,21 +102,21 @@ const SETTINGS = {
 const PLAN_SWEEP_CONFIG = {
   // 'single' = only use singleHp below
   // 'sweep'  = use hpSweep.min..max in hpSweep.step increments
-  hpMode: 'sweep',
+  hpMode: "sweep",
   singleHp: SETTINGS.LOCKED_HP,
 
   hpSweep: {
-    min: 600,
-    max: 650,
-    step: 50,
+    min: 500,
+    max: 700,
+    step: 25,
     includeSingleHp: false,
   },
 
   // 'dodge_only'      = old behavior (all free points into dodge)
   // 'acc_dodge_sweep' = sweep accuracy allocations and put the rest into dodge
-  allocationMode: 'dodge_only',
+  allocationMode: "acc_dodge_sweep",
   allocation: {
-    accStep: 10,
+    accStep: 5,
     customAccValues: [], // e.g. [15, 25] to force extra checkpoints when valid for a given HP
     includeFullDodge: true,
     includeFullAcc: true,
@@ -126,7 +127,7 @@ const PLAN_SWEEP_CONFIG = {
   // results are clearly worse for consecutive steps.
   safeAccuracyBail: {
     enabled: true,
-    metric: 'screen_or_confirm', // 'screen_or_confirm' | 'confirm_only'
+    metric: "screen_or_confirm", // 'screen_or_confirm' | 'confirm_only'
     minEvaluatedPlans: 3,
     minAccAheadOfBest: 20,
     worseByPct: 2.5,
@@ -157,11 +158,11 @@ const POOLS = {
     // "Ritual Dagger IV",
     // "Warlords Katana",
     // 'Fortified Void Bow',
-    'Split Crystal Bombs T2',
-    'Rift Gun',
+    // 'Split Crystal Bombs T2',
+    // 'Rift Gun',
     // 'Double Barrel Sniper Rifle',
     // 'Q15 Gun',
-    'Bio Gun Mk4',
+    // 'Bio Gun Mk4',
     // "Gun Blade Mk4",
     'Reaper Axe',
     // 'Alien Staff',
@@ -294,7 +295,7 @@ const TERM_UI = {
 const REPORT_CFG = {
   finalistsTopN: (() => {
     const n = parseInt(process.env.LEGACY_SHOW_TOP || '', 10);
-    return Number.isFinite(n) && n > 0 ? n : 10;
+    return Number.isFinite(n) && n > 0 ? n : 20;
   })(),
   refineChangesTopN: (() => {
     const n = parseInt(process.env.LEGACY_SHOW_REFINE_TOP || '', 10);
@@ -1621,7 +1622,7 @@ let DEFENDER_PAYLOADS;
   const candidates = override
     ? [override]
     : [
-        './legacy-defenders-v1.0.0.js',
+        './data/legacy-defenders-meta-v4-curated.js',
         './legacy-defenders-latest.js',
         // Fallbacks for older repos / alternate filenames:
         './legacy_defenders.js',
@@ -4047,10 +4048,83 @@ function parseMixedCrystalPasses() {
   return Number.isFinite(n) && n > 0 ? n : 2;
 }
 
+function parseFinalWorkers(defaultWorkers) {
+  const fallback = Math.max(1, Number(defaultWorkers) || 1);
+  const raw = String(process.env.LEGACY_FINAL_WORKERS ?? '').trim();
+  if (!raw) return fallback;
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+function confirmedScoreFromEntry(entry) {
+  return {
+    worstWin: entry.worstWin,
+    worstName: entry.worstName,
+    avgWin: entry.avgWin,
+    avgEx: entry.avgEx,
+    stats: entry.stats,
+  };
+}
+
+function mixedRefineWorkerMain() {
+  const { jobs, trialsSearch, trialsConfirm, maxTurns, rngMode, rngSeed, passes } = workerData;
+
+  const localCache = new Map();
+  function getDefenderV(itemName, crystalSpec, upgrade1 = '', upgrade2 = '', slotTag = 0) {
+    const key = defenderVariantKeyFromCrystalSpec(
+      itemName,
+      crystalSpec,
+      upgrade1,
+      upgrade2,
+      slotTag,
+    );
+    let v = localCache.get(key);
+    if (!v) {
+      v = computeVariantFromCrystalSpec(itemName, crystalSpec, upgrade1, upgrade2, slotTag);
+      localCache.set(key, v);
+    }
+    return v;
+  }
+
+  prefillVariantsFromDefenders(defenderBuilds, getDefenderV);
+  const defenders = defenderBuilds.map((d) => compileDefender(d, localCache));
+  const sharedEvalCache = new Map();
+
+  for (const job of jobs || []) {
+    const { key, originalIndex, baseEntry } = job;
+    const baseScoreKey = `${trialsConfirm}|${specKey(baseEntry.spec)}`;
+    if (!sharedEvalCache.has(baseScoreKey)) {
+      sharedEvalCache.set(baseScoreKey, confirmedScoreFromEntry(baseEntry));
+    }
+
+    const hit = refineSpecMixedCrystals({
+      baseEntry,
+      trialsSearch,
+      trialsConfirm,
+      maxTurns,
+      rngMode,
+      rngSeed,
+      defenders,
+      passes,
+      sharedEvalCache,
+    });
+
+    parentPort.postMessage({ type: 'mixed_refine_hit', key, originalIndex, hit });
+  }
+
+  parentPort.postMessage({ type: 'done' });
+}
+
 // =====================
 // WORKER MAIN
 // =====================
 function workerMain() {
+  const mode = workerData && workerData.mode ? workerData.mode : 'search';
+  if (mode === 'mixed_refine') {
+    mixedRefineWorkerMain();
+    return;
+  }
+
   const {
     trialsConfirm,
     trialsScreen,
@@ -4896,6 +4970,7 @@ async function main() {
     catalogConfirmTrials,
   );
   const mixedCrystalPasses = parseMixedCrystalPasses();
+  const finalWorkers = parseFinalWorkers(workers);
 
   // Bail-margin behavior:
   // - Default: use raw LEGACY_SCREEN_MARGIN (fast, matches older behavior)
@@ -5370,7 +5445,7 @@ async function main() {
     console.log('=== END PROFILE ===\n');
   }
 
-  printResults({
+  await printResults({
     globalByHp,
     globalBestByTypeByHp,
     globalCatalogTopByHp,
@@ -5385,6 +5460,7 @@ async function main() {
     mixedCrystalRefine,
     mixedCrystalSearchTrials,
     mixedCrystalPasses,
+    finalWorkers,
   });
 }
 
@@ -5475,7 +5551,112 @@ function dedupeRefinedEntries(entries) {
     .map(({ _firstIdx, ...rest }) => rest);
 }
 
-function printResults({
+function buildMixedRefineJobs(hpStates) {
+  const seen = new Set();
+  const jobs = [];
+
+  function addJob(baseEntry, hp) {
+    const key = specKey(baseEntry.spec);
+    if (seen.has(key)) return;
+    seen.add(key);
+    jobs.push({
+      key,
+      originalIndex: jobs.length,
+      hp,
+      note: compactBuildLabel(baseEntry.label || buildLabelFromSpec(baseEntry.spec), 64),
+      baseEntry,
+    });
+  }
+
+  for (const state of hpStates) {
+    if (!state || !state.lb || !state.lb.length) continue;
+    for (const e of state.confirmedTop || []) addJob(e, state.hp);
+    for (const e of state.confirmedTypes || []) addJob(e, state.hp);
+  }
+
+  return jobs;
+}
+
+async function runMixedRefineWorkers({
+  jobs,
+  requestedWorkers,
+  trialsSearch,
+  trialsConfirm,
+  maxTurns,
+  rngMode,
+  rngSeed,
+  passes,
+  onJobDone,
+}) {
+  const workerCount = Math.max(1, Math.min(requestedWorkers || 1, jobs.length));
+  if (workerCount <= 1) return null;
+
+  const chunkSize = Math.ceil(jobs.length / workerCount);
+  const jobChunks = [];
+  for (let i = 0; i < workerCount; i++) {
+    const chunk = jobs.slice(i * chunkSize, Math.min(jobs.length, (i + 1) * chunkSize));
+    if (chunk.length) jobChunks.push(chunk);
+  }
+
+  if (jobChunks.length <= 1) return null;
+
+  const orderedResults = new Array(jobs.length);
+
+  await new Promise((resolve, reject) => {
+    let doneCount = 0;
+    let settled = false;
+
+    function finishError(err) {
+      if (settled) return;
+      settled = true;
+      reject(err);
+    }
+
+    function finishDone() {
+      if (settled) return;
+      doneCount++;
+      if (doneCount >= jobChunks.length) {
+        settled = true;
+        resolve();
+      }
+    }
+
+    for (let w = 0; w < jobChunks.length; w++) {
+      const wk = new Worker(__filename, {
+        workerData: {
+          mode: 'mixed_refine',
+          workerId: w,
+          jobs: jobChunks[w],
+          trialsSearch,
+          trialsConfirm,
+          maxTurns,
+          rngMode,
+          rngSeed,
+          passes,
+        },
+      });
+
+      wk.on('message', (msg) => {
+        if (!msg || !msg.type) return;
+        if (msg.type === 'mixed_refine_hit') {
+          orderedResults[msg.originalIndex] = msg;
+          if (onJobDone) onJobDone(msg);
+          return;
+        }
+        if (msg.type === 'done') finishDone();
+      });
+
+      wk.on('error', finishError);
+      wk.on('exit', (code) => {
+        if (code !== 0) finishError(new Error(`Mixed refine worker ${w} exited with code ${code}`));
+      });
+    }
+  });
+
+  return orderedResults;
+}
+
+async function printResults({
   globalByHp,
   globalBestByTypeByHp,
   globalCatalogTopByHp,
@@ -5490,6 +5671,7 @@ function printResults({
   mixedCrystalRefine,
   mixedCrystalSearchTrials,
   mixedCrystalPasses,
+  finalWorkers,
 }) {
   console.log(section('RUN COMPLETE', 'green'));
   console.log(
@@ -5711,6 +5893,7 @@ function printResults({
   };
 
   const hpReports = [];
+  const hpStates = [];
 
   for (const hp of hpKeys) {
     const hpKey = String(hp);
@@ -5728,17 +5911,7 @@ function printResults({
     };
 
     if (!lb.length) {
-      hpReports.push({
-        hp,
-        kept: [],
-        winner: null,
-        winnerSourceKind: 'kept',
-        winnerSourceLabel: outcomeLabelForSource('kept'),
-        displayTop: [],
-        displayTypes: [],
-        refineChanges: [],
-      });
-      exportPayload.hp.push(hpExport);
+      hpStates.push({ hp, hpExport, lb, bestTypes, keptTypes: [], confirmedTop: [], confirmedTypes: [] });
       continue;
     }
 
@@ -5781,6 +5954,77 @@ function printResults({
 
     hpExport.catalogByType = confirmedTypes;
 
+    const keptTypes = Object.keys(bestTypes)
+      .map((t) => ({ type: t, ...bestTypes[t] }))
+      .sort((a, b) => b.worstWin - a.worstWin || b.avgWin - a.avgWin);
+
+    hpStates.push({
+      hp,
+      hpExport,
+      kept: lb,
+      lb,
+      bestTypes,
+      keptTypes,
+      confirmedTop,
+      confirmedTypes,
+    });
+  }
+
+  const canUseMixedRefineWorkers = mixedCrystalRefine && rngMode === 'fast' && finalWorkers > 1;
+  if (canUseMixedRefineWorkers) {
+    const mixedRefineJobs = buildMixedRefineJobs(hpStates);
+    const effectiveFinalWorkers = Math.max(1, Math.min(finalWorkers, mixedRefineJobs.length || 1));
+    if (effectiveFinalWorkers > 1 && mixedRefineJobs.length) {
+      const orderedResults = await runMixedRefineWorkers({
+        jobs: mixedRefineJobs,
+        requestedWorkers: effectiveFinalWorkers,
+        trialsSearch: mixedCrystalSearchTrials,
+        trialsConfirm: catalogConfirmTrials,
+        maxTurns: SETTINGS.MAX_TURNS,
+        rngMode,
+        rngSeed,
+        passes: mixedCrystalPasses,
+        onJobDone: (msg) => {
+          advanceFinalization(
+            'mixed refine',
+            mixedRefineJobs[msg.originalIndex]?.hp ?? null,
+            mixedRefineJobs[msg.originalIndex]?.note || '',
+          );
+        },
+      });
+
+      if (orderedResults) {
+        for (let i = 0; i < mixedRefineJobs.length; i++) {
+          const result = orderedResults[i];
+          if (!result) {
+            throw new Error(
+              `Missing mixed refine result for job ${i} (${mixedRefineJobs[i]?.key || 'unknown'})`,
+            );
+          }
+          mixedRefineResultCache.set(mixedRefineJobs[i].key, result.hit);
+        }
+      }
+    }
+  }
+
+  for (const state of hpStates) {
+    const { hp, hpExport, lb, keptTypes, confirmedTop, confirmedTypes } = state;
+
+    if (!lb.length) {
+      hpReports.push({
+        hp,
+        kept: [],
+        winner: null,
+        winnerSourceKind: 'kept',
+        winnerSourceLabel: outcomeLabelForSource('kept'),
+        displayTop: [],
+        displayTypes: [],
+        refineChanges: [],
+      });
+      exportPayload.hp.push(hpExport);
+      continue;
+    }
+
     let refinedTop = [];
     let refinedTypes = [];
     if (mixedCrystalRefine && confirmedTop.length) {
@@ -5795,10 +6039,6 @@ function printResults({
         .sort((a, b) => b.worstWin - a.worstWin || b.avgWin - a.avgWin);
       hpExport.mixedCatalogByType = refinedTypes;
     }
-
-    const keptTypes = Object.keys(bestTypes)
-      .map((t) => ({ type: t, ...bestTypes[t] }))
-      .sort((a, b) => b.worstWin - a.worstWin || b.avgWin - a.avgWin);
 
     const displayTop = pickDisplayTop(refinedTop, confirmedTop, lb, REPORT_CFG.finalistsTopN);
     const displayTypes = refinedTypes.length
