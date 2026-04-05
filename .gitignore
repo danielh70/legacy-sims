@@ -3,9 +3,4 @@
 results/
 .legacy-sim-custom--*.js
 
-sim_ui/.next/
-sim_ui/node_modules/
-sim_ui/out/
-sim_ui/*.tsbuildinfo
-
 npm-debug.log*

@@ -1,35 +1,15 @@
 # Legacy Sims
 
-Reverse-engineered Legacy combat simulators plus the `sim_ui` Next.js workbench.
+Reverse-engineered Legacy combat simulators.
 
 ## Repo Layout
 
 - `simulator/`: canonical Node entrypoints for the current simulator workflows.
-- `sim_ui/`: canonical Next.js UI app.
 - `data/`: shared non-app assets, including `legacy-defs.js`, `legacy-defenders.js`, and truth fixtures.
 - `tools/`: helper scripts such as truth collection and replay comparison.
 - `archive/`: historical versioned simulator files kept for reference.
 
 ## Primary Commands
-
-Install UI dependencies once:
-
-```bash
-npm --prefix sim_ui install
-```
-
-Run the UI:
-
-```bash
-npm run ui
-```
-
-Build or typecheck the UI:
-
-```bash
-npm run ui:build
-npm run ui:typecheck
-```
 
 Run the latest Node simulators:
 
