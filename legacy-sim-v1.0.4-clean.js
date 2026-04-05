@@ -24,51 +24,48 @@ const path = require('path');
 // You can also override the file at runtime with LEGACY_DEFENDER_FILE.
 const USER_CONFIG = {
   attacker: {
-    label: 'CUSTOM',
-    attackType: 'normal',
-    stats: { level: 80, hp: 650, speed: 60, dodge: 57, accuracy: 14 },
+    label: "CUSTOM",
+    attackType: "normal",
+    stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
     armor: {
-      name: 'SG1 Armor',
-      crystal: 'Perfect Pink Crystal',
+      name: "SG1 Armor",
+      crystal: "Abyss Crystal",
       upgrades: [],
     },
 
     weapon1: {
-      name: 'Reaper Axe',
-      crystal: 'Amulet Crystal',
+      name: "Reaper Axe",
+      crystal: "Berserker Crystal",
       upgrades: [],
     },
     weapon2: {
-      name: 'Crystal Maul',
-      crystalCounts: {
-        'Amulet Crystal': 3,
-        'Perfect Fire Crystal': 1,
-      },
+      name: "Crystal Maul",
+      crystal: "Amulet Crystal",
       upgrades: [],
     },
 
     misc1: {
-      name: 'Bio Spinal Enhancer',
-      crystal: 'Perfect Pink Crystal',
+      name: "Orphic Amulet",
+      crystal: "Perfect Orange Crystal",
       upgrades: [],
     },
     misc2: {
-      name: 'Bio Spinal Enhancer',
-      crystal: 'Perfect Orange Crystal',
+      name: "Orphic Amulet",
+      crystal: "Perfect Orange Crystal",
       upgrades: [],
     },
   },
 
   defenders: {
-    file: 'data/legacy-defenders-meta-v4-curated.js',
+    file: "data/legacy-defenders-meta-v4-curated.js",
   },
 
   // Normal default: edit this block for routine runs.
   // One-off runs can still override these values with LEGACY_* env vars.
   style: {
-    attackerAttackType: '', // '' = use attacker build attackType
-    defenderAttackType: '', // '' = use each defender payload attackType
-    roundMode: 'floor', // 'floor' | 'round' | 'ceil'
+    attackerAttackType: "aimed", // '' = use attacker build attackType
+    defenderAttackType: "", // '' = use each defender payload attackType
+    roundMode: "floor", // 'floor' | 'round' | 'ceil'
   },
 };
 // === END USER CONFIG =========================================================

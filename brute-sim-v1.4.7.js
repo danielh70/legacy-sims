@@ -53,6 +53,7 @@
  * Optional debugging:
  *   LEGACY_WATCH_BUILD=1                 # log one watched build when encountered
  *   LEGACY_FORCE_WEAPON_PAIR="Crystal Maul,Reaper Axe"  # temporary exact weapon item-pair lock
+ *   LEGACY_FORCE_WEAPON_INCLUDE="Reaper Axe,Crystal Maul"  # require at least one listed weapon item in the final pair; crystal/upgrade variants still flow through
  *   LEGACY_FORCE_MISC_INCLUDE="Orphic Amulet"  # require at least one listed misc item in the final build; crystal variants still flow through
  *
  * Output/UI knobs:
@@ -80,8 +81,8 @@ const SETTINGS = {
   MAX_TURNS: 200,
 
   TRIALS_CONFIRM_DEFAULT: 30000,
-  TRIALS_SCREEN_DEFAULT: 1300,
-  TRIALS_GATE_DEFAULT: 350,
+  TRIALS_SCREEN_DEFAULT: 1500,
+  TRIALS_GATE_DEFAULT: 400,
   GATEKEEPERS_DEFAULT: 4,
 
   SCREEN_BAIL_MARGIN_DEFAULT: 6.0,
@@ -91,7 +92,7 @@ const SETTINGS = {
   PROGRESS_EVERY_MS: 2000,
 
   // Historical single-HP default.
-  LOCKED_HP: 865,
+  LOCKED_HP: 700,
 
   WORKERS_DEFAULT_CAP: 12,
 };
@@ -102,21 +103,21 @@ const SETTINGS = {
 const PLAN_SWEEP_CONFIG = {
   // 'single' = only use singleHp below
   // 'sweep'  = use hpSweep.min..max in hpSweep.step increments
-  hpMode: "sweep",
+  hpMode: "single",
   singleHp: SETTINGS.LOCKED_HP,
 
   hpSweep: {
-    min: 500,
-    max: 700,
-    step: 25,
+    min: 575,
+    max: 725,
+    step: 50,
     includeSingleHp: false,
   },
 
   // 'dodge_only'      = old behavior (all free points into dodge)
   // 'acc_dodge_sweep' = sweep accuracy allocations and put the rest into dodge
-  allocationMode: "acc_dodge_sweep",
+  allocationMode: "dodge_only",
   allocation: {
-    accStep: 5,
+    accStep: 10,
     customAccValues: [], // e.g. [15, 25] to force extra checkpoints when valid for a given HP
     includeFullDodge: true,
     includeFullAcc: true,
@@ -157,15 +158,15 @@ const POOLS = {
     // 'Void Sword',
     // "Ritual Dagger IV",
     // "Warlords Katana",
-    // 'Fortified Void Bow',
-    // 'Split Crystal Bombs T2',
-    // 'Rift Gun',
-    // 'Double Barrel Sniper Rifle',
-    // 'Q15 Gun',
-    // 'Bio Gun Mk4',
+    'Fortified Void Bow',
+    'Split Crystal Bombs T2',
+    'Rift Gun',
+    'Double Barrel Sniper Rifle',
+    'Q15 Gun',
+    'Bio Gun Mk4',
     // "Gun Blade Mk4",
     'Reaper Axe',
-    // 'Alien Staff',
+    'Alien Staff',
   ],
   miscs: [
     'Bio Spinal Enhancer',
@@ -295,7 +296,7 @@ const TERM_UI = {
 const REPORT_CFG = {
   finalistsTopN: (() => {
     const n = parseInt(process.env.LEGACY_SHOW_TOP || '', 10);
-    return Number.isFinite(n) && n > 0 ? n : 20;
+    return Number.isFinite(n) && n > 0 ? n : 30;
   })(),
   refineChangesTopN: (() => {
     const n = parseInt(process.env.LEGACY_SHOW_REFINE_TOP || '', 10);
@@ -1764,6 +1765,33 @@ function parseForcedWeaponPairFromEnv() {
 }
 const FORCED_WEAPON_PAIR = parseForcedWeaponPairFromEnv();
 
+function parseForcedWeaponIncludeFromEnv() {
+  const raw = String(process.env.LEGACY_FORCE_WEAPON_INCLUDE || '').trim();
+  if (!raw) return null;
+
+  const names = String(process.env.LEGACY_FORCE_WEAPON_INCLUDE || '')
+    .split(',')
+    .map((x) => x.trim());
+  if (!names.length || names.some((name) => !name)) {
+    throw new Error(
+      'LEGACY_FORCE_WEAPON_INCLUDE must be a CSV list of weapon item names with no empty entries',
+    );
+  }
+
+  for (const name of names) {
+    const idef = ItemDefs[name];
+    if (!idef) {
+      throw new Error(`LEGACY_FORCE_WEAPON_INCLUDE contains unknown item "${name}"`);
+    }
+    if (idef.type !== 'Weapon') {
+      throw new Error(`LEGACY_FORCE_WEAPON_INCLUDE item "${name}" is not a Weapon item`);
+    }
+  }
+
+  return new Set(names);
+}
+const FORCED_WEAPON_INCLUDE = parseForcedWeaponIncludeFromEnv();
+
 function parseForcedMiscIncludeFromEnv() {
   const raw = String(process.env.LEGACY_FORCE_MISC_INCLUDE || '').trim();
   if (!raw) return null;
@@ -2812,18 +2840,22 @@ function buildVariantsForMiscsSuperset(names) {
 function buildWeaponPairs(weaponVariants) {
   const pairsA = [];
   const forcedPair = FORCED_WEAPON_PAIR;
+  const forcedInclude = FORCED_WEAPON_INCLUDE;
   // Temporary env-controlled exact weapon item-pair lock; crystal/upgrade variants still flow through.
   const forcedA = forcedPair ? forcedPair[0] : null;
   const forcedB = forcedPair ? forcedPair[1] : null;
   for (let i = 0; i < weaponVariants.length; i++) {
     for (let j = i; j < weaponVariants.length; j++) {
+      const left = weaponVariants[i].itemName;
+      const right = weaponVariants[j].itemName;
       if (forcedPair) {
-        const left = weaponVariants[i].itemName;
-        const right = weaponVariants[j].itemName;
         if (left === right) continue;
         const matchesForcedPair =
           (left === forcedA && right === forcedB) || (left === forcedB && right === forcedA);
         if (!matchesForcedPair) continue;
+      }
+      if (forcedInclude) {
+        if (!forcedInclude.has(left) && !forcedInclude.has(right)) continue;
       }
       pairsA.push(i, j);
     }

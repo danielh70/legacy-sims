@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 const CrystalDefs = {
   "Abyss Crystal": {
@@ -119,7 +119,7 @@ const ItemDefs = {
   "Alien Staff": {
     type: "Weapon",
     skillType: "projSkill",
-    flatStats: { speed: 50, accuracy: 34, projSkill: 48, defSkill: 8 },
+    flatStats: { speed: 50, accuracy: 39, projSkill: 48, defSkill: 8 },
     baseWeaponDamage: { min: 89, max: 112 },
   },
   "Void Bow": {
@@ -225,8 +225,8 @@ const ItemDefs = {
   "Orphic Amulet": {
     type: "Misc",
     flatStats: {
-      speed: 20,
-      accuracy: 20,
+      speed: 40,
+      accuracy: 27,
       gunSkill: 70,
       meleeSkill: 70,
       projSkill: 70,
@@ -246,8 +246,9 @@ const ItemDefs = {
   "Nerve Gauntlet": {
     type: "Misc",
     flatStats: {
+      dodge: 8,
       accuracy: 23,
-      gunSkill: -20,
+      gunSkill: 0,
       meleeSkill: 40,
       projSkill: 75,
     },
