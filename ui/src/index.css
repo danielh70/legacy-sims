@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #444 #222;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #222; }
+  ::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+
+  select, input[type="number"], input[type="text"] {
+    @apply bg-dark-700 border border-dark-500 text-gray-200 rounded px-2 py-1 text-sm;
+  }
+  select:focus, input:focus {
+    @apply outline-none border-accent-orange;
+  }
+}
