@@ -4,3 +4,4 @@ results/
 .legacy-sim-custom--*.js
 
 npm-debug.log*
+tmp/
