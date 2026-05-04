@@ -24,48 +24,48 @@ const path = require('path');
 // You can also override the file at runtime with LEGACY_DEFENDER_FILE.
 const USER_CONFIG = {
   attacker: {
-    label: "CUSTOM",
-    attackType: "normal",
+    label: 'CUSTOM',
+    attackType: 'normal',
     stats: { level: 80, hp: 865, speed: 60, dodge: 14, accuracy: 14 },
     armor: {
-      name: "SG1 Armor",
-      crystal: "Abyss Crystal",
+      name: 'SG1 Armor', // change from 'Dark Legion Armor'
+      crystal: 'Abyss Crystal',
       upgrades: [],
     },
 
     weapon1: {
-      name: "Reaper Axe",
-      crystal: "Berserker Crystal",
+      name: 'Reaper Axe',
+      crystal: 'Berserker Crystal',
       upgrades: [],
     },
     weapon2: {
-      name: "Crystal Maul",
-      crystal: "Amulet Crystal",
+      name: 'Crystal Maul',
+      crystal: 'Amulet Crystal',
       upgrades: [],
     },
 
     misc1: {
-      name: "Orphic Amulet",
-      crystal: "Perfect Orange Crystal",
+      name: 'Orphic Amulet',
+      crystal: 'Perfect Orange Crystal',
       upgrades: [],
     },
     misc2: {
-      name: "Orphic Amulet",
-      crystal: "Perfect Orange Crystal",
+      name: 'Orphic Amulet',
+      crystal: 'Perfect Orange Crystal',
       upgrades: [],
     },
   },
 
   defenders: {
-    file: "data/legacy-defenders-meta-v4-curated.js",
+    file: 'data/legacy-defenders-meta-v4-curated.js',
   },
 
   // Normal default: edit this block for routine runs.
   // One-off runs can still override these values with LEGACY_* env vars.
   style: {
-    attackerAttackType: "aimed", // '' = use attacker build attackType
-    defenderAttackType: "", // '' = use each defender payload attackType
-    roundMode: "floor", // 'floor' | 'round' | 'ceil'
+    attackerAttackType: 'normal', // '' = use attacker build attackType
+    defenderAttackType: 'normal', // '' = use each defender payload attackType
+    roundMode: 'floor', // 'floor' | 'round' | 'ceil'
   },
 };
 // === END USER CONFIG =========================================================
@@ -147,7 +147,7 @@ const __DEFAULT_ENV__ = {
   LEGACY_MISC_NO_CRYSTAL_SKILL_SLOT2_TYPES: '',
 
   LEGACY_VOID_SWORD_BASE_MIN_OVERRIDE: '',
-  LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE: '120',
+  LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE: '',
 
   LEGACY_SHARED_HIT: '0',
   LEGACY_ACTION_STOP_ON_KILL: '0',
@@ -1595,7 +1595,7 @@ let ItemDefs = {
     type: 'Weapon',
     skillType: 'meleeSkill',
     flatStats: { speed: 60, accuracy: 35, meleeSkill: 40, defSkill: 5 },
-    baseWeaponDamage: { min: 90, max: 120 },
+    baseWeaponDamage: { min: 90, max: 121 },
   },
 
   'Split Crystal Bombs T2': {
@@ -1902,10 +1902,10 @@ function applyCrystalPctToWeaponDmg(base, pctPerCrystal, n, weaponRoundMode, sta
   if (pctPerCrystal <= 0 || n <= 0 || x === 0) return x;
 
   if (stackMode === 'iter4') {
-    for (let i = 0; i < n; i++) x = roundWeaponDmg(x * (1 + pctPerCrystal), weaponRoundMode);
+    for (let i = 0; i < n; i++) x = x + roundWeaponDmg(x * pctPerCrystal, weaponRoundMode);
     return x;
   }
-  return roundWeaponDmg(x * (1 + pctPerCrystal * n), weaponRoundMode);
+  return base + roundWeaponDmg(base * pctPerCrystal * n, weaponRoundMode);
 }
 
 function getEffectiveCrystalPct(itemName, crystalName, slotTag = 0, idef = ItemDefs[itemName]) {

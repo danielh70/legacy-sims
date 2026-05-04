@@ -102,7 +102,7 @@ const ItemDefs = {
     type: "Weapon",
     skillType: "meleeSkill",
     flatStats: { speed: 60, accuracy: 35, meleeSkill: 40, defSkill: 5 },
-    baseWeaponDamage: { min: 90, max: 120 },
+    baseWeaponDamage: { min: 90, max: 121 },
   },
   "Reaper Axe": {
     type: "Weapon",
