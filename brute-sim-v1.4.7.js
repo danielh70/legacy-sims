@@ -2018,7 +2018,7 @@ function _envInt(name, dflt) {
 // ---- default calibration overrides (match current legacy-sim live defaults) ----
 (function applyCalibOverrides() {
   const vsMinRaw = _envStr('LEGACY_VOID_SWORD_BASE_MIN_OVERRIDE', '');
-  const vsMaxRaw = _envStr('LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE', '120');
+  const vsMaxRaw = _envStr('LEGACY_VOID_SWORD_BASE_MAX_OVERRIDE', '');
   if (ItemDefs['Void Sword'] && ItemDefs['Void Sword'].baseWeaponDamage) {
     if (vsMinRaw.toLowerCase() !== 'off') {
       const mn = parseInt(vsMinRaw, 10);
